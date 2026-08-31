@@ -96,4 +96,27 @@ describe('SearchForm', () => {
     render(<SearchForm onSubmit={onSubmit} disabled />);
     expect(screen.getByRole('button', { name: 'Searching...' })).toBeDisabled();
   });
+
+  it('switches the keyword input to RTL when Arabic is selected', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.selectOptions(screen.getByLabelText('Search language'), 'ar');
+    expect(screen.getByLabelText('Keyword or phrase').getAttribute('dir')).toBe('rtl');
+  });
+
+  it('switches the keyword input to RTL when Arabic text is typed', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    const keyword = screen.getByLabelText('Keyword or phrase');
+    await user.type(keyword, 'مرحبا');
+    expect(keyword.getAttribute('dir')).toBe('rtl');
+  });
+
+  it('keeps the keyword input LTR for English text', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    const keyword = screen.getByLabelText('Keyword or phrase');
+    await user.type(keyword, 'hello');
+    expect(keyword.getAttribute('dir')).toBe('ltr');
+  });
 });

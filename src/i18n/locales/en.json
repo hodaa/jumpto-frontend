@@ -46,7 +46,9 @@
   "status": {
     "title": "Transcribing video",
     "message": "This can take a few minutes. We will show your results as soon as the transcript is ready.",
-    "progress": "Progress: {{progress}}%"
+    "progress": "Progress: {{progress}}%",
+    "fetching": "Fetching transcript...",
+    "finding": "Finding timestamps..."
   },
   "results": {
     "title": "Matches for \"{{keyword}}\"",

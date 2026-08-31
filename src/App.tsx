@@ -1,23 +1,18 @@
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, submitSearch } from './api/client';
-import { ErrorView } from './components/ErrorView';
 import { Features } from './components/Features';
 import { Hero } from './components/Hero';
 import { HowItWorks } from './components/HowItWorks';
-import { ResultsList } from './components/ResultsList';
-import { ResultsToolbar } from './components/ResultsToolbar';
+import { ResultsPanel } from './components/ResultsPanel';
+import type { Phase } from './components/ResultsPanel';
 import { SearchForm } from './components/SearchForm';
 import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
-import { StatusCard } from './components/StatusCard';
-import { VideoPlayer } from './components/VideoPlayer';
 import { useJobPolling } from './hooks/useJobPolling';
 import type { VideoPlayerHandle } from './hooks/useYouTubePlayer';
 import type { SearchLanguage, SearchMatch } from './types';
 import { parseYouTubeId } from './utils/youtube';
-
-type Phase = 'idle' | 'processing' | 'done' | 'error' | 'mismatch';
 
 interface ActiveJob {
   jobId: string;
@@ -31,6 +26,7 @@ interface Query {
   language: SearchLanguage;
 }
 
+/** JumpTo app: centered landing when idle, full-width results panel once a search runs. */
 export default function App() {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>('idle');
@@ -143,6 +139,13 @@ export default function App() {
     setFormKey((k) => k + 1);
   }, []);
 
+  const handleRetry = useCallback(
+    () => void handleSubmit(query.url, query.keyword, query.language),
+    [handleSubmit, query],
+  );
+
+  const searching = phase === 'processing';
+
   return (
     <div className="app">
       <a href="#main-content" className="skip-link">
@@ -156,7 +159,7 @@ export default function App() {
               <SearchForm
                 key={formKey}
                 onSubmit={handleSubmit}
-                disabled={phase === 'processing'}
+                disabled={searching}
                 initialUrl={query.url}
                 initialKeyword={query.keyword}
               />
@@ -164,60 +167,21 @@ export default function App() {
           </div>
           <div className="split-view__column">
             <div className="results-canvas card">
-              {phase === 'idle' ? (
-                <div className="results-empty">
-                  <div className="w-full space-y-3 opacity-40 mb-6" aria-hidden="true">
-                    <div className="flex items-center gap-3 w-full">
-                      <div className="h-6 w-16 bg-slate-200 rounded-md shrink-0 animate-pulse" />
-                      <div className="h-4 w-3/4 bg-slate-200 rounded animate-pulse" />
-                    </div>
-                    <div className="flex items-center gap-3 w-full">
-                      <div className="h-6 w-16 bg-slate-200 rounded-md shrink-0 animate-pulse" />
-                      <div className="h-4 w-1/2 bg-slate-200 rounded animate-pulse" />
-                    </div>
-                    <div className="flex items-center gap-3 w-full opacity-60">
-                      <div className="h-6 w-16 bg-slate-200 rounded-md shrink-0 animate-pulse" />
-                      <div className="h-4 w-2/3 bg-slate-200 rounded animate-pulse" />
-                    </div>
-                  </div>
-                  <div className="results-empty__content">
-                    <div className="results-empty__icon" aria-hidden="true">
-                      🎯
-                    </div>
-                    <p className="results-empty__title">{t('results.idleTitle')}</p>
-                    <p className="results-empty__text">{t('results.idle')}</p>
-                  </div>
-                </div>
-              ) : phase === 'processing' ? (
-                <StatusCard progress={progress} />
-              ) : phase === 'done' ? (
-                <>
-                  <div className="results-canvas__toolbar">
-                    <h2>{t('results.title', { keyword: query.keyword })}</h2>
-                    {matches.length > 0 ? (
-                      <ResultsToolbar
-                        onCopy={handleCopyResults}
-                        onExport={handleExportResults}
-                        copied={copied}
-                      />
-                    ) : null}
-                  </div>
-                  {parseYouTubeId(query.url) ? (
-                    <VideoPlayer ref={playerRef} videoId={parseYouTubeId(query.url) as string} />
-                  ) : null}
-                  <ResultsList
-                    matches={matches}
-                    keyword={query.keyword}
-                    onSeek={handleSeek}
-                    onClear={handleClear}
-                  />
-                </>
-              ) : phase === 'error' || phase === 'mismatch' ? (
-                <ErrorView
-                  message={errorText}
-                  onRetry={() => void handleSubmit(query.url, query.keyword, query.language)}
-                />
-              ) : null}
+              <ResultsPanel
+                phase={phase}
+                progress={progress}
+                matches={matches}
+                errorText={errorText}
+                keyword={query.keyword}
+                youtubeId={parseYouTubeId(query.url) ?? null}
+                copied={copied}
+                playerRef={playerRef}
+                onCopy={() => void handleCopyResults()}
+                onExport={handleExportResults}
+                onSeek={handleSeek}
+                onClear={handleClear}
+                onRetry={handleRetry}
+              />
             </div>
           </div>
         </div>

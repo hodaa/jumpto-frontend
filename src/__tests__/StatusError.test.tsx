@@ -41,4 +41,10 @@ describe('StatusCard', () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it('renders the status stepper steps', () => {
+    render(<StatusCard progress={null} />);
+    expect(screen.getByText('Fetching transcript...')).toBeInTheDocument();
+    expect(screen.getByText('Finding timestamps...')).toBeInTheDocument();
+  });
 });
