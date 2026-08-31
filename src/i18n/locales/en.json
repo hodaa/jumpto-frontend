@@ -1,0 +1,89 @@
+{
+  "app": {
+    "title": "JumpTo"
+  },
+  "nav": {
+    "whyJumpto": "Why JumpTo"
+  },
+  "hero": {
+    "title": "Jump to the exact moment a phrase is spoken",
+    "subtitle": "Paste any YouTube link, type a phrase, and JumpTo pinpoints every exact occurrence with one-click timestamps."
+  },
+  "features": {
+    "title": "Why JumpTo",
+    "exactTitle": "Exact phrase matching",
+    "exactDesc": "We search the full transcript word by word, so you only get timestamps where the exact phrase appears — no fuzzy matches.",
+    "fastTitle": "Instant on repeat searches",
+    "fastDesc": "Transcripts are cached, so once a video has been transcribed the results come back in milliseconds.",
+    "jumpTitle": "Watch at the right second",
+    "jumpDesc": "Every result links straight to the exact moment, so you watch the scene instead of scrubbing."
+  },
+  "steps": {
+    "title": "How it works",
+    "step1Title": "Paste a link",
+    "step1Desc": "Any YouTube URL.",
+    "step2Title": "Search a phrase",
+    "step2Desc": "A single word or a full sentence.",
+    "step3Title": "Jump to the moment",
+    "step3Desc": "Get exact timestamps instantly."
+  },
+  "footer": {
+    "note": "JumpTo — find the exact moment any phrase is spoken in a YouTube video.",
+    "rights": "© {{year}} JumpTo. All rights reserved."
+  },
+  "form": {
+    "title": "Search a YouTube video for a phrase",
+    "urlLabel": "YouTube URL",
+    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "keywordLabel": "Keyword or phrase",
+    "keywordPlaceholder": "e.g. never gonna give you up",
+    "languageLabel": "Search language",
+    "languageEn": "English",
+    "languageAr": "العربية",
+    "submit": "Jump to the moment",
+    "searching": "Searching..."
+  },
+  "status": {
+    "title": "Transcribing video",
+    "message": "This can take a few minutes. We will show your results as soon as the transcript is ready.",
+    "progress": "Progress: {{progress}}%"
+  },
+  "results": {
+    "title": "Matches for \"{{keyword}}\"",
+    "matchCount_one": "{{count}} match",
+    "matchCount_other": "{{count}} matches",
+    "empty": "No exact matches found. Try a different phrase.",
+    "idle": "Your timestamp matches will appear here. Run a search to get started.",
+    "idleTitle": "Ready to find your moment",
+    "at": "at",
+    "play": "Play",
+    "seek": "Play at {{timestamp}} — {{snippet}}",
+    "watchOnYouTube": "Watch on YouTube",
+    "noSnippet": "Exact match",
+    "copy": "Copy all",
+    "export": "Export CSV",
+    "copied": "Copied!"
+  },
+  "player": {
+    "note": "Click a match to jump to that moment here on the page."
+  },
+  "error": {
+    "validation": "Please enter a YouTube URL and a keyword.",
+    "urlRequired": "Please enter a YouTube URL.",
+    "keywordRequired": "Please enter a keyword.",
+    "invalidUrl": "Please enter a valid YouTube URL.",
+    "server": "Something went wrong. Please try again.",
+    "jobGone": "This transcription job no longer exists. Please search again.",
+    "boundary": "Something unexpected went wrong. Please reload the page and try again.",
+    "failed": "Transcription failed: {{message}}",
+    "network": "Could not reach the server. Check that the backend is running."
+  },
+  "mismatch": {
+    "message": "This video is not in the selected language. Please pick a different search language."
+  },
+  "actions": {
+    "retry": "Try again",
+    "language": "العربية",
+    "newSearch": "New search"
+  }
+}
