@@ -39,8 +39,20 @@ describe('App', () => {
     mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
     await fillAndSubmit();
     expect(await screen.findByText('00:05')).toBeInTheDocument();
-    const link = screen.getByRole('link', { name: /Watch on YouTube/i });
-    expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abcdef12345&t=5');
+    expect(screen.getAllByText('▶')).toHaveLength(RESULTS.length);
+  });
+
+  it('hides toolbar actions and offers Clear keyword when there are no matches', async () => {
+    mockSubmit.mockResolvedValue({ status: 'found', results: [] });
+    await fillAndSubmit();
+    expect(await screen.findByText(/No exact matches found/)).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    expect(screen.queryByRole('button', { name: 'Copy all' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Export CSV' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Clear keyword' }));
+    expect(await screen.findByText('Ready to find your moment')).toBeInTheDocument();
   });
 
   it('polls the job and shows results once it completes', async () => {

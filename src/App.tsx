@@ -41,6 +41,7 @@ export default function App() {
   const [query, setQuery] = useState<Query>({ url: '', keyword: '', language: 'en' });
   const playerRef = useRef<VideoPlayerHandle | null>(null);
   const [copied, setCopied] = useState(false);
+  const [formKey, setFormKey] = useState(0);
 
   const handleSeek = useCallback((seconds: number) => {
     playerRef.current?.seekTo(seconds);
@@ -131,6 +132,17 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [matches, query.keyword]);
 
+  const handleClear = useCallback(() => {
+    setPhase('idle');
+    setMatches([]);
+    setProgress(null);
+    setErrorText('');
+    setJob(null);
+    setQuery({ url: '', keyword: '', language: 'en' });
+    setCopied(false);
+    setFormKey((k) => k + 1);
+  }, []);
+
   return (
     <div className="app">
       <a href="#main-content" className="skip-link">
@@ -142,6 +154,7 @@ export default function App() {
           <div className="split-view__column">
             <Hero>
               <SearchForm
+                key={formKey}
                 onSubmit={handleSubmit}
                 disabled={phase === 'processing'}
                 initialUrl={query.url}
@@ -181,11 +194,13 @@ export default function App() {
                 <>
                   <div className="results-canvas__toolbar">
                     <h2>{t('results.title', { keyword: query.keyword })}</h2>
-                    <ResultsToolbar
-                      onCopy={handleCopyResults}
-                      onExport={handleExportResults}
-                      copied={copied}
-                    />
+                    {matches.length > 0 ? (
+                      <ResultsToolbar
+                        onCopy={handleCopyResults}
+                        onExport={handleExportResults}
+                        copied={copied}
+                      />
+                    ) : null}
                   </div>
                   {parseYouTubeId(query.url) ? (
                     <VideoPlayer ref={playerRef} videoId={parseYouTubeId(query.url) as string} />
@@ -193,8 +208,8 @@ export default function App() {
                   <ResultsList
                     matches={matches}
                     keyword={query.keyword}
-                    youtubeId={parseYouTubeId(query.url) ?? ''}
                     onSeek={handleSeek}
+                    onClear={handleClear}
                   />
                 </>
               ) : phase === 'error' || phase === 'mismatch' ? (

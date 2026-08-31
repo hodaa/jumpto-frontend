@@ -53,6 +53,7 @@
     "matchCount_one": "{{count}} match",
     "matchCount_other": "{{count}} matches",
     "empty": "No exact matches found. Try a different phrase.",
+    "clearKeyword": "Clear keyword",
     "idle": "Your timestamp matches will appear here. Run a search to get started.",
     "idleTitle": "Ready to find your moment",
     "at": "at",
