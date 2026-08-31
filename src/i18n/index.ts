@@ -8,7 +8,7 @@ const STORAGE_KEY = 'jumpto.lang';
 
 function initialLanguage(): Language {
   const saved = localStorage.getItem(STORAGE_KEY);
-  return saved === 'en' || saved === 'ar' ? saved : 'ar';
+  return saved === 'en' || saved === 'ar' ? saved : 'en';
 }
 
 function applyDocumentLanguage(lang: Language): void {

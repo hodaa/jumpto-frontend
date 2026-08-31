@@ -153,19 +153,19 @@ export default function App() {
             <div className="results-canvas card">
               {phase === 'idle' ? (
                 <div className="results-empty">
-                  <div className="results-empty__ghost" aria-hidden="true">
-                    <span className="skeleton-match">
-                      <span className="skeleton-match__pill" />
-                      <span className="skeleton-match__line skeleton-match__line--lg" />
-                    </span>
-                    <span className="skeleton-match">
-                      <span className="skeleton-match__pill" />
-                      <span className="skeleton-match__line skeleton-match__line--md" />
-                    </span>
-                    <span className="skeleton-match skeleton-match--faint">
-                      <span className="skeleton-match__pill" />
-                      <span className="skeleton-match__line skeleton-match__line--sm" />
-                    </span>
+                  <div className="w-full space-y-3 opacity-40 mb-6" aria-hidden="true">
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="h-6 w-16 bg-slate-200 rounded-md shrink-0 animate-pulse" />
+                      <div className="h-4 w-3/4 bg-slate-200 rounded animate-pulse" />
+                    </div>
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="h-6 w-16 bg-slate-200 rounded-md shrink-0 animate-pulse" />
+                      <div className="h-4 w-1/2 bg-slate-200 rounded animate-pulse" />
+                    </div>
+                    <div className="flex items-center gap-3 w-full opacity-60">
+                      <div className="h-6 w-16 bg-slate-200 rounded-md shrink-0 animate-pulse" />
+                      <div className="h-4 w-2/3 bg-slate-200 rounded animate-pulse" />
+                    </div>
                   </div>
                   <div className="results-empty__content">
                     <div className="results-empty__icon" aria-hidden="true">
