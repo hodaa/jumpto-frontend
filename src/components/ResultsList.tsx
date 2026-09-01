@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SearchMatch } from '../types';
 import { formatYouTubeTime } from '../utils/youtube';
-import { IconExternal, IconSearch } from './icons';
+import { IconSearch } from './icons';
 
 const DEFAULT_MATCH_LIMIT = 50;
 
@@ -51,17 +51,11 @@ function highlightKeyword(text: string, keyword: string): ReactNode {
   return parts.length ? parts : text;
 }
 
-/** Link that opens the match on YouTube at the exact second. */
-function watchUrl(youtubeId: string, seconds: number): string {
-  return `https://www.youtube.com/watch?v=${youtubeId}&t=${Math.floor(seconds)}s`;
-}
-
 export function ResultsList({
   matches,
   keyword,
   onSeek,
   onClear,
-  youtubeId,
   matchLimit = DEFAULT_MATCH_LIMIT,
 }: Props) {
   const { t } = useTranslation();
