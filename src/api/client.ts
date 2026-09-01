@@ -15,7 +15,7 @@ export class ApiError extends Error {
 }
 
 const http = axios.create({
-  baseURL: (import.meta.env.API_BASE_URL as string | undefined) ?? '',
+  baseURL: (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '',
   timeout: 30_000,
 });
 
