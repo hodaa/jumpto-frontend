@@ -36,6 +36,7 @@ export function SearchForm({
   const [keywordError, setKeywordError] = useState<string | null>(null);
 
   const keywordDir = isArabicText(keyword) || language === 'ar' ? 'rtl' : 'ltr';
+  const inputAlign = keywordDir === 'rtl' ? 'text-right' : 'text-left';
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -59,9 +60,12 @@ export function SearchForm({
     onSubmit(cleanUrl, cleanKeyword, language);
   };
 
+  const inputClass =
+    'w-full rounded-xl border border-slate-200 bg-slate-100/70 px-4 py-3 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/15';
+
   return (
     <form
-      className="grid w-full max-w-xl gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/40 sm:p-8"
+      className="grid w-full max-w-xl gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
       onSubmit={handleSubmit}
       aria-label={t('form.title')}
     >
@@ -78,7 +82,7 @@ export function SearchForm({
           placeholder={t('form.urlPlaceholder')}
           aria-describedby={urlError ? 'url-error' : undefined}
           aria-invalid={urlError ? true : undefined}
-          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 placeholder:text-slate-500 focus:border-[#00bff8] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#00bff8]/20"
+          className={`${inputClass} text-left placeholder:text-left`}
         />
         {urlError ? (
           <p className="text-sm font-semibold text-rose-600" role="alert" id="url-error">
@@ -100,7 +104,7 @@ export function SearchForm({
           placeholder={t('form.keywordPlaceholder')}
           aria-describedby={keywordError ? 'keyword-error' : undefined}
           aria-invalid={keywordError ? true : undefined}
-          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 placeholder:text-slate-500 focus:border-[#00bff8] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#00bff8]/20"
+          className={`${inputClass} ${inputAlign} ${keywordDir === 'rtl' ? 'u-ar-font' : ''}`}
         />
         {keywordError ? (
           <p className="text-sm font-semibold text-rose-600" role="alert" id="keyword-error">
@@ -117,7 +121,7 @@ export function SearchForm({
           id="language"
           value={language}
           onChange={(event) => setLanguage(event.target.value as SearchLanguage)}
-          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#00bff8] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#00bff8]/20"
+          className={inputClass}
         >
           <option value="en">{t('form.languageEn')}</option>
           <option value="ar">{t('form.languageAr')}</option>
@@ -127,14 +131,21 @@ export function SearchForm({
       <button
         type="submit"
         disabled={disabled}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#081e54] px-6 py-3.5 text-base font-bold text-white shadow-md transition hover:-translate-y-px hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-[#00bff8]/40 disabled:cursor-wait disabled:bg-gradient-to-r disabled:from-[#081e54] disabled:to-[#0e7490] disabled:opacity-95 disabled:shadow-[0_0_0_0_rgba(0,191,248,0.5)] disabled:animate-pulse"
+        className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-base font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-md active:translate-y-0 active:bg-primary focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 focus-visible:ring-offset-2 disabled:cursor-wait disabled:animate-pulse disabled:bg-slate-400 disabled:shadow-none"
       >
         {disabled ? (
           <span
             aria-hidden="true"
             className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"
           />
-        ) : null}
+        ) : (
+          <span
+            aria-hidden="true"
+            className="transition-transform duration-200 group-hover:translate-x-0.5"
+          >
+            🎯
+          </span>
+        )}
         {disabled ? t('form.searching') : t('form.submit')}
       </button>
     </form>

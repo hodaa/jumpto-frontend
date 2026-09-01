@@ -34,6 +34,12 @@ describe('ResultsPanel', () => {
     expect(screen.getByText('00:05')).toBeInTheDocument();
   });
 
+  it('renders the keyword inside the title without leaking [object Object]', () => {
+    render(<ResultsPanel {...baseProps} phase="done" />);
+    expect(screen.getByRole('heading', { name: 'Matches for "hello"' })).toBeInTheDocument();
+    expect(screen.queryByText(/object Object/)).not.toBeInTheDocument();
+  });
+
   it('shows an error view with retry', async () => {
     const user = userEvent.setup();
     render(<ResultsPanel {...baseProps} phase="error" errorText="error.network" />);

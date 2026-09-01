@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { ErrorView } from './ErrorView';
 import { ResultsList } from './ResultsList';
 import { ResultsToolbar } from './ResultsToolbar';
@@ -25,7 +25,9 @@ interface Props {
   onRetry: () => void;
 }
 
-/** Full-width results panel shown while a search is processing or complete. */
+const CARD = 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8';
+
+/** Right-column white card that shows all phases of a search. */
 export function ResultsPanel({
   phase,
   progress,
@@ -45,45 +47,56 @@ export function ResultsPanel({
 
   if (phase === 'idle') {
     return (
-      <div className="results-empty">
-        <div className="w-full space-y-3 opacity-40 mb-6" aria-hidden="true">
+      <section className={CARD} aria-label={t('results.idleTitle')}>
+        <div className="w-full space-y-3 opacity-40" aria-hidden="true">
           <div className="flex items-center gap-3 w-full">
-            <div className="h-6 w-16 bg-slate-200 rounded-md shrink-0 animate-pulse" />
-            <div className="h-4 w-3/4 bg-slate-200 rounded animate-pulse" />
+            <div className="h-6 w-16 rounded-md bg-slate-200 shrink-0 animate-pulse" />
+            <div className="h-4 w-3/4 rounded bg-slate-200 animate-pulse" />
           </div>
           <div className="flex items-center gap-3 w-full">
-            <div className="h-6 w-16 bg-slate-200 rounded-md shrink-0 animate-pulse" />
-            <div className="h-4 w-1/2 bg-slate-200 rounded animate-pulse" />
+            <div className="h-6 w-16 rounded-md bg-slate-200 shrink-0 animate-pulse" />
+            <div className="h-4 w-1/2 rounded bg-slate-200 animate-pulse" />
           </div>
           <div className="flex items-center gap-3 w-full opacity-60">
-            <div className="h-6 w-16 bg-slate-200 rounded-md shrink-0 animate-pulse" />
-            <div className="h-4 w-2/3 bg-slate-200 rounded animate-pulse" />
+            <div className="h-6 w-16 rounded-md bg-slate-200 shrink-0 animate-pulse" />
+            <div className="h-4 w-2/3 rounded bg-slate-200 animate-pulse" />
           </div>
         </div>
-        <div className="results-empty__content">
-          <div className="results-empty__icon" aria-hidden="true">
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center">
+          <span
+            aria-hidden="true"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-2xl"
+          >
             🎯
-          </div>
-          <p className="results-empty__title">{t('results.idleTitle')}</p>
-          <p className="results-empty__text">{t('results.idle')}</p>
+          </span>
+          <p className="text-lg font-bold text-slate-800">{t('results.idleTitle')}</p>
+          <p className="-mt-1 max-w-md text-sm text-slate-500">{t('results.idle')}</p>
         </div>
-      </div>
+      </section>
     );
   }
 
   if (phase === 'processing') {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/40 sm:p-8">
+      <section className={CARD} aria-label={t('status.title')}>
         <StatusCard progress={progress} />
-      </div>
+      </section>
     );
   }
 
   if (phase === 'done') {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/40 sm:p-8">
+      <section className={CARD} aria-label={t('results.title', { keyword })}>
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-slate-800">{t('results.title', { keyword })}</h2>
+          <h2 className="text-lg font-bold text-slate-800" dir="auto">
+            <Trans
+              i18nKey="results.title"
+              values={{ keyword }}
+              components={{
+                keyword: <span className="results-keyword" dir="auto" />,
+              }}
+            />
+          </h2>
           {matches.length > 0 ? (
             <ResultsToolbar onCopy={onCopy} onExport={onExport} copied={copied} />
           ) : null}
@@ -92,13 +105,13 @@ export function ResultsPanel({
         <div className="mt-5">
           <ResultsList matches={matches} keyword={keyword} onSeek={onSeek} onClear={onClear} />
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/40 sm:p-8">
+    <section className={CARD} role="alert">
       <ErrorView message={errorText} onRetry={onRetry} />
-    </div>
+    </section>
   );
 }

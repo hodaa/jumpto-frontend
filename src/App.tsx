@@ -51,7 +51,7 @@ export default function App() {
       setMatches([]);
       try {
         const response = await submitSearch(url, keyword, language);
-        if (response.status === 'found') {
+        if (response.status === 'found' || response.status === 'not_found') {
           setMatches(response.results);
           setPhase('done');
           return;
@@ -153,40 +153,37 @@ export default function App() {
       </a>
       <SiteHeader />
       <main className="app-main" id="main-content">
-        <div className="split-view">
-          <div className="split-view__column">
-            <Hero>
-              <SearchForm
-                key={formKey}
-                onSubmit={handleSubmit}
-                disabled={searching}
-                initialUrl={query.url}
-                initialKeyword={query.keyword}
-              />
-            </Hero>
+        <Hero />
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 lg:gap-8">
+          <div className="lg:col-span-5">
+            <SearchForm
+              key={formKey}
+              onSubmit={handleSubmit}
+              disabled={searching}
+              initialUrl={query.url}
+              initialKeyword={query.keyword}
+            />
           </div>
-          <div className="split-view__column">
-            <div className="results-canvas card">
-              <ResultsPanel
-                phase={phase}
-                progress={progress}
-                matches={matches}
-                errorText={errorText}
-                keyword={query.keyword}
-                youtubeId={parseYouTubeId(query.url) ?? null}
-                copied={copied}
-                playerRef={playerRef}
-                onCopy={() => void handleCopyResults()}
-                onExport={handleExportResults}
-                onSeek={handleSeek}
-                onClear={handleClear}
-                onRetry={handleRetry}
-              />
-            </div>
+          <div className="lg:col-span-7">
+            <ResultsPanel
+              phase={phase}
+              progress={progress}
+              matches={matches}
+              errorText={errorText}
+              keyword={query.keyword}
+              youtubeId={parseYouTubeId(query.url) ?? null}
+              copied={copied}
+              playerRef={playerRef}
+              onCopy={() => void handleCopyResults()}
+              onExport={handleExportResults}
+              onSeek={handleSeek}
+              onClear={handleClear}
+              onRetry={handleRetry}
+            />
           </div>
         </div>
-        <Features />
         <HowItWorks />
+        <Features />
       </main>
       <SiteFooter />
     </div>

@@ -55,6 +55,13 @@ describe('App', () => {
     expect(await screen.findByText('Ready to find your moment')).toBeInTheDocument();
   });
 
+  it('shows the empty state for a not_found cached response instead of spinning forever', async () => {
+    mockSubmit.mockResolvedValue({ status: 'not_found', results: [] });
+    await fillAndSubmit();
+    expect(await screen.findByText(/No exact matches found/)).toBeInTheDocument();
+    expect(screen.queryByText('Transcribing video')).not.toBeInTheDocument();
+  });
+
   it('polls the job and shows results once it completes', async () => {
     mockSubmit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'vid-1' });
     mockStatus.mockResolvedValue({

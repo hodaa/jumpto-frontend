@@ -51,9 +51,10 @@
     "finding": "جارٍ إيجاد التوقيتات..."
   },
   "results": {
-    "title": "النتائج لعبارة \"{{keyword}}\"",
+    "title": "النتائج لعبارة \"<keyword>{{keyword}}</keyword>\"",
     "matchCount_one": "{{count}} نتيجة",
     "matchCount_other": "{{count}} نتائج",
+    "hint": "انقر على تطابق للانتقال إلى تلك اللحظة",
     "empty": "لم يتم العثور على تطابقات مطابقة تمامًا. جرّب عبارة مختلفة.",
     "clearKeyword": "مسح الكلمة المفتاحية",
     "idle": "ستظهر هنا تطابقاتك مع التوقيتات. ابدأ بحثًا للبدء.",
@@ -87,6 +88,7 @@
   "actions": {
     "retry": "إعادة المحاولة",
     "language": "English",
+    "languageSelector": "اللغة",
     "newSearch": "بحث جديد"
   }
 }

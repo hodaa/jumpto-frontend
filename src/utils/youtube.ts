@@ -28,3 +28,24 @@ export function parseYouTubeId(url: string): string | null {
 export function buildWatchUrl(youtubeId: string, seconds: number): string {
   return `https://www.youtube.com/watch?v=${encodeURIComponent(youtubeId)}&t=${Math.floor(seconds)}`;
 }
+
+/**
+ * Format a timestamp the way the YouTube player controls do:
+ * `MM:SS`, or `HH:MM:SS` once the duration reaches an hour.
+ * Non-finite or negative input falls back to `00:00`.
+ */
+export function formatYouTubeTime(totalSeconds: number): string {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
+    totalSeconds = 0;
+  }
+  const total = Math.floor(totalSeconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(seconds).padStart(2, '0');
+  if (hours > 0) {
+    return `${hours}:${mm}:${ss}`;
+  }
+  return `${mm}:${ss}`;
+}

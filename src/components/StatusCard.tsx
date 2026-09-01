@@ -14,7 +14,7 @@ export function StatusCard({ progress, skeleton = false }: Props) {
 
   if (skeleton) {
     return (
-      <section className="status-card" aria-busy="true">
+      <section aria-busy="true">
         <div className="skeleton skeleton--title" />
         <div className="skeleton skeleton--text" />
         <div className="skeleton skeleton--card-sm" style={{ marginTop: '1rem' }} />
@@ -25,11 +25,15 @@ export function StatusCard({ progress, skeleton = false }: Props) {
   const value = progress ?? 0;
 
   return (
-    <section className="status-card space-y-5 p-2 text-center" aria-live="polite" aria-busy="true">
+    <section
+      className="flex flex-col items-center justify-center gap-5 text-center"
+      aria-live="polite"
+      aria-busy="true"
+    >
       <div className="flex flex-col items-center gap-3">
         <span
           aria-hidden="true"
-          className="h-12 w-12 animate-spin rounded-full border-4 border-[#00bff8]/20 border-t-[#00bff8]"
+          className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary"
         />
         <h2 className="text-lg font-bold text-slate-800">{t('status.title')}</h2>
       </div>
@@ -42,7 +46,7 @@ export function StatusCard({ progress, skeleton = false }: Props) {
         aria-valuenow={value}
       >
         <div
-          className="h-full rounded-full bg-gradient-to-r from-[#081e54] to-[#0e7490] transition-[width] duration-500"
+          className="h-full rounded-full bg-primary transition-[width] duration-500"
           style={{ width: `${value}%` }}
         />
       </div>
@@ -51,7 +55,7 @@ export function StatusCard({ progress, skeleton = false }: Props) {
         {progress !== null ? t('status.progress', { progress: value }) : t('status.message')}
       </p>
 
-      <ol className="mx-auto flex max-w-sm list-none flex-col gap-2 text-left">
+      <ol className="mx-auto flex max-w-sm list-none flex-col gap-2 text-start">
         <li className="flex items-center gap-2 text-sm font-medium text-slate-700">
           <CheckIcon />
           {t('status.fetching')}
@@ -88,7 +92,7 @@ function PendingIcon() {
       aria-hidden="true"
       viewBox="0 0 20 20"
       fill="currentColor"
-      className="h-5 w-5 shrink-0 animate-spin text-[#00bff8]"
+      className="h-5 w-5 shrink-0 animate-spin text-primary"
     >
       <path
         fillRule="evenodd"

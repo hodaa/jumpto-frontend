@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 export function SiteFooter() {
   const { t } = useTranslation();
   return (
-    <footer className="site-footer">
-      <p className="footer-note">{t('footer.note')}</p>
-      <p className="footer-rights">{t('footer.rights', { year: new Date().getFullYear() })}</p>
+    <footer className="mt-10 border-t border-slate-200 pt-6 text-center text-sm text-slate-500">
+      <p>{t('footer.note')}</p>
+      <p className="mt-1">{t('footer.rights', { year: new Date().getFullYear() })}</p>
     </footer>
   );
 }

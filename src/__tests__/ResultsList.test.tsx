@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { ResultsList } from '../components/ResultsList';
+import { formatYouTubeTime } from '../utils/youtube';
 
 const matches = [
   { timestamp: '00:03', progress_seconds: 3, text_snippet: 'hello world here' },
@@ -9,23 +10,49 @@ const matches = [
 ];
 
 describe('ResultsList', () => {
-  it('renders match count and timestamps', () => {
+  it('renders match count and formatted player-style timestamps', () => {
     render(<ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} />);
     expect(screen.getByText('2 matches')).toBeInTheDocument();
     expect(screen.getByText('00:03')).toBeInTheDocument();
-    expect(screen.getByText('hello world here')).toBeInTheDocument();
+    expect(screen.getByText('01:15')).toBeInTheDocument();
     expect(screen.getByText('Exact match')).toBeInTheDocument();
+  });
+
+  it('highlights the searched keyword inside the snippet', () => {
+    render(<ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} />);
+    const mark = screen.getByText('hello world', { selector: 'mark' });
+    expect(mark).toBeInTheDocument();
+    expect(mark).toHaveTextContent('hello world');
+  });
+
+  it('formats long durations to YouTube player HH:MM:SS format', () => {
+    const long = [{ timestamp: '6943', progress_seconds: 6943, text_snippet: null }];
+    render(<ResultsList matches={long} keyword="x" onSeek={vi.fn()} />);
+    expect(screen.getByText('1:55:43')).toBeInTheDocument();
+  });
+
+  it('renders an Arabic snippet inside an RTL container', () => {
+    const arabic = [
+      {
+        timestamp: '00:01',
+        progress_seconds: 1,
+        text_snippet: 'الله يحب المتقين في كل مكان',
+      },
+    ];
+    const { container } = render(<ResultsList matches={arabic} keyword="الله" onSeek={vi.fn()} />);
+    const snippet = container.querySelector('.match-card__snippet');
+    expect(snippet).toHaveAttribute('dir', 'rtl');
   });
 
   it('calls onSeek with the right second when a match is clicked', async () => {
     const user = userEvent.setup();
     const onSeek = vi.fn();
     render(<ResultsList matches={matches} keyword="hello world" onSeek={onSeek} />);
-    await user.click(screen.getByText('hello world here'));
-    expect(onSeek).toHaveBeenCalledWith(3);
+    await user.click(screen.getByText('01:15'));
+    expect(onSeek).toHaveBeenCalledWith(75);
   });
 
-  it('keeps match rows clean with a play icon and no external link', () => {
+  it('keeps match rows clean with a prominent play button and no external link', () => {
     render(<ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} />);
     const playIcons = screen.getAllByText('▶');
     expect(playIcons).toHaveLength(2);
@@ -35,5 +62,26 @@ describe('ResultsList', () => {
   it('shows an empty state when there are no matches', () => {
     render(<ResultsList matches={[]} keyword="zzz" onSeek={vi.fn()} />);
     expect(screen.getByText('No exact matches found. Try a different phrase.')).toBeInTheDocument();
+  });
+});
+
+describe('formatYouTubeTime', () => {
+  it('formats zero and small values as MM:SS', () => {
+    expect(formatYouTubeTime(0)).toBe('00:00');
+    expect(formatYouTubeTime(5)).toBe('00:05');
+    expect(formatYouTubeTime(75)).toBe('01:15');
+    expect(formatYouTubeTime(3599)).toBe('59:59');
+  });
+
+  it('formats values of an hour or more as HH:MM:SS', () => {
+    expect(formatYouTubeTime(3600)).toBe('1:00:00');
+    expect(formatYouTubeTime(6943)).toBe('1:55:43');
+    expect(formatYouTubeTime(7325)).toBe('2:02:05');
+  });
+
+  it('falls back to 00:00 for invalid input', () => {
+    expect(formatYouTubeTime(NaN)).toBe('00:00');
+    expect(formatYouTubeTime(-5)).toBe('00:00');
+    expect(formatYouTubeTime(Infinity)).toBe('00:00');
   });
 });

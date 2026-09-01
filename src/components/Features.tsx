@@ -14,12 +14,17 @@ export function Features() {
     <section className="features" id="why-jumpto" aria-label={t('features.title')}>
       <div className="features__inner">
         <h2 className="section-title">{t('features.title')}</h2>
-        <div className="features-grid">
+        <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
           {items.map((item) => (
-            <article className="feature-card" key={item.title}>
-              <span className="feature-icon">{item.icon}</span>
-              <h3 className="feature-title">{item.title}</h3>
-              <p className="feature-desc">{item.desc}</p>
+            <article
+              className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+              key={item.title}
+            >
+              <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                {item.icon}
+              </span>
+              <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-slate-500">{item.desc}</p>
             </article>
           ))}
         </div>

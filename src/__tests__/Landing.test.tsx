@@ -13,7 +13,7 @@ describe('Landing sections', () => {
     expect(screen.getByAltText('JumpTo')).toHaveAttribute('src', '/logo.png');
     expect(screen.getByRole('link', { name: 'JumpTo home' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Why JumpTo' })).toHaveAttribute('href', '#why-jumpto');
-    expect(screen.getByRole('button', { name: 'العربية' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Language' })).toBeInTheDocument();
   });
 
   it('renders the hero headline with the search card slot', () => {

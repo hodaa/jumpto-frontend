@@ -51,9 +51,10 @@
     "finding": "Finding timestamps..."
   },
   "results": {
-    "title": "Matches for \"{{keyword}}\"",
+    "title": "Matches for \"<keyword>{{keyword}}</keyword>\"",
     "matchCount_one": "{{count}} match",
     "matchCount_other": "{{count}} matches",
+    "hint": "Click a match to jump to that moment",
     "empty": "No exact matches found. Try a different phrase.",
     "clearKeyword": "Clear keyword",
     "idle": "Your timestamp matches will appear here. Run a search to get started.",
@@ -87,6 +88,7 @@
   "actions": {
     "retry": "Try again",
     "language": "العربية",
+    "languageSelector": "Language",
     "newSearch": "New search"
   }
 }

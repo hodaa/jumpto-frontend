@@ -13,6 +13,12 @@ export interface SearchFoundResponse {
   results: SearchMatch[];
 }
 
+/** Response shape when the video is transcribed but the phrase has no matches. */
+export interface SearchNotFoundResponse {
+  status: 'not_found';
+  results: [];
+}
+
 /** Response shape when a transcription job was created. */
 export interface SearchProcessingResponse {
   status: 'processing';
@@ -29,7 +35,10 @@ export interface SearchLanguageMismatchResponse {
 
 /** Union of possible POST /api/search responses. */
 export type SearchResponse =
-  SearchFoundResponse | SearchProcessingResponse | SearchLanguageMismatchResponse;
+  | SearchFoundResponse
+  | SearchNotFoundResponse
+  | SearchProcessingResponse
+  | SearchLanguageMismatchResponse;
 
 /** Languages the user can search in. */
 export type SearchLanguage = 'en' | 'ar';
@@ -47,4 +56,5 @@ export interface StatusResponse {
 }
 
 /** Response shape for GET /api/video/{video_id}/search. */
-export type VideoSearchResponse = SearchFoundResponse | SearchLanguageMismatchResponse;
+export type VideoSearchResponse =
+  SearchFoundResponse | SearchNotFoundResponse | SearchLanguageMismatchResponse;

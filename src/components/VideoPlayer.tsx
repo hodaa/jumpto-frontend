@@ -17,9 +17,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPl
   useImperativeHandle(ref, () => handle, [handle]);
 
   return (
-    <div className="video-player">
-      <div className="video-player-frame" ref={containerRef} />
-      <p className="video-player-note">{t('player.note')}</p>
+    <div className="overflow-hidden rounded-xl bg-black">
+      <div className="aspect-video w-full" ref={containerRef} />
+      <p className="bg-white px-4 py-3 text-xs text-slate-500">{t('player.note')}</p>
     </div>
   );
 });
