@@ -126,7 +126,21 @@ describe('SearchForm', () => {
     await user.selectOptions(screen.getByLabelText('Search language'), 'ar');
     const keyword = screen.getByLabelText('Keyword or phrase');
     expect(keyword.getAttribute('dir')).toBe('rtl');
-    expect(keyword).toHaveStyle({ textAlign: 'right' });
+    expect(keyword).toHaveStyle({ textAlign: 'right', direction: 'rtl' });
     expect(keyword.className).toContain('search-input--rtl');
+  });
+
+  it('places the language selector arrow on the right in English and on the left in Arabic', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<SearchForm onSubmit={onSubmit} />);
+
+    const languageSelect = screen.getByLabelText('Search language');
+    const arrow = screen.getAllByText('▼')[0];
+    expect(arrow.className).toContain('right-3');
+
+    await user.selectOptions(languageSelect, 'ar');
+    rerender(<SearchForm onSubmit={onSubmit} initialLanguage="ar" />);
+    const arabicArrow = screen.getAllByText('▼')[0];
+    expect(arabicArrow.className).toContain('left-3');
   });
 });

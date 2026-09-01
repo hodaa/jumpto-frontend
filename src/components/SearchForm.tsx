@@ -61,6 +61,7 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
   const placeholderAlignClass = keywordDir === 'rtl' ? 'search-input--rtl' : 'search-input--ltr';
   const fieldIconSide = isArabicLanguage ? 'right-3' : 'left-3';
   const selectIconSide = isArabicLanguage ? 'right-3' : 'left-3';
+  const selectArrowSide = isArabicLanguage ? 'left-3' : 'right-3';
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -116,7 +117,7 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
             aria-describedby={urlError ? 'url-error' : undefined}
             aria-invalid={urlError ? true : undefined}
             className={`${inputClass} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
-            style={{ textAlign: textAlignStyle }}
+            style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
         </div>
         {urlError ? (
@@ -146,7 +147,7 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
             aria-describedby={keywordError ? 'keyword-error' : undefined}
             aria-invalid={keywordError ? true : undefined}
             className={`${inputClass} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
-            style={{ textAlign: textAlignStyle }}
+            style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
         </div>
         {keywordError ? (
@@ -179,7 +180,7 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
             <option value="ar">{t('form.languageAr')}</option>
           </select>
           <span
-            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${isArabicLanguage ? 'right-3' : 'left-3'} text-slate-400 flex items-center justify-center w-8`}
+            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${selectArrowSide} text-slate-400 flex items-center justify-center w-8`}
           >
             ▼
           </span>
