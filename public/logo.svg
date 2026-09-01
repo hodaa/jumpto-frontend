@@ -1,0 +1,12 @@
+<svg width="360" height="120" viewBox="0 0 360 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">JumpTo</title>
+  <desc id="desc">JumpTo brand logo with a play icon.</desc>
+
+  <text x="20" y="82" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="900" letter-spacing="-2">
+    <tspan fill="#01124e">Jump</tspan>
+    <tspan fill="#6dcff6">To</tspan>
+  </text>
+
+  <rect x="232" y="18" width="52" height="52" rx="14" fill="#29c5f6"/>
+  <path d="M250 31 L275 49 L250 67 Z" fill="#FFFFFF"/>
+</svg>

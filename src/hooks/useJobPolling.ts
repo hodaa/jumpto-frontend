@@ -4,6 +4,8 @@ import { ApiError, fetchJobStatus, fetchVideoSearch } from '../api/client';
 import type { SearchLanguage, SearchMatch } from '../types';
 
 const POLL_INTERVAL_MS = 2000;
+const RETRY_DELAY_MS = 250;
+const MAX_CONSECUTIVE_FAILURES = 2;
 
 interface PollCallbacks {
   onProgress: (progress: number | null) => void;
@@ -43,7 +45,8 @@ export function useJobPolling({
     }
     const video = await fetchVideoSearch(videoId, keyword, language);
     if (video.status === 'language_mismatch') {
-      onMismatch(t('mismatch.message'));
+      const languageLabel = language === 'ar' ? t('form.languageAr') : t('form.languageEn');
+      onMismatch(t('mismatch.message', { language: languageLabel }));
     } else {
       onSuccess(video.results);
     }
@@ -54,16 +57,22 @@ export function useJobPolling({
     if (!jobId) return;
     let cancelled = false;
     let timerId: number | undefined;
+    let failures = 0;
 
     const tick = async (): Promise<void> => {
       try {
         const keepPolling = await handle();
+        failures = 0;
         if (keepPolling && !cancelled) {
           timerId = window.setTimeout(() => void tick(), POLL_INTERVAL_MS);
         }
       } catch (error) {
-        if (!cancelled) {
+        if (cancelled) return;
+        failures += 1;
+        if (failures > MAX_CONSECUTIVE_FAILURES) {
           onError(error instanceof ApiError ? error.messageKey : t('error.server'));
+        } else {
+          timerId = window.setTimeout(() => void tick(), RETRY_DELAY_MS);
         }
       }
     };

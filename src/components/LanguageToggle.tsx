@@ -32,8 +32,22 @@ export function LanguageToggle() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const current = getLanguage() === 'ar' ? 'ar' : 'en';
-  const currentLabel = OPTIONS.find((o) => o.value === current)?.label ?? 'English';
+  const currentIndex = OPTIONS.findIndex((option) => option.value === current);
+  const currentLabel = OPTIONS[currentIndex]?.label ?? 'English';
+  const isArabic = current === 'ar';
+
+  const focusOption = (index: number) => {
+    optionRefs.current[index]?.focus();
+  };
+
+  useEffect(() => {
+    if (open) {
+      focusOption(currentIndex);
+    }
+  }, [open, currentIndex]);
 
   useEffect(() => {
     if (!open) return;
@@ -60,6 +74,36 @@ export function LanguageToggle() {
   const select = (value: Language) => {
     setLanguage(value);
     setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      setOpen(true);
+    }
+  };
+
+  const handleOptionKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let next = index;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+      next = (index + 1) % OPTIONS.length;
+    } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+      next = (index - 1 + OPTIONS.length) % OPTIONS.length;
+    } else if (event.key === 'Home') {
+      next = 0;
+    } else if (event.key === 'End') {
+      next = OPTIONS.length - 1;
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus();
+      return;
+    }
+    if (next !== index) {
+      event.preventDefault();
+      focusOption(next);
+    }
   };
 
   const optionId = (value: Language) => `lang-option-${value}`;
@@ -67,40 +111,63 @@ export function LanguageToggle() {
   return (
     <div ref={rootRef} className="relative inline-block">
       <button
+        ref={triggerRef}
         type="button"
         className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-300"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t('actions.languageSelector')}
+        aria-controls="language-listbox"
         onClick={() => setOpen((value) => !value)}
+        onKeyDown={handleTriggerKeyDown}
       >
+        {isArabic ? (
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        ) : null}
         <GlobeIcon />
         <span>{currentLabel}</span>
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
-        >
-          <path
-            fillRule="evenodd"
-            d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-            clipRule="evenodd"
-          />
-        </svg>
+        {!isArabic ? (
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        ) : null}
       </button>
 
       {open ? (
         <ul
+          id="language-listbox"
           role="listbox"
           aria-label={t('actions.languageSelector')}
           className="absolute end-0 z-10 mt-2 min-w-44 rounded-xl border border-slate-200 bg-white shadow-lg"
         >
-          {OPTIONS.map((option) => {
+          {OPTIONS.map((option, index) => {
             const selected = option.value === current;
             return (
               <li key={option.value}>
                 <button
+                  ref={(node) => {
+                    optionRefs.current[index] = node;
+                  }}
                   type="button"
                   role="option"
                   id={optionId(option.value)}
@@ -110,6 +177,7 @@ export function LanguageToggle() {
                     selected ? 'text-primary' : 'text-slate-700'
                   }`}
                   onClick={() => select(option.value)}
+                  onKeyDown={(event) => handleOptionKeyDown(event, index)}
                 >
                   <span className={option.value === 'ar' ? 'u-ar-font' : undefined}>
                     {option.label}

@@ -119,4 +119,14 @@ describe('SearchForm', () => {
     await user.type(keyword, 'hello');
     expect(keyword.getAttribute('dir')).toBe('ltr');
   });
+
+  it('aligns the Arabic placeholder to the right when Arabic mode is selected', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.selectOptions(screen.getByLabelText('Search language'), 'ar');
+    const keyword = screen.getByLabelText('Keyword or phrase');
+    expect(keyword.getAttribute('dir')).toBe('rtl');
+    expect(keyword).toHaveStyle({ textAlign: 'right' });
+    expect(keyword.className).toContain('search-input--rtl');
+  });
 });

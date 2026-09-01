@@ -59,6 +59,42 @@ describe('ResultsList', () => {
     expect(screen.queryByText('Watch on YouTube')).not.toBeInTheDocument();
   });
 
+  it('adds a Watch on YouTube link per match when the video id is known', () => {
+    render(
+      <ResultsList
+        matches={matches}
+        keyword="hello world"
+        onSeek={vi.fn()}
+        youtubeId="dQw4w9WgXcQ"
+      />,
+    );
+    const links = screen.getAllByRole('link', { name: 'Watch on YouTube' });
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveAttribute(
+      'href',
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3s',
+    );
+    expect(links[1]).toHaveAttribute(
+      'href',
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=75s',
+    );
+  });
+
+  it('caps the visible matches and reveals more on demand', async () => {
+    const user = userEvent.setup();
+    const many = Array.from({ length: 3 }, (_, i) => ({
+      timestamp: `00:0${i}`,
+      progress_seconds: i,
+      text_snippet: `match ${i}`,
+    }));
+    render(<ResultsList matches={many} keyword="match" onSeek={vi.fn()} matchLimit={2} />);
+    expect(screen.getByRole('button', { name: 'Show 1 more matches' })).toBeInTheDocument();
+    expect(screen.queryByText('match 2')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Show 1 more matches' }));
+    expect(screen.getByRole('button', { name: 'Play at 00:02 — match 2' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show all 3 matches' })).toBeInTheDocument();
+  });
+
   it('shows an empty state when there are no matches', () => {
     render(<ResultsList matches={[]} keyword="zzz" onSeek={vi.fn()} />);
     expect(screen.getByText('No exact matches found. Try a different phrase.')).toBeInTheDocument();

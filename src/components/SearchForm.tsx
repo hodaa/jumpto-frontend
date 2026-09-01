@@ -1,15 +1,22 @@
-import { useState } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLanguage } from '../i18n';
 import { parseYouTubeId } from '../utils/youtube';
 import type { SearchLanguage } from '../types';
+import { IconGlobe, IconSearch, IconTarget, IconVideo } from './icons';
+
+export interface SearchFormHandle {
+  focusLanguage: () => void;
+}
 
 interface Props {
   onSubmit: (url: string, keyword: string, language: SearchLanguage) => void;
+  onCancel?: () => void;
   disabled?: boolean;
   initialUrl?: string;
   initialKeyword?: string;
+  initialLanguage?: SearchLanguage;
 }
 
 const ARABIC_PATTERN = /[\u0600-\u06FF\u0750-\u077F]/;
@@ -22,21 +29,38 @@ function isArabicText(value: string): boolean {
  * JumpTo search form. Renders centered card fields with auto-RTL support
  * for the keyword input based on the selected language or typed text.
  */
-export function SearchForm({
-  onSubmit,
-  disabled = false,
-  initialUrl = '',
-  initialKeyword = '',
-}: Props) {
+export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm(
+  {
+    onSubmit,
+    onCancel,
+    disabled = false,
+    initialUrl = '',
+    initialKeyword = '',
+    initialLanguage,
+  },
+  ref,
+) {
   const { t } = useTranslation();
+  const languageSelectRef = useRef<HTMLSelectElement>(null);
   const [url, setUrl] = useState(initialUrl);
   const [keyword, setKeyword] = useState(initialKeyword);
-  const [language, setLanguage] = useState<SearchLanguage>(getLanguage() === 'ar' ? 'ar' : 'en');
+  const [language, setLanguage] = useState<SearchLanguage>(
+    initialLanguage ?? (getLanguage() === 'ar' ? 'ar' : 'en'),
+  );
   const [urlError, setUrlError] = useState<string | null>(null);
   const [keywordError, setKeywordError] = useState<string | null>(null);
 
-  const keywordDir = isArabicText(keyword) || language === 'ar' ? 'rtl' : 'ltr';
+  useImperativeHandle(ref, () => ({
+    focusLanguage: () => languageSelectRef.current?.focus(),
+  }));
+
+  const isArabicLanguage = language === 'ar';
+  const keywordDir = isArabicText(keyword) || isArabicLanguage ? 'rtl' : 'ltr';
   const inputAlign = keywordDir === 'rtl' ? 'text-right' : 'text-left';
+  const textAlignStyle = keywordDir === 'rtl' ? 'right' : 'left';
+  const placeholderAlignClass = keywordDir === 'rtl' ? 'search-input--rtl' : 'search-input--ltr';
+  const fieldIconSide = isArabicLanguage ? 'right-3' : 'left-3';
+  const selectIconSide = isArabicLanguage ? 'right-3' : 'left-3';
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -61,29 +85,40 @@ export function SearchForm({
   };
 
   const inputClass =
-    'w-full rounded-xl border border-slate-200 bg-slate-100/70 px-4 py-3 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/15';
+    `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 ${inputAlign} text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
+
+  const selectClass =
+    `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 ps-10 pe-10 ${isArabicLanguage ? 'text-right' : 'text-left'} text-base font-semibold text-slate-900 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
 
   return (
     <form
-      className="grid w-full max-w-xl gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+      className="grid w-full max-w-2xl gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg hover:shadow-xl transition-shadow sm:p-8 animate-fade-in-up"
       onSubmit={handleSubmit}
       aria-label={t('form.title')}
     >
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <label className="text-sm font-semibold text-slate-700" htmlFor="url">
           {t('form.urlLabel')}
         </label>
-        <input
-          id="url"
-          type="url"
-          dir="ltr"
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          placeholder={t('form.urlPlaceholder')}
-          aria-describedby={urlError ? 'url-error' : undefined}
-          aria-invalid={urlError ? true : undefined}
-          className={`${inputClass} text-left placeholder:text-left`}
-        />
+        <div className="relative">
+          <span
+            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${fieldIconSide} text-slate-400 flex items-center justify-center w-8`}
+          >
+            <IconVideo size={18} />
+          </span>
+          <input
+            id="url"
+            type="url"
+            dir={keywordDir}
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            placeholder={t('form.urlPlaceholder')}
+            aria-describedby={urlError ? 'url-error' : undefined}
+            aria-invalid={urlError ? true : undefined}
+            className={`${inputClass} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
+            style={{ textAlign: textAlignStyle }}
+          />
+        </div>
         {urlError ? (
           <p className="text-sm font-semibold text-rose-600" role="alert" id="url-error">
             {urlError}
@@ -91,21 +126,29 @@ export function SearchForm({
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <label className="text-sm font-semibold text-slate-700" htmlFor="keyword">
           {t('form.keywordLabel')}
         </label>
-        <input
-          id="keyword"
-          type="text"
-          dir={keywordDir}
-          value={keyword}
-          onChange={(event) => setKeyword(event.target.value)}
-          placeholder={t('form.keywordPlaceholder')}
-          aria-describedby={keywordError ? 'keyword-error' : undefined}
-          aria-invalid={keywordError ? true : undefined}
-          className={`${inputClass} ${inputAlign} ${keywordDir === 'rtl' ? 'u-ar-font' : ''}`}
-        />
+        <div className="relative">
+          <span
+            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${fieldIconSide} text-slate-400 flex items-center justify-center w-8`}
+          >
+            <IconSearch size={18} />
+          </span>
+          <input
+            id="keyword"
+            type="text"
+            dir={keywordDir}
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder={t('form.keywordPlaceholder')}
+            aria-describedby={keywordError ? 'keyword-error' : undefined}
+            aria-invalid={keywordError ? true : undefined}
+            className={`${inputClass} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
+            style={{ textAlign: textAlignStyle }}
+          />
+        </div>
         {keywordError ? (
           <p className="text-sm font-semibold text-rose-600" role="alert" id="keyword-error">
             {keywordError}
@@ -113,41 +156,71 @@ export function SearchForm({
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <label className="text-sm font-semibold text-slate-700" htmlFor="language">
           {t('form.languageLabel')}
         </label>
-        <select
-          id="language"
-          value={language}
-          onChange={(event) => setLanguage(event.target.value as SearchLanguage)}
-          className={inputClass}
-        >
-          <option value="en">{t('form.languageEn')}</option>
-          <option value="ar">{t('form.languageAr')}</option>
-        </select>
+        <div className="relative">
+          <span
+            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${selectIconSide} text-slate-400 flex items-center justify-center w-8`}
+          >
+            <IconGlobe size={18} />
+          </span>
+          <select
+            ref={languageSelectRef}
+            id="language"
+            value={language}
+            onChange={(event) => setLanguage(event.target.value as SearchLanguage)}
+            aria-describedby="language-hint"
+            dir={isArabicLanguage ? 'rtl' : 'ltr'}
+            className={`${selectClass} appearance-none`}
+          >
+            <option value="en">{t('form.languageEn')}</option>
+            <option value="ar">{t('form.languageAr')}</option>
+          </select>
+          <span
+            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${isArabicLanguage ? 'right-3' : 'left-3'} text-slate-400 flex items-center justify-center w-8`}
+          >
+            ▼
+          </span>
+        </div>
+        <p id="language-hint" className="text-xs text-slate-500">
+          {t('form.languageHint')}
+        </p>
       </div>
 
-      <button
-        type="submit"
-        disabled={disabled}
-        className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-base font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-md active:translate-y-0 active:bg-primary focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 focus-visible:ring-offset-2 disabled:cursor-wait disabled:animate-pulse disabled:bg-slate-400 disabled:shadow-none"
-      >
-        {disabled ? (
-          <span
-            aria-hidden="true"
-            className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"
-          />
-        ) : (
-          <span
-            aria-hidden="true"
-            className="transition-transform duration-200 group-hover:translate-x-0.5"
+      <div className="flex flex-col gap-3">
+        <button
+          type="submit"
+          disabled={disabled}
+          className="group relative inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#0296c7] px-6 py-3 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-[#027aa8] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#0296c7]/30 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50 disabled:shadow-none overflow-hidden"
+        >
+          <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+          {disabled ? (
+            <span
+              aria-hidden="true"
+              className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white relative z-10"
+            />
+          ) : (
+            <span
+              aria-hidden="true"
+              className="relative z-10 transition-transform duration-200 group-hover:scale-110"
+            >
+              <IconTarget size={18} />
+            </span>
+          )}
+          <span className="relative z-10">{disabled ? t('form.searching') : t('form.submit')}</span>
+        </button>
+        {disabled && onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-300"
           >
-            🎯
-          </span>
-        )}
-        {disabled ? t('form.searching') : t('form.submit')}
-      </button>
+            {t('actions.cancelSearch')}
+          </button>
+        ) : null}
+      </div>
     </form>
   );
-}
+});

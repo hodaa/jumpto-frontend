@@ -19,7 +19,6 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPl
   return (
     <div className="overflow-hidden rounded-xl bg-black">
       <div className="aspect-video w-full" ref={containerRef} />
-      <p className="bg-white px-4 py-3 text-xs text-slate-500">{t('player.note')}</p>
     </div>
   );
 });

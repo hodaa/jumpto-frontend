@@ -13,18 +13,19 @@ export function Features() {
   return (
     <section className="features" id="why-jumpto" aria-label={t('features.title')}>
       <div className="features__inner">
-        <h2 className="section-title">{t('features.title')}</h2>
-        <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
-          {items.map((item) => (
+        <h2 className="section-title animate-fade-in">{t('features.title')}</h2>
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+          {items.map((item, index) => (
             <article
-              className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+              className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-[#02c1f7]/30 hover:shadow-xl hover:bg-gradient-to-br hover:from-white hover:to-[#02c1f7]/5 animate-fade-in-up group"
               key={item.title}
+              style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+              <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#02c1f7]/10 to-[#000520]/10 text-[#02c1f7] group-hover:from-[#02c1f7]/20 group-hover:to-[#000520]/20 transition-all duration-300 group-hover:scale-110">
                 {item.icon}
               </span>
-              <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-slate-500">{item.desc}</p>
+              <h3 className="text-base font-bold text-[#01124e]">{item.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.desc}</p>
             </article>
           ))}
         </div>

@@ -15,7 +15,7 @@ describe('VideoPlayer', () => {
   it('renders the player placeholder and note', () => {
     render(<VideoPlayer videoId="jNQXAC9IVRw" />);
     expect(
-      screen.getByText('Click a match to jump to that moment here on the page.'),
+      screen.getByText('Click a match below to jump to that moment in the video.'),
     ).toBeInTheDocument();
   });
 

@@ -149,9 +149,10 @@ describe('App', () => {
     await fillAndSubmit();
     expect(
       await screen.findByText(
-        'This video is not in the selected language. Please pick a different search language.',
+        "This video doesn't appear to be in English. Please pick a different search language.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Change search language' })).toBeInTheDocument();
   });
 });

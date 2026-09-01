@@ -10,9 +10,10 @@ import { SiteHeader } from '../components/SiteHeader';
 describe('Landing sections', () => {
   it('renders the brand header with the logo and language toggle', () => {
     render(<SiteHeader />);
-    expect(screen.getByAltText('JumpTo')).toHaveAttribute('src', '/logo.png');
+    expect(screen.getByAltText('JumpTo')).toHaveAttribute('src', '/logo.svg');
     expect(screen.getByRole('link', { name: 'JumpTo home' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Why JumpTo' })).toHaveAttribute('href', '#why-jumpto');
+    expect(screen.getByRole('link', { name: 'How it works' })).toHaveAttribute('href', '#how-it-works');
     expect(screen.getByRole('button', { name: 'Language' })).toBeInTheDocument();
   });
 
@@ -40,7 +41,7 @@ describe('Landing sections', () => {
 
   it('renders the footer with the current year', () => {
     render(<SiteFooter />);
-    expect(screen.getByText(/JumpTo — find the exact moment/)).toBeInTheDocument();
+    expect(screen.getByText('JumpTo — Find moments that matter')).toBeInTheDocument();
     expect(
       screen.getByText(`© ${new Date().getFullYear()} JumpTo. All rights reserved.`),
     ).toBeInTheDocument();
@@ -50,7 +51,7 @@ describe('Landing sections', () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: 'Why JumpTo' })).toBeInTheDocument();
     expect(screen.getByText('Exact phrase matching')).toBeInTheDocument();
-    expect(screen.getByText('How it works')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'How it works' })).toBeInTheDocument();
     expect(screen.getByText('Paste a link')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Jump to the moment' })).toBeInTheDocument();
   });

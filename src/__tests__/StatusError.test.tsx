@@ -33,13 +33,9 @@ describe('StatusCard', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '42');
   });
 
-  it('renders an indeterminate message when progress is unknown', () => {
+  it('renders an indeterminate progress bar when progress is unknown', () => {
     render(<StatusCard progress={null} />);
-    expect(
-      screen.getByText(
-        'This can take a few minutes. We will show your results as soon as the transcript is ready.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
   });
 
   it('renders the status stepper steps', () => {
