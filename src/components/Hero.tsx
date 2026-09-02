@@ -11,21 +11,10 @@ export function Hero({ children, compact = false }: Props) {
   const { t } = useTranslation();
   return (
     <section
-      className={`flex flex-col items-center text-center animate-fade-in ${compact ? 'mb-5' : 'mb-16'}`}
-    >
-      <div className="relative inline-block text-center">
-        <h1
-          id="search-heading"
-          className={`bg-gradient-to-r from-primary via-primary-light to-primary bg-clip-text text-transparent ${
-            compact
-              ? 'text-xl font-extrabold leading-tight sm:text-2xl'
-              : 'text-3xl font-extrabold leading-tight sm:text-4xl md:text-5xl'
-          }`}
-        >
-          {t('hero.title')}
-        </h1>
-        <div className="hero-accent-bar absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-full" />
-      </div>
+      className={`flex flex-col items-center text-center animate-fade-in ${compact ? 'mb-5' : 'mb-16'}`}>
+      <h1 id="search-heading" className="section-title animate-fade-in">
+        {t('hero.title')}
+      </h1>
       <p
         className={
           compact

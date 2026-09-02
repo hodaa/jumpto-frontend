@@ -42,7 +42,8 @@
     "languageEn": "English",
     "languageAr": "العربية",
     "submit": "انتقل إلى اللحظة",
-    "searching": "جارٍ البحث..."
+    "searching": "جارٍ البحث...",
+    "clear": "مسح النموذج والبدء من جديد"
   },
   "status": {
     "title": "جارٍ تفريغ الفيديو",

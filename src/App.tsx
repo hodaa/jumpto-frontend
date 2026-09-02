@@ -6,7 +6,7 @@ import { Hero } from './components/Hero';
 import { HowItWorks } from './components/HowItWorks';
 import { ResultsPanel } from './components/ResultsPanel';
 import type { Phase } from './components/ResultsPanel';
-import { SearchForm, type SearchFormHandle } from './components/SearchForm';
+import { SearchForm } from './components/SearchForm';
 import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
 import { useJobPolling } from './hooks/useJobPolling';
@@ -46,7 +46,6 @@ export default function App() {
   const [query, setQuery] = useState<Query>({ url: '', keyword: '' });
   const playerRef = useRef<VideoPlayerHandle | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
-  const searchFormRef = useRef<SearchFormHandle>(null);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const [formKey, setFormKey] = useState(0);
@@ -235,7 +234,6 @@ export default function App() {
         <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-10">
           <section aria-labelledby="search-heading" className="min-w-0">
             <SearchForm
-              ref={searchFormRef}
               key={formKey}
               onSubmit={handleSubmit}
               onCancel={searching ? handleCancelSearch : undefined}

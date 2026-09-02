@@ -8,7 +8,7 @@ function Logo() {
       href="/"
       aria-label="JumpTo home"
     >
-      <img className=" object-contain" src="/logocap.svg" alt="JumpTo" width="100" height="48" />
+      <img className="object-contain" src="/logo2.png" alt="JumpTo" width="100" height="48" />
     </a>
   );
 }

@@ -42,7 +42,8 @@
     "languageEn": "English",
     "languageAr": "العربية",
     "submit": "Jump to the moment",
-    "searching": "Searching..."
+    "searching": "Searching...",
+    "clear": "Clear and start over"
   },
   "status": {
     "title": "Transcribing video",

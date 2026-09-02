@@ -39,7 +39,10 @@ function highlightKeyword(text: string, keyword: string): ReactNode {
       parts.push(text.slice(cursor, index));
     }
     parts.push(
-      <mark key={index} className="match-card__highlight rounded bg-primary px-1 text-white">
+      <mark
+        key={index}
+        className="match-card__highlight rounded bg-primary px-1 text-white transition-colors duration-200 group-hover:bg-[#02c1f7]"
+      >
         {text.slice(index, index + key.length)}
       </mark>,
     );

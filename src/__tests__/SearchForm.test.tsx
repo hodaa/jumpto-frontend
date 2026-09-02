@@ -11,7 +11,6 @@ describe('SearchForm', () => {
     render(<SearchForm onSubmit={onSubmit} />);
     expect(screen.getByLabelText('Video URL')).toBeInTheDocument();
     expect(screen.getByLabelText('Keyword or phrase')).toBeInTheDocument();
-    expect(screen.getByLabelText('Transcript Language')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Jump to the moment' })).toBeInTheDocument();
   });
 
@@ -113,13 +112,12 @@ describe('SearchForm', () => {
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(screen.getByLabelText('Video URL'), 'https://www.youtube.com/watch?v=abcdef12345');
     await waitFor(() => expect(fetchVideoLanguage).toHaveBeenCalledWith('abcdef12345'));
-    await waitFor(() =>
-      expect(screen.getByLabelText('Transcript Language')).toHaveValue('ar'),
-    );
+    const url = screen.getByLabelText('Video URL');
+    await waitFor(() => expect(url.getAttribute('dir')).toBe('rtl'));
     fetchVideoLanguage.mockRestore();
   });
 
-  it('keeps the default language when language detection fails', async () => {
+  it('keeps the keyword input LTR when language detection fails', async () => {
     const fetchVideoLanguage = vi.spyOn(api, 'fetchVideoLanguage').mockRejectedValue(
       new Error('not found'),
     );
@@ -127,9 +125,7 @@ describe('SearchForm', () => {
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(screen.getByLabelText('Video URL'), 'https://www.youtube.com/watch?v=abcdef12345');
     await waitFor(() => expect(fetchVideoLanguage).toHaveBeenCalledWith('abcdef12345'));
-    await waitFor(() =>
-      expect(screen.getByLabelText('Transcript Language')).toHaveValue('en'),
-    );
+    expect(screen.getByLabelText('Video URL').getAttribute('dir')).toBe('ltr');
     fetchVideoLanguage.mockRestore();
   });
 });

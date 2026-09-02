@@ -1,14 +1,10 @@
 import { fetchVideoLanguage } from '../api/client';
-import { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLanguage } from '../i18n';
 import { parseYouTubeId } from '../utils/youtube';
-import { IconGlobe, IconSearch, IconTarget, IconVideo } from './icons';
-
-export interface SearchFormHandle {
-  focusLanguage: () => void;
-}
+import { IconSearch, IconTarget, IconVideo } from './icons';
 
 interface Props {
   onSubmit: (url: string, keyword: string) => void;
@@ -28,27 +24,19 @@ function isArabicText(value: string): boolean {
  * JumpTo search form. Renders centered card fields with auto-RTL support
  * for the keyword input based on the detected language or typed text.
  */
-export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm(
-  {
-    onSubmit,
-    onCancel,
-    disabled = false,
-    initialUrl = '',
-    initialKeyword = '',
-  },
-  ref,
-) {
+export function SearchForm({
+  onSubmit,
+  onCancel,
+  disabled = false,
+  initialUrl = '',
+  initialKeyword = '',
+}: Props) {
   const { t } = useTranslation();
-  const languageSelectRef = useRef<HTMLSelectElement>(null);
   const [url, setUrl] = useState(initialUrl);
   const [keyword, setKeyword] = useState(initialKeyword);
   const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [keywordError, setKeywordError] = useState<string | null>(null);
-
-  useImperativeHandle(ref, () => ({
-    focusLanguage: () => languageSelectRef.current?.focus(),
-  }));
 
   useEffect(() => {
     const videoId = parseYouTubeId(url);
@@ -72,8 +60,6 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
   const textAlignStyle = keywordDir === 'rtl' ? 'right' : 'left';
   const placeholderAlignClass = keywordDir === 'rtl' ? 'search-input--rtl' : 'search-input--ltr';
   const fieldIconSide = isArabicLanguage ? 'right-3' : 'left-3';
-  const selectIconSide = isArabicLanguage ? 'right-3' : 'left-3';
-  const selectArrowSide = isArabicLanguage ? 'left-3' : 'right-3';
   const styleInjected = useRef(false);
 
   useEffect(() => {
@@ -127,9 +113,17 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
     onSubmit(cleanUrl, cleanKeyword);
   };
 
-  const inputClass = `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 ${inputAlign} text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
+  const handleClear = () => {
+    setUrl('');
+    setKeyword('');
+    setUrlError(null);
+    setKeywordError(null);
+    setDetectedLanguage(null);
+  };
 
-  const selectClass = `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 ps-10 pe-10 ${isArabicLanguage ? 'text-right' : 'text-left'} text-base font-semibold text-slate-900 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
+  const hasInput = url.trim().length > 0 || keyword.trim().length > 0;
+
+  const inputClass = `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 ${inputAlign} text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
 
   return (
     <form
@@ -201,35 +195,6 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="language">
-          {t('form.languageLabel')}
-        </label>
-        <div className="relative">
-          <span
-            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${selectIconSide} text-slate-400 flex items-center justify-center w-8`}
-          >
-            <IconGlobe size={18} />
-          </span>
-          <select
-            ref={languageSelectRef}
-            id="language"
-            value={detectedLanguage ?? (getLanguage() === 'ar' ? 'ar' : 'en')}
-            disabled
-            dir={isArabicLanguage ? 'rtl' : 'ltr'}
-            className={`${selectClass} appearance-none opacity-60`}
-          >
-            <option value="en">{t('form.languageEn')}</option>
-            <option value="ar">{t('form.languageAr')}</option>
-          </select>
-          <span
-            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${selectArrowSide} text-slate-400 flex items-center justify-center w-8`}
-          >
-            ▼
-          </span>
-        </div>
-      </div>
-
       <div className="flex flex-col gap-3 pb-4">
         <button
           type="submit"
@@ -252,6 +217,15 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
           )}
           <span className="relative z-10">{disabled ? t('form.searching') : t('form.submit')}</span>
         </button>
+        {hasInput && !disabled ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="text-sm font-semibold text-primary transition-colors duration-200 hover:text-primary hover:underline focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 rounded"
+          >
+            {t('form.clear')}
+          </button>
+        ) : null}
         {disabled && onCancel ? (
           <button
             type="button"
@@ -264,4 +238,4 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
       </div>
     </form>
   );
-});
+}
