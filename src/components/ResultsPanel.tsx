@@ -28,9 +28,10 @@ interface Props {
   onClear: () => void;
   onNewSearch?: () => void;
   onRetry: () => void;
+  currentPlayingTimestamp?: number | null;
 }
 
-const CARD = 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8';
+const CARD = 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 h-full';
 
 /** Right-column white card that shows all phases of a search. */
 export function ResultsPanel({
@@ -50,6 +51,7 @@ export function ResultsPanel({
   onClear,
   onNewSearch,
   onRetry,
+  currentPlayingTimestamp,
 }: Props) {
   const { t } = useTranslation();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -62,8 +64,11 @@ export function ResultsPanel({
 
   if (phase === 'idle') {
     return (
-      <section className={CARD} aria-label={t('results.idleTitle')}>
-        <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+      <section
+        className={`${CARD} flex items-center justify-center min-h-[300px]`}
+        aria-label={t('results.idleTitle')}
+      >
+        <div className="flex flex-col items-center justify-center gap-3 text-center">
           <span
             aria-hidden="true"
             className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-500"
@@ -92,7 +97,7 @@ export function ResultsPanel({
           <h2
             ref={headingRef}
             tabIndex={-1}
-            className="text-lg font-bold text-[#01124e] focus:outline-none min-w-0"
+            className="text-lg font-bold text-[#01124e] focus:outline-none min-w-0 rtl:text-right"
             dir="auto"
           >
             <Trans
@@ -103,15 +108,14 @@ export function ResultsPanel({
               }}
             />
           </h2>
-          {matches.length > 0 ? (
-            <ResultsToolbar
-              onCopy={onCopy}
-              onExport={onExport}
-              copied={copied}
-              copyFailed={copyFailed}
-              onNewSearch={onNewSearch}
-            />
-          ) : null}
+          <ResultsToolbar
+            onCopy={onCopy}
+            onExport={onExport}
+            copied={copied}
+            copyFailed={copyFailed}
+            onNewSearch={onNewSearch}
+            hasMatches={matches.length > 0}
+          />
         </div>
         {youtubeId ? <VideoPlayer ref={playerRef} videoId={youtubeId} /> : null}
         <div className="mt-5">
@@ -120,8 +124,8 @@ export function ResultsPanel({
             keyword={keyword}
             onSeek={onSeek}
             onClear={onClear}
-            youtubeId={youtubeId}
             matchLimit={matchLimit}
+            currentPlayingTimestamp={currentPlayingTimestamp}
           />
         </div>
       </section>

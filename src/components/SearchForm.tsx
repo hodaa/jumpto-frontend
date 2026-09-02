@@ -127,11 +127,9 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
     onSubmit(cleanUrl, cleanKeyword);
   };
 
-  const inputClass =
-    `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 ${inputAlign} text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
+  const inputClass = `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 ${inputAlign} text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
 
-  const selectClass =
-    `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 ps-10 pe-10 ${isArabicLanguage ? 'text-right' : 'text-left'} text-base font-semibold text-slate-900 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
+  const selectClass = `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 ps-10 pe-10 ${isArabicLanguage ? 'text-right' : 'text-left'} text-base font-semibold text-slate-900 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
 
   return (
     <form
@@ -140,7 +138,7 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
       aria-label={t('form.title')}
     >
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold text-slate-700" htmlFor="url">
+        <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="url">
           {t('form.urlLabel')}
         </label>
         <div className="relative">
@@ -163,14 +161,18 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
           />
         </div>
         {urlError ? (
-          <p className="text-sm font-semibold text-rose-600" role="alert" id="url-error">
+          <p
+            className="text-sm font-semibold text-rose-600 rtl:text-right"
+            role="alert"
+            id="url-error"
+          >
             {urlError}
           </p>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold text-slate-700" htmlFor="keyword">
+        <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="keyword">
           {t('form.keywordLabel')}
         </label>
         <div className="relative">
@@ -200,7 +202,7 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold text-slate-700" htmlFor="language">
+        <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="language">
           {t('form.languageLabel')}
         </label>
         <div className="relative">
@@ -226,16 +228,13 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
             ▼
           </span>
         </div>
-        <p id="language-hint" className="text-xs text-slate-500">
-          {t('form.languageHint')}
-        </p>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 pb-4">
         <button
           type="submit"
           disabled={disabled}
-          className="group relative inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#0296c7] px-6 py-3 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-[#027aa8] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#0296c7]/30 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50 disabled:shadow-none overflow-hidden"
+          className="group relative inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#0296c7] px-6 py-3 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-[#027aa8] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#0296c7]/30 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50 disabled:shadow-none overflow-hidden active:scale-[0.98]"
         >
           <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
           {disabled ? (

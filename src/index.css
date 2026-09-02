@@ -1,7 +1,8 @@
 @import 'tailwindcss';
 
 @theme {
-   --color-primary:oklch(0.33 0.09 266.54);
+  --color-primary: oklch(0.33 0.09 266.54);
+  --color-primary-light: oklch(0.45 0.12 266.54);
 }
 
 :root {
@@ -30,8 +31,8 @@
   --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.05);
   --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.1), 0 3px 10px rgba(15, 23, 42, 0.06);
   --font-sans:
-    'Plus Jakarta Sans', 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans Arabic', 'Segoe UI Arabic', system-ui,
-    sans-serif;
+    'Plus Jakarta Sans', 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans Arabic',
+    'Segoe UI Arabic', system-ui, sans-serif;
 }
 
 .search-input--rtl,
@@ -148,6 +149,7 @@ body {
   padding: 4rem 0 3rem;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border-top: 1px solid var(--color-border);
+  overflow: visible;
 }
 
 .steps > .section-title {
@@ -166,6 +168,7 @@ body {
   gap: 0;
   max-width: 1080px;
   position: relative;
+  overflow: visible;
 }
 
 /* Draws the connector line between badges so it never collides: the line sits
@@ -177,10 +180,12 @@ body {
   flex: 1;
   padding: 0 1.5rem;
   transition: transform 0.3s ease;
+  overflow: visible;
 }
 
 .step:hover {
   transform: translateY(-4px);
+  z-index: 2;
 }
 
 .step-badge {
@@ -314,6 +319,105 @@ body {
   text-align: center;
 }
 
+/* ── RTL Hero Component ── */
+[dir='rtl'] .section-title::after {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+[dir='rtl'] .relative {
+  text-align: center;
+}
+
+/* ── RTL Hero Accent Bar ── */
+[dir='rtl'] .hero-accent-bar {
+  left: auto;
+  right: 50%;
+  transform: translateX(50%);
+}
+
+/* ── RTL SiteHeader ── */
+[dir='rtl'] header {
+  flex-direction: row-reverse;
+}
+
+[dir='rtl'] header nav {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir='rtl'] header nav a {
+  text-align: right;
+}
+
+/* ── RTL Features ── */
+[dir='rtl'] .features article {
+  text-align: right;
+  align-items: flex-start;
+}
+
+[dir='rtl'] .features article h3 {
+  text-align: right;
+}
+
+[dir='rtl'] .features article p {
+  text-align: right;
+}
+
+/* ── RTL ResultsPanel ── */
+[dir='rtl'] .results-keyword {
+  text-align: right;
+}
+
+[dir='rtl'] [aria-label*='results'] h2 {
+  text-align: right;
+}
+
+[dir='rtl'] .match-card__snippet {
+  text-align: right;
+}
+
+[dir='rtl'] .matches {
+  text-align: right;
+}
+
+[dir='rtl'] .matches p {
+  text-align: right;
+}
+
+/* ── Equal Card Heights ── */
+.h-full {
+  height: 100%;
+}
+
+/* ── Global RTL Text Alignment ── */
+[dir='rtl'] .text-center {
+  text-align: center;
+}
+
+[dir='rtl'] h1,
+[dir='rtl'] h2,
+[dir='rtl'] h3,
+[dir='rtl'] h4,
+[dir='rtl'] h5,
+[dir='rtl'] h6 {
+  text-align: right;
+}
+
+[dir='rtl'] p,
+[dir='rtl'] span,
+[dir='rtl'] div {
+  text-align: inherit;
+}
+
+[dir='rtl'] label {
+  text-align: right;
+}
+
+[dir='rtl'] button {
+  text-align: center;
+}
+
 /* ── Why JumpTo section ── */
 .features {
   margin-top: 4rem;
@@ -411,7 +515,8 @@ body {
 }
 
 @keyframes glow-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(67, 56, 202, 0.4);
   }
   50% {

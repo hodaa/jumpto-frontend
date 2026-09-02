@@ -48,7 +48,11 @@ export function StatusCard({ progress, keyword = '', skeleton = false }: Props) 
           aria-hidden="true"
           className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary"
         />
-        <h2 ref={headingRef} tabIndex={-1} className="text-lg font-bold text-[#01124e] focus:outline-none">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-lg font-bold text-[#01124e] focus:outline-none"
+        >
           {t('status.title')}
         </h2>
         {keyword ? (

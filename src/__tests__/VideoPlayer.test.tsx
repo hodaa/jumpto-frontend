@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VideoPlayer } from '../components/VideoPlayer';
 
@@ -12,11 +12,10 @@ beforeEach(() => {
 });
 
 describe('VideoPlayer', () => {
-  it('renders the player placeholder and note', () => {
-    render(<VideoPlayer videoId="jNQXAC9IVRw" />);
-    expect(
-      screen.getByText('Click a match below to jump to that moment in the video.'),
-    ).toBeInTheDocument();
+  it('renders a placeholder container for the embedded player', () => {
+    const { container } = render(<VideoPlayer videoId="jNQXAC9IVRw" />);
+    expect(container.querySelector('.aspect-video')).toBeInTheDocument();
+    expect(container.querySelector('.overflow-hidden')).toBeInTheDocument();
   });
 
   it('initializes the YouTube player on mount', async () => {

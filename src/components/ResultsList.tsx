@@ -14,6 +14,7 @@ interface Props {
   onClear?: () => void;
   youtubeId?: string | null;
   matchLimit?: number;
+  currentPlayingTimestamp?: number | null;
 }
 
 const ARABIC_PATTERN = /[\u0600-\u06FF\u0750-\u077F]/;
@@ -58,6 +59,7 @@ export function ResultsList({
   onClear,
   youtubeId,
   matchLimit = DEFAULT_MATCH_LIMIT,
+  currentPlayingTimestamp,
 }: Props) {
   const { t } = useTranslation();
   const [expandedKeyword, setExpandedKeyword] = useState<string | null>(null);
@@ -66,7 +68,7 @@ export function ResultsList({
   if (matches.length === 0) {
     return (
       <section
-        className="flex flex-col items-center gap-3 py-8 text-center"
+        className="flex flex-col items-center gap-3 py-8 text-center rtl:text-right"
         aria-label={t('results.title', { keyword })}
       >
         <span
@@ -76,8 +78,8 @@ export function ResultsList({
           <IconSearch size={20} />
         </span>
         <div className="max-w-sm space-y-1">
-          <p className="-mt-1 text-sm text-slate-500">{t('results.empty')}</p>
-          <p className="text-xs text-slate-400">{t('results.emptyHint')}</p>
+          <p className="-mt-1 text-sm text-slate-500 rtl:text-right">{t('results.empty')}</p>
+          <p className="text-xs text-slate-400 rtl:text-right">{t('results.emptyHint')}</p>
         </div>
         {onClear ? (
           <button
@@ -98,16 +100,19 @@ export function ResultsList({
 
   return (
     <section aria-label={t('results.title', { keyword })}>
-      <p className="mb-3 text-sm font-semibold text-slate-600">
-        <span>{t('results.matchCount', { count: matches.length })}</span>
-        {capped && !expanded ? (
-          <span className="font-normal text-slate-400">
-            {' · '}
-            {t('results.showing', { shown: maxVisible, total: matches.length })}
+      <div className="mb-3 flex flex-col gap-1">
+        <div className="flex items-center gap-2 rtl:text-right">
+          <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
+            {t('results.matchCount', { count: matches.length })}
           </span>
-        ) : null}
-        <span className="font-normal text-slate-400"> · {t('results.hint')}</span>
-      </p>
+          {capped && !expanded ? (
+            <span className="text-sm font-normal text-slate-400">
+              {t('results.showing', { shown: maxVisible, total: matches.length })}
+            </span>
+          ) : null}
+        </div>
+        <p className="text-xs text-slate-500 rtl:text-right">{t('results.hint')}</p>
+      </div>
       <ol className="matches flex max-h-[60vh] flex-col gap-3 overflow-y-auto pe-1">
         {matches.slice(0, maxVisible).map((match) => {
           const snippet = match.text_snippet ?? t('results.noSnippet');
@@ -118,7 +123,7 @@ export function ResultsList({
               <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
                 <button
                   type="button"
-                  className="group flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-start transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
+                  className="group flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-start transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 cursor-pointer"
                   onClick={() => onSeek(match.progress_seconds)}
                   aria-label={t('results.seek', {
                     timestamp: formatYouTubeTime(match.progress_seconds),
@@ -133,7 +138,11 @@ export function ResultsList({
                       ▶
                     </span>
                     <span
-                      className="rounded-md bg-slate-100 px-2 py-1 text-sm font-bold tabular-nums text-slate-600"
+                      className={`rounded-md px-2 py-1 text-sm font-bold tabular-nums ${
+                        currentPlayingTimestamp === match.progress_seconds
+                          ? 'bg-primary text-white'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
                       dir="ltr"
                     >
                       {formatYouTubeTime(match.progress_seconds)}

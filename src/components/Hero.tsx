@@ -13,18 +13,18 @@ export function Hero({ children, compact = false }: Props) {
     <section
       className={`flex flex-col items-center text-center animate-fade-in ${compact ? 'mb-5' : 'mb-16'}`}
     >
-      <div className="relative inline-block">
+      <div className="relative inline-block text-center">
         <h1
           id="search-heading"
-          className={
+          className={`bg-gradient-to-r from-primary via-primary-light to-primary bg-clip-text text-transparent ${
             compact
-              ? 'text-2xl font-extrabold leading-tight text-[#01124e] sm:text-3xl'
-              : 'text-4xl font-extrabold leading-tight text-[#01124e] sm:text-5xl md:text-6xl'
-          }
+              ? 'text-xl font-extrabold leading-tight sm:text-2xl'
+              : 'text-3xl font-extrabold leading-tight sm:text-4xl md:text-5xl'
+          }`}
         >
           {t('hero.title')}
         </h1>
-        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-[#02c1f7] rounded-full" />
+        <div className="hero-accent-bar absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-full" />
       </div>
       <p
         className={

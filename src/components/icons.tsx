@@ -147,7 +147,7 @@ export function IconExternal({ size = 14 }: IconProps) {
   );
 }
 
-/** Video icon used for the YouTube URL field. */
+/** Video icon used for the Video URL field. */
 export function IconVideo({ size = 18 }: IconProps) {
   return (
     <svg

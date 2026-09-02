@@ -6,10 +6,9 @@
     "howItWorks": "How it works",
     "whyJumpto": "Why JumpTo"
   },
-  "hero": {
+"hero": {
     "title": "Jump to the exact moment a phrase is spoken",
-    "subtitle": "Paste any YouTube link, type a phrase, and JumpTo pinpoints every exact occurrence with one-click timestamps.",
-    "tagline": "Find exact moments in your videos instantly"
+    "subtitle": "Paste a YouTube link, enter a phrase, find the exact moment. jump there instantly."
   },
   "features": {
     "title": "Why JumpTo",
@@ -23,26 +22,25 @@
   "steps": {
     "title": "How it works",
     "step1Title": "Paste a link",
-    "step1Desc": "Any YouTube URL.",
+    "step1Desc": "Any Video URL.",
     "step2Title": "Search a phrase",
     "step2Desc": "A single word or a full sentence.",
     "step3Title": "Jump to the moment",
     "step3Desc": "Get exact timestamps instantly."
   },
   "footer": {
-    "note": "JumpTo — Find moments that matter",
+    "note": "JumpTo — Find the moments that matter",
     "rights": "© {{year}} JumpTo. All rights reserved."
   },
   "form": {
     "title": "Search a YouTube video for a phrase",
-    "urlLabel": "YouTube URL",
+    "urlLabel": "Video URL",
     "urlPlaceholder": "https://www.youtube.com/watch?v=...",
     "keywordLabel": "Keyword or phrase",
     "keywordPlaceholder": "e.g. never gonna give you up",
-    "languageLabel": "Search language",
+    "languageLabel": "Transcript Language",
     "languageEn": "English",
     "languageAr": "العربية",
-    "languageHint": "Language spoken in the video — not the app display language.",
     "submit": "Jump to the moment",
     "searching": "Searching..."
   },
@@ -73,15 +71,16 @@
     "export": "Export CSV",
     "copied": "Copied!",
     "copyFailed": "Could not copy results to the clipboard. Please try again.",
+    "noMatchesTooltip": "No matches to copy or export",
     "showMore": "Show {{count}} more matches",
     "showLess": "Show all {{count}} matches",
     "showing": "Showing {{shown}} of {{total}} matches"
   },
   "error": {
-    "validation": "Please enter a YouTube URL and a keyword.",
-    "urlRequired": "Please enter a YouTube URL.",
+    "validation": "Please enter a Video URL and a keyword.",
+    "urlRequired": "Please enter a Video URL.",
     "keywordRequired": "Please enter a keyword.",
-    "invalidUrl": "Please enter a valid YouTube URL.",
+    "invalidUrl": "Please enter a valid Video URL.",
     "server": "Something went wrong. Please try again.",
     "jobGone": "This transcription job no longer exists. Please search again.",
     "boundary": "Something unexpected went wrong. Please reload the page and try again.",
@@ -90,9 +89,6 @@
   },
   "mismatch": {
     "message": "This video doesn't appear to be in {{language}}. Please pick a different search language."
-  },
-  "player": {
-    "note": "Click a match below to jump to that moment in the video."
   },
   "actions": {
     "retry": "Try again",

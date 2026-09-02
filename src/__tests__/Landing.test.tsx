@@ -10,10 +10,13 @@ import { SiteHeader } from '../components/SiteHeader';
 describe('Landing sections', () => {
   it('renders the brand header with the logo and language toggle', () => {
     render(<SiteHeader />);
-    expect(screen.getByAltText('JumpTo')).toHaveAttribute('src', '/logo.png');
+    expect(screen.getByAltText('JumpTo')).toHaveAttribute('src', '/logocap.svg');
     expect(screen.getByRole('link', { name: 'JumpTo home' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Why JumpTo' })).toHaveAttribute('href', '#why-jumpto');
-    expect(screen.getByRole('link', { name: 'How it works' })).toHaveAttribute('href', '#how-it-works');
+    expect(screen.getByRole('link', { name: 'How it works' })).toHaveAttribute(
+      'href',
+      '#how-it-works',
+    );
     expect(screen.getByRole('button', { name: 'Language' })).toBeInTheDocument();
   });
 
@@ -41,7 +44,7 @@ describe('Landing sections', () => {
 
   it('renders the footer with the current year', () => {
     render(<SiteFooter />);
-    expect(screen.getByText('JumpTo — Find moments that matter')).toBeInTheDocument();
+    expect(screen.getByText('JumpTo — Find the moments that matter')).toBeInTheDocument();
     expect(
       screen.getByText(`© ${new Date().getFullYear()} JumpTo. All rights reserved.`),
     ).toBeInTheDocument();

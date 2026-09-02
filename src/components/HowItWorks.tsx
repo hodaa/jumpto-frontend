@@ -14,7 +14,11 @@ export function HowItWorks() {
       <h2 className="section-title animate-fade-in">{t('steps.title')}</h2>
       <ol className="steps-track">
         {steps.map((step, index) => (
-          <li className="step animate-fade-in-up" key={step.title} style={{ animationDelay: `${index * 0.15}s` }}>
+          <li
+            className="step animate-fade-in-up"
+            key={step.title}
+            style={{ animationDelay: `${index * 0.15}s` }}
+          >
             <span className="step-badge" aria-label={`Step ${index + 1}`}>
               <span className="step-badge__number">{index + 1}</span>
             </span>

@@ -32,7 +32,7 @@ interface Query {
 
 function safeFilenamePart(value: string): string {
   const cleaned = value.replace(/[^\w\u0600-\u06FF-]+/g, '_').replace(/^_|_$/g, '');
-  return (cleaned.slice(0, 50) || 'results');
+  return cleaned.slice(0, 50) || 'results';
 }
 
 /** JumpTo app: two-column split — search on the left, results on the right. */
@@ -50,6 +50,7 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const [formKey, setFormKey] = useState(0);
+  const [currentPlayingTimestamp, setCurrentPlayingTimestamp] = useState<number | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
   const transitionTimerRef = useRef<number | null>(null);
 
@@ -64,9 +65,7 @@ export default function App() {
   useEffect(() => {
     if (phase === 'idle') return;
     const mobile =
-      typeof window.matchMedia === 'function'
-        ? window.matchMedia('(max-width: 1023px)')
-        : null;
+      typeof window.matchMedia === 'function' ? window.matchMedia('(max-width: 1023px)') : null;
     if (mobile?.matches) {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -88,6 +87,7 @@ export default function App() {
   }, []);
 
   const handleSeek = useCallback((seconds: number) => {
+    setCurrentPlayingTimestamp(seconds);
     playerRef.current?.seekTo(seconds);
   }, []);
 
@@ -99,6 +99,7 @@ export default function App() {
       setMatches([]);
       setProgress(null);
       setCopyFailed(false);
+      setCurrentPlayingTimestamp(null);
       clearPendingTransition();
       try {
         const response = await submitSearch(url, keyword);
@@ -188,6 +189,7 @@ export default function App() {
     setJob(null);
     setCopied(false);
     setCopyFailed(false);
+    setCurrentPlayingTimestamp(null);
     setFormKey((k) => k + 1);
   }, [clearPendingTransition]);
 
@@ -201,6 +203,7 @@ export default function App() {
     setJob(null);
     setCopied(false);
     setCopyFailed(false);
+    setCurrentPlayingTimestamp(null);
   }, [clearPendingTransition]);
 
   const handleCancelSearch = useCallback(() => {
@@ -208,6 +211,7 @@ export default function App() {
     setPhase('idle');
     setProgress(null);
     setJob(null);
+    setCurrentPlayingTimestamp(null);
   }, [clearPendingTransition]);
 
   const handleRetry = useCallback(
@@ -229,10 +233,7 @@ export default function App() {
           <Hero compact />
         </div>
         <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-10">
-          <section
-            aria-labelledby="search-heading"
-            className="min-w-0"
-          >
+          <section aria-labelledby="search-heading" className="min-w-0">
             <SearchForm
               ref={searchFormRef}
               key={formKey}
@@ -261,6 +262,7 @@ export default function App() {
               onClear={handleClearKeyword}
               onNewSearch={handleNewSearch}
               onRetry={handleRetry}
+              currentPlayingTimestamp={currentPlayingTimestamp}
             />
           </section>
         </div>

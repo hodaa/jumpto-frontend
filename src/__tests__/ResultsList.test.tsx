@@ -59,27 +59,6 @@ describe('ResultsList', () => {
     expect(screen.queryByText('Watch on YouTube')).not.toBeInTheDocument();
   });
 
-  it('adds a Watch on YouTube link per match when the video id is known', () => {
-    render(
-      <ResultsList
-        matches={matches}
-        keyword="hello world"
-        onSeek={vi.fn()}
-        youtubeId="dQw4w9WgXcQ"
-      />,
-    );
-    const links = screen.getAllByRole('link', { name: 'Watch on YouTube' });
-    expect(links).toHaveLength(2);
-    expect(links[0]).toHaveAttribute(
-      'href',
-      'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3s',
-    );
-    expect(links[1]).toHaveAttribute(
-      'href',
-      'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=75s',
-    );
-  });
-
   it('caps the visible matches and reveals more on demand', async () => {
     const user = userEvent.setup();
     const many = Array.from({ length: 3 }, (_, i) => ({

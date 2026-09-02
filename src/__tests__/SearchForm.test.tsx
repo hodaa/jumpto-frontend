@@ -9,9 +9,9 @@ const onSubmit = vi.fn();
 describe('SearchForm', () => {
   it('renders url and keyword inputs', () => {
     render(<SearchForm onSubmit={onSubmit} />);
-    expect(screen.getByLabelText('YouTube URL')).toBeInTheDocument();
+    expect(screen.getByLabelText('Video URL')).toBeInTheDocument();
     expect(screen.getByLabelText('Keyword or phrase')).toBeInTheDocument();
-    expect(screen.getByLabelText('Search language')).toBeInTheDocument();
+    expect(screen.getByLabelText('Transcript Language')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Jump to the moment' })).toBeInTheDocument();
   });
 
@@ -19,7 +19,7 @@ describe('SearchForm', () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByText('Please enter a YouTube URL.')).toBeInTheDocument();
+    expect(screen.getByText('Please enter a Video URL.')).toBeInTheDocument();
     expect(screen.getByText('Please enter a keyword.')).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -29,7 +29,7 @@ describe('SearchForm', () => {
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(screen.getByLabelText('Keyword or phrase'), 'hello');
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByText('Please enter a YouTube URL.')).toBeInTheDocument();
+    expect(screen.getByText('Please enter a Video URL.')).toBeInTheDocument();
     expect(screen.queryByText('Please enter a keyword.')).not.toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -38,22 +38,22 @@ describe('SearchForm', () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(
-      screen.getByLabelText('YouTube URL'),
+      screen.getByLabelText('Video URL'),
       'https://www.youtube.com/watch?v=abcdef12345',
     );
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
     expect(screen.getByText('Please enter a keyword.')).toBeInTheDocument();
-    expect(screen.queryByText('Please enter a YouTube URL.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Please enter a Video URL.')).not.toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('shows an error for an invalid url', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('YouTube URL'), 'https://example.com/video');
+    await user.type(screen.getByLabelText('Video URL'), 'https://example.com/video');
     await user.type(screen.getByLabelText('Keyword or phrase'), 'hello');
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByText('Please enter a valid YouTube URL.')).toBeInTheDocument();
+    expect(screen.getByText('Please enter a valid Video URL.')).toBeInTheDocument();
     expect(screen.queryByText('Please enter a keyword.')).not.toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -62,7 +62,7 @@ describe('SearchForm', () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(
-      screen.getByLabelText('YouTube URL'),
+      screen.getByLabelText('Video URL'),
       'https://www.youtube.com/watch?v=abcdef12345',
     );
     await user.type(screen.getByLabelText('Keyword or phrase'), '  hello world  ');
@@ -111,10 +111,10 @@ describe('SearchForm', () => {
     });
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('YouTube URL'), 'https://www.youtube.com/watch?v=abcdef12345');
+    await user.type(screen.getByLabelText('Video URL'), 'https://www.youtube.com/watch?v=abcdef12345');
     await waitFor(() => expect(fetchVideoLanguage).toHaveBeenCalledWith('abcdef12345'));
     await waitFor(() =>
-      expect(screen.getByLabelText('Search language')).toHaveValue('ar'),
+      expect(screen.getByLabelText('Transcript Language')).toHaveValue('ar'),
     );
     fetchVideoLanguage.mockRestore();
   });
@@ -125,10 +125,10 @@ describe('SearchForm', () => {
     );
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('YouTube URL'), 'https://www.youtube.com/watch?v=abcdef12345');
+    await user.type(screen.getByLabelText('Video URL'), 'https://www.youtube.com/watch?v=abcdef12345');
     await waitFor(() => expect(fetchVideoLanguage).toHaveBeenCalledWith('abcdef12345'));
     await waitFor(() =>
-      expect(screen.getByLabelText('Search language')).toHaveValue('en'),
+      expect(screen.getByLabelText('Transcript Language')).toHaveValue('en'),
     );
     fetchVideoLanguage.mockRestore();
   });

@@ -1,0 +1,9 @@
+<svg width="360" height="120" viewBox="0 0 360 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">JumpTo</title>
+  <desc id="desc">JumpTo brand wordmark with a cyan video icon.</desc>
+  <text x="20" y="82" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="62" font-weight="900" letter-spacing="-4">
+    <tspan fill="#FFFFFF">Jump</tspan><tspan fill="#203263">To</tspan>
+  </text>
+  <rect x="310" y="52" width="28" height="28" rx="7" fill="#16BCEB"/>
+  <path d="M319 59 L331 66 L319 73 Z" fill="#102A56"/>
+</svg>
