@@ -34,19 +34,21 @@
     sans-serif;
 }
 
+.search-input--rtl,
 .search-input--rtl::placeholder,
 .search-input--rtl::-webkit-input-placeholder,
 .search-input--rtl::-moz-placeholder,
 .search-input--rtl:-ms-input-placeholder {
-  text-align: right;
+  text-align: right !important;
   direction: rtl;
 }
 
+.search-input--ltr,
 .search-input--ltr::placeholder,
 .search-input--ltr::-webkit-input-placeholder,
 .search-input--ltr::-moz-placeholder,
 .search-input--ltr:-ms-input-placeholder {
-  text-align: left;
+  text-align: left !important;
   direction: ltr;
 }
 
@@ -461,6 +463,18 @@ body {
   border-radius: var(--radius-lg);
   color: var(--color-muted-strong);
   box-shadow: var(--shadow-sm);
+}
+
+[dir='rtl'] input,
+[dir='rtl'] select {
+  text-align: right;
+}
+
+[dir='rtl'] input::placeholder,
+[dir='rtl'] input::-webkit-input-placeholder,
+[dir='rtl'] input::-moz-placeholder,
+[dir='rtl'] input:-ms-input-placeholder {
+  text-align: right !important;
 }
 
 [dir='rtl'] select {

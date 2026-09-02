@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, fetchJobStatus, fetchVideoSearch, submitSearch } from '../api/client';
+import { ApiError, fetchJobStatus, fetchVideoLanguage, fetchVideoSearch, submitSearch } from '../api/client';
 
 const { postMock, getMock, createMock } = vi.hoisted(() => {
   const postMock = vi.fn();
@@ -17,11 +17,10 @@ describe('api client', () => {
 
   it('posts a search request and returns data', async () => {
     postMock.mockResolvedValue({ data: { status: 'found', results: [] } });
-    const result = await submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'hello', 'en');
+    const result = await submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'hello');
     expect(postMock).toHaveBeenCalledWith('/api/search', {
       youtube_url: 'https://www.youtube.com/watch?v=abcdef12345',
       keyword: 'hello',
-      language: 'en',
     });
     expect(result).toEqual({ status: 'found', results: [] });
   });
@@ -30,7 +29,7 @@ describe('api client', () => {
     postMock.mockRejectedValue({
       response: { status: 400, data: { error: { message: 'bad url' } } },
     });
-    await expect(submitSearch('x', 'y', 'en')).rejects.toMatchObject({
+    await expect(submitSearch('x', 'y')).rejects.toMatchObject({
       messageKey: 'error.invalidUrl',
       serverMessage: 'bad url',
     });
@@ -39,45 +38,59 @@ describe('api client', () => {
   it('maps a 422 to a validation error', async () => {
     postMock.mockRejectedValue({ response: { status: 422, data: { detail: [] } } });
     await expect(
-      submitSearch('https://www.youtube.com/watch?v=abcdef12345', '', 'en'),
+      submitSearch('https://www.youtube.com/watch?v=abcdef12345', ''),
     ).rejects.toMatchObject({ messageKey: 'error.validation' });
   });
 
   it('maps a request without a response to a network error', async () => {
     postMock.mockRejectedValue({ request: {} });
     await expect(
-      submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'x', 'en'),
+      submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'x'),
     ).rejects.toMatchObject({ messageKey: 'error.network' });
   });
 
   it('maps any other status to a generic server error', async () => {
     postMock.mockRejectedValue({ response: { status: 500, data: {} } });
     await expect(
-      submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'x', 'en'),
+      submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'x'),
     ).rejects.toMatchObject({ messageKey: 'error.server' });
   });
 
   it('maps an unknown error to a generic server error', async () => {
     postMock.mockRejectedValue(new Error('boom'));
     await expect(
-      submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'x', 'en'),
+      submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'x'),
     ).rejects.toMatchObject({ messageKey: 'error.server' });
   });
 
   it('fetches job status', async () => {
     getMock.mockResolvedValue({
-      data: { status: 'processing', video_id: 'v', progress: 10, results: null, error: null },
+      data: {
+        status: 'processing',
+        video_id: 'v',
+        progress: 10,
+        results: null,
+        error: null,
+        video_language: null,
+      },
     });
     const result = await fetchJobStatus('job-1');
     expect(getMock).toHaveBeenCalledWith('/api/status/job-1');
     expect(result).toMatchObject({ status: 'processing' });
   });
 
+  it('fetches video language', async () => {
+    getMock.mockResolvedValue({ data: { language: 'ar' } });
+    const result = await fetchVideoLanguage('vid-1');
+    expect(getMock).toHaveBeenCalledWith('/api/video/vid-1/language');
+    expect(result).toEqual({ language: 'ar' });
+  });
+
   it('fetches video search results with keyword param', async () => {
     getMock.mockResolvedValue({ data: { status: 'found', results: [] } });
-    const result = await fetchVideoSearch('vid-1', 'hello', 'en');
+    const result = await fetchVideoSearch('vid-1', 'hello');
     expect(getMock).toHaveBeenCalledWith('/api/video/vid-1/search', {
-      params: { keyword: 'hello', language: 'en' },
+      params: { keyword: 'hello' },
     });
     expect(result).toEqual({ status: 'found', results: [] });
   });

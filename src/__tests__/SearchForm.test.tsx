@@ -1,12 +1,13 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { SearchForm } from '../components/SearchForm';
+import * as api from '../api/client';
 
 const onSubmit = vi.fn();
 
 describe('SearchForm', () => {
-  it('renders url, keyword and language inputs', () => {
+  it('renders url and keyword inputs', () => {
     render(<SearchForm onSubmit={onSubmit} />);
     expect(screen.getByLabelText('YouTube URL')).toBeInTheDocument();
     expect(screen.getByLabelText('Keyword or phrase')).toBeInTheDocument();
@@ -70,38 +71,12 @@ describe('SearchForm', () => {
     expect(onSubmit).toHaveBeenCalledWith(
       'https://www.youtube.com/watch?v=abcdef12345',
       'hello world',
-      'en',
-    );
-  });
-
-  it('submits the selected search language', async () => {
-    const user = userEvent.setup();
-    render(<SearchForm onSubmit={onSubmit} />);
-    await user.type(
-      screen.getByLabelText('YouTube URL'),
-      'https://www.youtube.com/watch?v=abcdef12345',
-    );
-    await user.type(screen.getByLabelText('Keyword or phrase'), 'hello');
-    await user.selectOptions(screen.getByLabelText('Search language'), 'ar');
-    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit).toHaveBeenCalledWith(
-      'https://www.youtube.com/watch?v=abcdef12345',
-      'hello',
-      'ar',
     );
   });
 
   it('disables the button while searching', () => {
     render(<SearchForm onSubmit={onSubmit} disabled />);
     expect(screen.getByRole('button', { name: 'Searching...' })).toBeDisabled();
-  });
-
-  it('switches the keyword input to RTL when Arabic is selected', async () => {
-    const user = userEvent.setup();
-    render(<SearchForm onSubmit={onSubmit} />);
-    await user.selectOptions(screen.getByLabelText('Search language'), 'ar');
-    expect(screen.getByLabelText('Keyword or phrase').getAttribute('dir')).toBe('rtl');
   });
 
   it('switches the keyword input to RTL when Arabic text is typed', async () => {
@@ -120,27 +95,41 @@ describe('SearchForm', () => {
     expect(keyword.getAttribute('dir')).toBe('ltr');
   });
 
-  it('aligns the Arabic placeholder to the right when Arabic mode is selected', async () => {
+  it('aligns the Arabic placeholder to the right when Arabic mode is active', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
-    await user.selectOptions(screen.getByLabelText('Search language'), 'ar');
     const keyword = screen.getByLabelText('Keyword or phrase');
+    await user.type(keyword, 'مرحبا');
     expect(keyword.getAttribute('dir')).toBe('rtl');
     expect(keyword).toHaveStyle({ textAlign: 'right', direction: 'rtl' });
     expect(keyword.className).toContain('search-input--rtl');
   });
 
-  it('places the language selector arrow on the right in English and on the left in Arabic', async () => {
+  it('auto-detects the video language from a valid YouTube URL', async () => {
+    const fetchVideoLanguage = vi.spyOn(api, 'fetchVideoLanguage').mockResolvedValue({
+      language: 'ar',
+    });
     const user = userEvent.setup();
-    const { rerender } = render(<SearchForm onSubmit={onSubmit} />);
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.type(screen.getByLabelText('YouTube URL'), 'https://www.youtube.com/watch?v=abcdef12345');
+    await waitFor(() => expect(fetchVideoLanguage).toHaveBeenCalledWith('abcdef12345'));
+    await waitFor(() =>
+      expect(screen.getByLabelText('Search language')).toHaveValue('ar'),
+    );
+    fetchVideoLanguage.mockRestore();
+  });
 
-    const languageSelect = screen.getByLabelText('Search language');
-    const arrow = screen.getAllByText('▼')[0];
-    expect(arrow.className).toContain('right-3');
-
-    await user.selectOptions(languageSelect, 'ar');
-    rerender(<SearchForm onSubmit={onSubmit} initialLanguage="ar" />);
-    const arabicArrow = screen.getAllByText('▼')[0];
-    expect(arabicArrow.className).toContain('left-3');
+  it('keeps the default language when language detection fails', async () => {
+    const fetchVideoLanguage = vi.spyOn(api, 'fetchVideoLanguage').mockRejectedValue(
+      new Error('not found'),
+    );
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.type(screen.getByLabelText('YouTube URL'), 'https://www.youtube.com/watch?v=abcdef12345');
+    await waitFor(() => expect(fetchVideoLanguage).toHaveBeenCalledWith('abcdef12345'));
+    await waitFor(() =>
+      expect(screen.getByLabelText('Search language')).toHaveValue('en'),
+    );
+    fetchVideoLanguage.mockRestore();
   });
 });

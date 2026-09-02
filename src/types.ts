@@ -26,22 +26,11 @@ export interface SearchProcessingResponse {
   video_id: string;
 }
 
-/** Response shape when the selected language does not match the video. */
-export interface SearchLanguageMismatchResponse {
-  status: 'language_mismatch';
-  video_language: string | null;
-  message: string;
-}
-
 /** Union of possible POST /api/search responses. */
 export type SearchResponse =
   | SearchFoundResponse
   | SearchNotFoundResponse
-  | SearchProcessingResponse
-  | SearchLanguageMismatchResponse;
-
-/** Languages the user can search in. */
-export type SearchLanguage = 'en' | 'ar';
+  | SearchProcessingResponse;
 
 /** Lifecycle states for a transcription job. */
 export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
@@ -53,8 +42,13 @@ export interface StatusResponse {
   progress: number | null;
   results: SearchMatch[] | null;
   error: string | null;
+  video_language: string | null;
+}
+
+/** Response shape for GET /api/video/{video_id}/language. */
+export interface VideoLanguageResponse {
+  language: string | null;
 }
 
 /** Response shape for GET /api/video/{video_id}/search. */
-export type VideoSearchResponse =
-  SearchFoundResponse | SearchNotFoundResponse | SearchLanguageMismatchResponse;
+export type VideoSearchResponse = SearchFoundResponse | SearchNotFoundResponse;

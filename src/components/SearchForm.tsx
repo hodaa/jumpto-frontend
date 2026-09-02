@@ -1,9 +1,9 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { fetchVideoLanguage } from '../api/client';
+import { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLanguage } from '../i18n';
 import { parseYouTubeId } from '../utils/youtube';
-import type { SearchLanguage } from '../types';
 import { IconGlobe, IconSearch, IconTarget, IconVideo } from './icons';
 
 export interface SearchFormHandle {
@@ -11,12 +11,11 @@ export interface SearchFormHandle {
 }
 
 interface Props {
-  onSubmit: (url: string, keyword: string, language: SearchLanguage) => void;
+  onSubmit: (url: string, keyword: string) => void;
   onCancel?: () => void;
   disabled?: boolean;
   initialUrl?: string;
   initialKeyword?: string;
-  initialLanguage?: SearchLanguage;
 }
 
 const ARABIC_PATTERN = /[\u0600-\u06FF\u0750-\u077F]/;
@@ -27,7 +26,7 @@ function isArabicText(value: string): boolean {
 
 /**
  * JumpTo search form. Renders centered card fields with auto-RTL support
- * for the keyword input based on the selected language or typed text.
+ * for the keyword input based on the detected language or typed text.
  */
 export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchForm(
   {
@@ -36,7 +35,6 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
     disabled = false,
     initialUrl = '',
     initialKeyword = '',
-    initialLanguage,
   },
   ref,
 ) {
@@ -44,9 +42,7 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
   const languageSelectRef = useRef<HTMLSelectElement>(null);
   const [url, setUrl] = useState(initialUrl);
   const [keyword, setKeyword] = useState(initialKeyword);
-  const [language, setLanguage] = useState<SearchLanguage>(
-    initialLanguage ?? (getLanguage() === 'ar' ? 'ar' : 'en'),
-  );
+  const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [keywordError, setKeywordError] = useState<string | null>(null);
 
@@ -54,7 +50,23 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
     focusLanguage: () => languageSelectRef.current?.focus(),
   }));
 
-  const isArabicLanguage = language === 'ar';
+  useEffect(() => {
+    const videoId = parseYouTubeId(url);
+    if (!videoId) return;
+    const timer = window.setTimeout(async () => {
+      try {
+        const { language } = await fetchVideoLanguage(videoId);
+        if (language === 'ar' || language === 'en') {
+          setDetectedLanguage(language);
+        }
+      } catch {
+        // detection failed; keep default
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [url]);
+
+  const isArabicLanguage = detectedLanguage === 'ar' || (!detectedLanguage && getLanguage() === 'ar');
   const keywordDir = isArabicText(keyword) || isArabicLanguage ? 'rtl' : 'ltr';
   const inputAlign = keywordDir === 'rtl' ? 'text-right' : 'text-left';
   const textAlignStyle = keywordDir === 'rtl' ? 'right' : 'left';
@@ -62,6 +74,36 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
   const fieldIconSide = isArabicLanguage ? 'right-3' : 'left-3';
   const selectIconSide = isArabicLanguage ? 'right-3' : 'left-3';
   const selectArrowSide = isArabicLanguage ? 'left-3' : 'right-3';
+  const styleInjected = useRef(false);
+
+  useEffect(() => {
+    if (styleInjected.current) return;
+    styleInjected.current = true;
+    const style = document.createElement('style');
+    style.textContent = `
+      .search-input--rtl::placeholder,
+      .search-input--rtl::-webkit-input-placeholder,
+      .search-input--rtl::-moz-placeholder,
+      .search-input--rtl:-ms-input-placeholder {
+        text-align: right !important;
+        direction: rtl;
+      }
+      .search-input--ltr::placeholder,
+      .search-input--ltr::-webkit-input-placeholder,
+      .search-input--ltr::-moz-placeholder,
+      .search-input--ltr:-ms-input-placeholder {
+        text-align: left !important;
+        direction: ltr;
+      }
+      [dir='rtl'] input::placeholder,
+      [dir='rtl'] input::-webkit-input-placeholder,
+      [dir='rtl'] input::-moz-placeholder,
+      [dir='rtl'] input:-ms-input-placeholder {
+        text-align: right !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -82,7 +124,7 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
     if (hasUrlError || hasKeywordError) {
       return;
     }
-    onSubmit(cleanUrl, cleanKeyword, language);
+    onSubmit(cleanUrl, cleanKeyword);
   };
 
   const inputClass =
@@ -170,11 +212,10 @@ export const SearchForm = forwardRef<SearchFormHandle, Props>(function SearchFor
           <select
             ref={languageSelectRef}
             id="language"
-            value={language}
-            onChange={(event) => setLanguage(event.target.value as SearchLanguage)}
-            aria-describedby="language-hint"
+            value={detectedLanguage ?? (getLanguage() === 'ar' ? 'ar' : 'en')}
+            disabled
             dir={isArabicLanguage ? 'rtl' : 'ltr'}
-            className={`${selectClass} appearance-none`}
+            className={`${selectClass} appearance-none opacity-60`}
           >
             <option value="en">{t('form.languageEn')}</option>
             <option value="ar">{t('form.languageAr')}</option>

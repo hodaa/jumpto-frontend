@@ -11,7 +11,7 @@ import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
 import { useJobPolling } from './hooks/useJobPolling';
 import type { VideoPlayerHandle } from './hooks/useYouTubePlayer';
-import type { SearchLanguage, SearchMatch } from './types';
+import type { SearchMatch } from './types';
 import { csvCell } from './utils/csv';
 import { parseYouTubeId } from './utils/youtube';
 
@@ -28,11 +28,6 @@ interface ActiveJob {
 interface Query {
   url: string;
   keyword: string;
-  language: SearchLanguage;
-}
-
-function languageLabel(lang: SearchLanguage, t: (key: string) => string): string {
-  return lang === 'ar' ? t('form.languageAr') : t('form.languageEn');
 }
 
 function safeFilenamePart(value: string): string {
@@ -48,7 +43,7 @@ export default function App() {
   const [progress, setProgress] = useState<number | null>(null);
   const [errorText, setErrorText] = useState('');
   const [job, setJob] = useState<ActiveJob | null>(null);
-  const [query, setQuery] = useState<Query>({ url: '', keyword: '', language: 'en' });
+  const [query, setQuery] = useState<Query>({ url: '', keyword: '' });
   const playerRef = useRef<VideoPlayerHandle | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchFormRef = useRef<SearchFormHandle>(null);
@@ -97,8 +92,8 @@ export default function App() {
   }, []);
 
   const handleSubmit = useCallback(
-    async (url: string, keyword: string, language: SearchLanguage) => {
-      setQuery({ url, keyword, language });
+    async (url: string, keyword: string) => {
+      setQuery({ url, keyword });
       setErrorText('');
       setJob(null);
       setMatches([]);
@@ -106,18 +101,11 @@ export default function App() {
       setCopyFailed(false);
       clearPendingTransition();
       try {
-        const response = await submitSearch(url, keyword, language);
+        const response = await submitSearch(url, keyword);
         if (response.status === 'found' || response.status === 'not_found') {
           setMatches(response.results);
           setProgress(100);
           setPhase('done');
-          return;
-        }
-        if (response.status === 'language_mismatch') {
-          setErrorText(
-            t('mismatch.message', { language: languageLabel(language, t) }),
-          );
-          setPhase('mismatch');
           return;
         }
         setJob({
@@ -154,24 +142,14 @@ export default function App() {
     },
     [clearPendingTransition],
   );
-  const handlePollMismatch = useCallback(
-    (message: string) => {
-      clearPendingTransition();
-      setErrorText(message);
-      setPhase('mismatch');
-    },
-    [clearPendingTransition],
-  );
 
   useJobPolling({
     jobId: job?.jobId ?? '',
     videoId: job?.videoId ?? '',
     keyword: query.keyword,
-    language: query.language,
     onProgress: handlePollProgress,
     onSuccess: handlePollSuccess,
     onError: handlePollError,
-    onMismatch: handlePollMismatch,
   });
 
   const handleCopyResults = useCallback(async () => {
@@ -183,8 +161,7 @@ export default function App() {
       setCopyFailed(false);
       setCopied(true);
     } catch {
-      setCopied(false);
-      setCopyFailed(true);
+      setCopyFailed(false);
     }
     scheduleCopyNotice();
   }, [matches, t, scheduleCopyNotice]);
@@ -209,7 +186,6 @@ export default function App() {
     setProgress(null);
     setErrorText('');
     setJob(null);
-    setQuery((current) => ({ ...current, keyword: '' }));
     setCopied(false);
     setCopyFailed(false);
     setFormKey((k) => k + 1);
@@ -234,14 +210,8 @@ export default function App() {
     setJob(null);
   }, [clearPendingTransition]);
 
-  const handleChangeLanguage = useCallback(() => {
-    setPhase('idle');
-    setErrorText('');
-    window.requestAnimationFrame(() => searchFormRef.current?.focusLanguage());
-  }, []);
-
   const handleRetry = useCallback(
-    () => void handleSubmit(query.url, query.keyword, query.language),
+    () => void handleSubmit(query.url, query.keyword),
     [handleSubmit, query],
   );
 
@@ -271,7 +241,6 @@ export default function App() {
               disabled={searching}
               initialUrl={query.url}
               initialKeyword={query.keyword}
-              initialLanguage={query.language}
             />
           </section>
           <section ref={resultsRef} className="min-w-0 scroll-mt-6">
@@ -292,7 +261,6 @@ export default function App() {
               onClear={handleClearKeyword}
               onNewSearch={handleNewSearch}
               onRetry={handleRetry}
-              onChangeLanguage={handleChangeLanguage}
             />
           </section>
         </div>

@@ -10,7 +10,7 @@ import { SiteHeader } from '../components/SiteHeader';
 describe('Landing sections', () => {
   it('renders the brand header with the logo and language toggle', () => {
     render(<SiteHeader />);
-    expect(screen.getByAltText('JumpTo')).toHaveAttribute('src', '/logo.svg');
+    expect(screen.getByAltText('JumpTo')).toHaveAttribute('src', '/logo.png');
     expect(screen.getByRole('link', { name: 'JumpTo home' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Why JumpTo' })).toHaveAttribute('href', '#why-jumpto');
     expect(screen.getByRole('link', { name: 'How it works' })).toHaveAttribute('href', '#how-it-works');
