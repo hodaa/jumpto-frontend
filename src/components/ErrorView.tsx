@@ -52,7 +52,7 @@ export function ErrorView({ message, onRetry, secondaryAction }: Props) {
       >
         <WarningIcon />
       </span>
-      <p className="max-w-md text-sm text-slate-600">{t(message, { defaultValue: message })}</p>
+      <p className="max-w-md text-base text-slate-600">{t(message, { defaultValue: message })}</p>
       <div className="flex flex-wrap items-center justify-center gap-3">
         {secondaryAction ? (
           <button
