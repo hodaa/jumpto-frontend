@@ -17,6 +17,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPl
   return (
     <div className="overflow-hidden rounded-xl bg-black">
       <div className="aspect-video w-full" ref={containerRef} />
+      <p className="px-3 py-2 text-sm text-slate-400">
+        Click a match below to jump to that moment in the video.
+      </p>
     </div>
   );
 });

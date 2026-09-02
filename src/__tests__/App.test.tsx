@@ -70,12 +70,13 @@ describe('App', () => {
       progress: 100,
       results: null,
       error: null,
+      video_language: null,
     });
     mockVideoSearch.mockResolvedValue({ status: 'found', results: RESULTS });
 
     await fillAndSubmit();
     expect(await screen.findByText('Exact match')).toBeInTheDocument();
-    expect(mockVideoSearch).toHaveBeenCalledWith('vid-1', 'hello world', 'en');
+    expect(mockVideoSearch).toHaveBeenCalledWith('vid-1', 'hello world');
   });
 
   it('shows the failure message reported by the job', async () => {
@@ -86,6 +87,7 @@ describe('App', () => {
       progress: null,
       results: null,
       error: 'Assembly API quota exceeded',
+      video_language: null,
     });
 
     await fillAndSubmit();
@@ -124,6 +126,7 @@ describe('App', () => {
         progress: 40,
         results: null,
         error: null,
+        video_language: null,
       })
       .mockResolvedValueOnce({
         status: 'completed',
@@ -131,6 +134,7 @@ describe('App', () => {
         progress: 100,
         results: null,
         error: null,
+        video_language: null,
       });
     mockVideoSearch.mockResolvedValue({ status: 'found', results: RESULTS });
 
@@ -139,20 +143,4 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByText('00:05')).toBeInTheDocument(), { timeout: 5000 });
   });
 
-  it('shows the language mismatch message', async () => {
-    mockSubmit.mockResolvedValue({
-      status: 'language_mismatch',
-      video_language: 'ar',
-      message: 'not matched',
-    });
-
-    await fillAndSubmit();
-    expect(
-      await screen.findByText(
-        "This video doesn't appear to be in English. Please pick a different search language.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Change search language' })).toBeInTheDocument();
   });
-});

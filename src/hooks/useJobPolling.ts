@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, fetchJobStatus, fetchVideoSearch } from '../api/client';
-import type { SearchLanguage, SearchMatch } from '../types';
+import type { SearchMatch } from '../types';
 
 const POLL_INTERVAL_MS = 2000;
 const RETRY_DELAY_MS = 250;
@@ -11,14 +11,12 @@ interface PollCallbacks {
   onProgress: (progress: number | null) => void;
   onSuccess: (matches: SearchMatch[]) => void;
   onError: (message: string) => void;
-  onMismatch: (message: string) => void;
 }
 
 interface PollInput extends PollCallbacks {
   jobId: string;
   videoId: string;
   keyword: string;
-  language: SearchLanguage;
 }
 
 /** Poll a job until it reaches a terminal state, then fetch its results. */
@@ -26,11 +24,9 @@ export function useJobPolling({
   jobId,
   videoId,
   keyword,
-  language,
   onProgress,
   onSuccess,
   onError,
-  onMismatch,
 }: PollInput): void {
   const { t } = useTranslation();
   const handle = useCallback(async (): Promise<boolean> => {
@@ -43,15 +39,10 @@ export function useJobPolling({
       onError(status.error ?? t('error.server'));
       return false;
     }
-    const video = await fetchVideoSearch(videoId, keyword, language);
-    if (video.status === 'language_mismatch') {
-      const languageLabel = language === 'ar' ? t('form.languageAr') : t('form.languageEn');
-      onMismatch(t('mismatch.message', { language: languageLabel }));
-    } else {
-      onSuccess(video.results);
-    }
+    const video = await fetchVideoSearch(videoId, keyword);
+    onSuccess(video.results);
     return false;
-  }, [jobId, videoId, keyword, language, onError, onMismatch, onProgress, onSuccess, t]);
+  }, [jobId, videoId, keyword, onError, onProgress, onSuccess, t]);
 
   useEffect(() => {
     if (!jobId) return;

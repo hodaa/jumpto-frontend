@@ -9,7 +9,7 @@ import { VideoPlayer } from './VideoPlayer';
 import type { VideoPlayerHandle } from '../hooks/useYouTubePlayer';
 import type { SearchMatch } from '../types';
 
-export type Phase = 'idle' | 'processing' | 'done' | 'error' | 'mismatch';
+export type Phase = 'idle' | 'processing' | 'done' | 'error';
 
 interface Props {
   phase: Phase;
@@ -28,7 +28,6 @@ interface Props {
   onClear: () => void;
   onNewSearch?: () => void;
   onRetry: () => void;
-  onChangeLanguage?: () => void;
 }
 
 const CARD = 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8';
@@ -51,7 +50,6 @@ export function ResultsPanel({
   onClear,
   onNewSearch,
   onRetry,
-  onChangeLanguage,
 }: Props) {
   const { t } = useTranslation();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -83,22 +81,6 @@ export function ResultsPanel({
     return (
       <section className={CARD} aria-label={t('status.title')}>
         <StatusCard progress={progress} keyword={keyword} />
-      </section>
-    );
-  }
-
-  if (phase === 'mismatch') {
-    return (
-      <section className={CARD} role="alert">
-        <ErrorView
-          message={errorText}
-          onRetry={onRetry}
-          secondaryAction={
-            onChangeLanguage
-              ? { label: t('actions.changeLanguage'), onClick: onChangeLanguage }
-              : undefined
-          }
-        />
       </section>
     );
   }
