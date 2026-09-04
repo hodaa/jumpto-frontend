@@ -115,13 +115,13 @@ describe('App', () => {
     await waitFor(() => expect(mockSubmit).toHaveBeenCalledTimes(2));
   });
 
-  it('still polls for progress before completion', async () => {
+  it('shows a local time-based progress indicator before completion', async () => {
     mockSubmit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'vid-1' });
     mockStatus
       .mockResolvedValueOnce({
         status: 'processing',
         video_id: 'vid-1',
-        progress: 40,
+        progress: null,
         results: null,
         error: null,
         video_language: null,
@@ -129,7 +129,7 @@ describe('App', () => {
       .mockResolvedValueOnce({
         status: 'completed',
         video_id: 'vid-1',
-        progress: 100,
+        progress: null,
         results: null,
         error: null,
         video_language: null,
@@ -137,7 +137,8 @@ describe('App', () => {
     mockVideoSearch.mockResolvedValue({ status: 'found', results: RESULTS });
 
     await fillAndSubmit();
-    await waitFor(() => expect(screen.getByText('Progress: 40%')).toBeInTheDocument());
+    expect(await screen.findByText('Transcribing video')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('00:05')).toBeInTheDocument(), { timeout: 5000 });
   });
 

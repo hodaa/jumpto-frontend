@@ -18,6 +18,9 @@ import { parseYouTubeId } from './utils/youtube';
 const PROGRESS_DONE_DELAY_MS = 350;
 const COPY_NOTICE_MS = 2000;
 const MATCH_LIMIT = 50;
+const PROGRESS_TICK_MS = 6000; // +10% every 6s → feels alive while the job runs
+const PROGRESS_TICK_STEP = 10;
+const PROGRESS_MAX = 85; // cap below 100% so we never look done before results arrive
 
 interface ActiveJob {
   jobId: string;
@@ -122,7 +125,6 @@ export default function App() {
     [t, clearPendingTransition],
   );
 
-  const handlePollProgress = useCallback((value: number | null) => setProgress(value), []);
   const handlePollSuccess = useCallback(
     (value: SearchMatch[]) => {
       setProgress(100);
@@ -147,10 +149,20 @@ export default function App() {
     jobId: job?.jobId ?? '',
     videoId: job?.videoId ?? '',
     keyword: query.keyword,
-    onProgress: handlePollProgress,
     onSuccess: handlePollSuccess,
     onError: handlePollError,
   });
+
+  useEffect(() => {
+    if (phase !== 'processing') return undefined;
+    const id = window.setInterval(() => {
+      setProgress((current) => {
+        if (current === null) return PROGRESS_TICK_STEP;
+        return Math.min(current + PROGRESS_TICK_STEP, PROGRESS_MAX);
+      });
+    }, PROGRESS_TICK_MS);
+    return () => window.clearInterval(id);
+  }, [phase]);
 
   const handleCopyResults = useCallback(async () => {
     const text = matches

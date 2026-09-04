@@ -10,7 +10,6 @@ const POLL_MAX_DURATION_MS =
   Number(import.meta.env.VITE_POLL_TIMEOUT_MS) || 5 * 60_000;
 
 interface PollCallbacks {
-  onProgress: (progress: number | null) => void;
   onSuccess: (matches: SearchMatch[]) => void;
   onError: (message: string) => void;
 }
@@ -26,7 +25,6 @@ export function useJobPolling({
   jobId,
   videoId,
   keyword,
-  onProgress,
   onSuccess,
   onError,
 }: PollInput): void {
@@ -34,7 +32,6 @@ export function useJobPolling({
   const handle = useCallback(async (): Promise<boolean> => {
     const status = await fetchJobStatus(jobId);
     if (status.status === 'pending' || status.status === 'processing') {
-      onProgress(status.progress);
       return true;
     }
     if (status.status === 'failed') {
@@ -44,7 +41,7 @@ export function useJobPolling({
     const video = await fetchVideoSearch(videoId, keyword);
     onSuccess(video.results);
     return false;
-  }, [jobId, videoId, keyword, onError, onProgress, onSuccess, t]);
+  }, [jobId, videoId, keyword, onError, onSuccess, t]);
 
   useEffect(() => {
     if (!jobId) return;
