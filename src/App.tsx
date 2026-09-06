@@ -18,8 +18,9 @@ import { parseYouTubeId } from './utils/youtube';
 const PROGRESS_DONE_DELAY_MS = 350;
 const COPY_NOTICE_MS = 2000;
 const MATCH_LIMIT = 50;
-const PROGRESS_TICK_MS = 6000; // +10% every 6s → feels alive while the job runs
-const PROGRESS_TICK_STEP = 10;
+const PROGRESS_INITIAL = 5; // shown the moment the user clicks Jump, before submit resolves
+const PROGRESS_TICK_MS = 3000; // +5% every 3s → counting starts right away and keeps crawling
+const PROGRESS_TICK_STEP = 5;
 const PROGRESS_MAX = 85; // cap below 100% so we never look done before results arrive
 
 interface ActiveJob {
@@ -99,10 +100,13 @@ export default function App() {
       setErrorText('');
       setJob(null);
       setMatches([]);
-      setProgress(null);
       setCopyFailed(false);
       setCurrentPlayingTimestamp(null);
       clearPendingTransition();
+      // Start the progress count the moment the button is clicked, before the
+      // search request resolves, so the user sees counting immediately.
+      setProgress(PROGRESS_INITIAL);
+      setPhase('processing');
       try {
         const response = await submitSearch(url, keyword);
         if (response.status === 'found' || response.status === 'not_found') {
@@ -116,7 +120,6 @@ export default function App() {
           videoId: response.video_id,
           youtubeId: parseYouTubeId(url) ?? '',
         });
-        setPhase('processing');
       } catch (error) {
         setErrorText(error instanceof ApiError ? error.messageKey : t('error.server'));
         setPhase('error');
@@ -157,7 +160,7 @@ export default function App() {
     if (phase !== 'processing') return undefined;
     const id = window.setInterval(() => {
       setProgress((current) => {
-        if (current === null) return PROGRESS_TICK_STEP;
+        if (current === null) return PROGRESS_INITIAL;
         return Math.min(current + PROGRESS_TICK_STEP, PROGRESS_MAX);
       });
     }, PROGRESS_TICK_MS);

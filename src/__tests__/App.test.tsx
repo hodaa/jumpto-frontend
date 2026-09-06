@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { ApiError, fetchJobStatus, fetchVideoSearch, submitSearch } from '../api/client';
-import type { SearchMatch } from '../types';
+import type { SearchMatch, SearchResponse } from '../types';
 
 vi.mock('../api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../api/client')>();
@@ -142,4 +142,12 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByText('00:05')).toBeInTheDocument(), { timeout: 5000 });
   });
 
+  it('starts counting progress the moment Jump is clicked, before the request resolves', async () => {
+    mockSubmit.mockImplementation(() => new Promise<SearchResponse>(() => {}));
+
+    await fillAndSubmit();
+
+    expect(await screen.findByRole('progressbar')).toHaveAttribute('aria-valuenow', '5');
+    expect(screen.getByText('Transcribing video')).toBeInTheDocument();
   });
+});
