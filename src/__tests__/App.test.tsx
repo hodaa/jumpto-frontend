@@ -149,7 +149,7 @@ describe('App', () => {
 
     await fillAndSubmit();
 
-    expect(await screen.findByRole('progressbar')).toHaveAttribute('aria-valuenow', '5');
+    expect(await screen.findByRole('progressbar')).toHaveAttribute('aria-valuenow', '10');
     expect(screen.getByText('Transcribing video')).toBeInTheDocument();
   });
 

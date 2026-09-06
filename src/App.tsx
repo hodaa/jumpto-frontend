@@ -19,10 +19,11 @@ import { getCachedResults, setCachedResults } from './utils/resultsCache';
 const PROGRESS_DONE_DELAY_MS = 350;
 const COPY_NOTICE_MS = 2000;
 const MATCH_LIMIT = 50;
-const PROGRESS_INITIAL = 5; // shown the moment the user clicks Jump, before submit resolves
-const PROGRESS_TICK_MS = 3000; // +5% every 3s → counting starts right away and keeps crawling
-const PROGRESS_TICK_STEP = 5;
-const PROGRESS_MAX = 85; // cap below 100% so we never look done before results arrive
+const PROGRESS_INITIAL = 10; // shown the moment the user clicks Jump, before submit resolves
+const PROGRESS_TICK_STEP = 10;
+const PROGRESS_FALLBACK_TICK_MS = 3000; // no estimate → one step every 3s
+const PROGRESS_MIN_TICK_MS = 1000; // floor so a tiny estimate doesn't spin wildly
+const PROGRESS_MAX = 90; // cap below 100% so we never look done before results arrive
 
 interface ActiveJob {
   jobId: string;
@@ -53,6 +54,7 @@ export default function App() {
   const playerRef = useRef<VideoPlayerHandle | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const startedAtRef = useRef<number | null>(null);
+  const estimatedWaitRef = useRef<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const [formKey, setFormKey] = useState(0);
@@ -76,6 +78,10 @@ export default function App() {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [phase]);
+
+  useEffect(() => {
+    estimatedWaitRef.current = estimatedWait;
+  }, [estimatedWait]);
 
   const clearPendingTransition = useCallback(() => {
     if (transitionTimerRef.current !== null) {
@@ -205,13 +211,30 @@ export default function App() {
 
   useEffect(() => {
     if (phase !== 'processing') return undefined;
-    const id = window.setInterval(() => {
-      setProgress((current) => {
-        if (current === null) return PROGRESS_INITIAL;
-        return Math.min(current + PROGRESS_TICK_STEP, PROGRESS_MAX);
-      });
-    }, PROGRESS_TICK_MS);
-    return () => window.clearInterval(id);
+    let timer: number | null = null;
+    const scheduleNext = (current: number) => {
+      if (current >= PROGRESS_MAX) return;
+      const remaining = estimatedWaitRef.current;
+      const stepsLeft = Math.ceil((PROGRESS_MAX - current) / PROGRESS_TICK_STEP);
+      let delay = PROGRESS_FALLBACK_TICK_MS;
+      if (remaining !== null && remaining > 1 && stepsLeft > 0) {
+        // Spread the remaining +10% steps across the remaining estimate so the
+        // counter reaches ~90% around when the job is expected to finish.
+        delay = Math.max(PROGRESS_MIN_TICK_MS, (remaining * 1000) / stepsLeft);
+      }
+      timer = window.setTimeout(() => {
+        setProgress((value) => {
+          if (value === null) return PROGRESS_INITIAL;
+          const next = Math.min(value + PROGRESS_TICK_STEP, PROGRESS_MAX);
+          scheduleNext(next);
+          return next;
+        });
+      }, delay);
+    };
+    scheduleNext(PROGRESS_INITIAL);
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+    };
   }, [phase]);
 
   const handleCopyResults = useCallback(async () => {
