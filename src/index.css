@@ -328,20 +328,6 @@ body {
   text-align: center;
 }
 
-/* ── RTL SiteHeader ── */
-[dir='rtl'] header {
-  flex-direction: row-reverse;
-}
-
-[dir='rtl'] header nav {
-  margin-left: 0;
-  margin-right: auto;
-}
-
-[dir='rtl'] header nav a {
-  text-align: right;
-}
-
 /* ── RTL Features ── */
 [dir='rtl'] .features article {
   text-align: right;
