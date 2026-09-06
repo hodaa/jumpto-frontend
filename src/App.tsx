@@ -246,7 +246,8 @@ export default function App() {
       setCopyFailed(false);
       setCopied(true);
     } catch {
-      setCopyFailed(false);
+      setCopied(false);
+      setCopyFailed(true);
     }
     scheduleCopyNotice();
   }, [matches, t, scheduleCopyNotice]);

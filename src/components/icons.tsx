@@ -126,27 +126,6 @@ export function IconDownload({ size = 16 }: IconProps) {
   );
 }
 
-/** External-link icon for opening a match on YouTube. */
-export function IconExternal({ size = 14 }: IconProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M15 3h6v6" />
-      <path d="M10 14 21 3" />
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-    </svg>
-  );
-}
-
 /** Video icon used for the Video URL field. */
 export function IconVideo({ size = 18 }: IconProps) {
   return (
@@ -163,27 +142,6 @@ export function IconVideo({ size = 18 }: IconProps) {
     >
       <path d="m22 8-6 4 6 4V8Z" />
       <rect x="2" y="6" width="14" height="12" rx="2" />
-    </svg>
-  );
-}
-
-/** Globe icon used for the language select. */
-export function IconGlobe({ size = 18 }: IconProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3.6 9h16.8M3.6 15h16.8" />
-      <path d="M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
     </svg>
   );
 }

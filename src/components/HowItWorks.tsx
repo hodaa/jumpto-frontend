@@ -19,7 +19,7 @@ export function HowItWorks() {
             key={step.title}
             style={{ animationDelay: `${index * 0.15}s` }}
           >
-            <span className="step-badge" aria-label={`Step ${index + 1}`}>
+            <span className="step-badge" aria-label={t('steps.stepLabel', { n: index + 1 })}>
               <span className="step-badge__number">{index + 1}</span>
             </span>
             <h3 className="text-center text-lg font-bold text-[#01124e]">{step.title}</h3>

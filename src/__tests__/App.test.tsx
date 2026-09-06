@@ -244,4 +244,36 @@ describe('App', () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole('button', { name: 'Copied!' })).toBeInTheDocument();
   });
+
+  it('reports a copy failure when the clipboard write rejects', async () => {
+    mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
+
+    await fillAndSubmit();
+    await screen.findByText('00:05');
+
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Copy all' }));
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent(
+      'Could not copy results to the clipboard. Please try again.',
+    );
+    expect(screen.queryByRole('button', { name: 'Copied!' })).not.toBeInTheDocument();
+  });
+
+  it('starts a new search from the results toolbar', async () => {
+    mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
+
+    await fillAndSubmit();
+    await screen.findByText('00:05');
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'New search' }));
+    expect(await screen.findByText('Ready to find your moment')).toBeInTheDocument();
+  });
 });

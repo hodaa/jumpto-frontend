@@ -17,11 +17,11 @@ export function Features() {
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
           {items.map((item, index) => (
             <article
-              className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-[#02c1f7]/30 hover:shadow-xl hover:bg-gradient-to-br hover:from-white hover:to-[#02c1f7]/5 animate-fade-in-up group"
+              className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-xl hover:bg-gradient-to-br hover:from-white hover:to-accent/5 animate-fade-in-up group"
               key={item.title}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#02c1f7]/10 to-[#000520]/10 text-[#02c1f7] group-hover:from-[#02c1f7]/20 group-hover:to-[#000520]/20 transition-all duration-300 group-hover:scale-110">
+              <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-accent/10 to-[#000520]/10 text-accent group-hover:from-accent/20 group-hover:to-[#000520]/20 transition-all duration-300 group-hover:scale-110">
                 {item.icon}
               </span>
               <h3 className="text-base font-bold text-[#01124e]">{item.title}</h3>

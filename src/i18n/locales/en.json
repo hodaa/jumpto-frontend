@@ -8,7 +8,7 @@
   },
   "hero": {
     "title": "Jump to the exact moment a phrase is spoken",
-    "subtitle": "Paste a YouTube link, enter a phrase, find the exact moment. jump there instantly."
+    "subtitle": "Paste a YouTube link, enter a phrase, find the exact moment. Jump there instantly."
   },
   "features": {
     "title": "Why JumpTo",
@@ -26,7 +26,8 @@
     "step2Title": "Search a phrase",
     "step2Desc": "A single word or a full sentence.",
     "step3Title": "Jump to the moment",
-    "step3Desc": "Get exact timestamps instantly."
+    "step3Desc": "Get exact timestamps instantly.",
+    "stepLabel": "Step {{n}}"
   },
   "footer": {
     "note": "JumpTo — Find the moments that matter",
@@ -38,9 +39,6 @@
     "urlPlaceholder": "https://www.youtube.com/watch?v=...",
     "keywordLabel": "Keyword or phrase",
     "keywordPlaceholder": "e.g. never gonna give you up",
-    "languageLabel": "Transcript Language",
-    "languageEn": "English",
-    "languageAr": "العربية",
     "submit": "Jump to the moment",
     "searching": "Searching...",
     "clear": "Clear and start over"
@@ -64,8 +62,6 @@
     "clearKeyword": "Clear keyword",
     "idle": "Your timestamp matches will appear here. Run a search to get started.",
     "idleTitle": "Ready to find your moment",
-    "at": "at",
-    "play": "Play",
     "seek": "Play at {{timestamp}} — {{snippet}}",
     "watchOnYouTube": "Watch on YouTube",
     "noSnippet": "Exact match",
@@ -90,16 +86,12 @@
     "network": "Could not reach the server. Check that the backend is running.",
     "timeout": "This is taking longer than expected. Please try again later."
   },
-  "mismatch": {
-    "message": "This video doesn't appear to be in {{language}}. Please pick a different search language."
-  },
   "actions": {
     "retry": "Try again",
     "language": "العربية",
     "languageSelector": "Language",
     "newSearch": "New search",
     "cancelSearch": "Cancel search",
-    "changeLanguage": "Change search language",
     "skipToContent": "Skip to main content"
   }
 }

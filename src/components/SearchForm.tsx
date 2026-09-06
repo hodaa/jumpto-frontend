@@ -38,10 +38,7 @@ export function SearchForm({
 
   const isArabicLanguage = getLanguage() === 'ar';
   const keywordDir = isArabicText(keyword) || isArabicLanguage ? 'rtl' : 'ltr';
-  const inputAlign = keywordDir === 'rtl' ? 'text-right' : 'text-left';
   const textAlignStyle = keywordDir === 'rtl' ? 'right' : 'left';
-  const placeholderAlignClass = keywordDir === 'rtl' ? 'search-input--rtl' : 'search-input--ltr';
-  const fieldIconSide = isArabicLanguage ? 'right-3' : 'left-3';
   const styleInjected = useRef(false);
 
   useEffect(() => {
@@ -62,12 +59,6 @@ export function SearchForm({
       .search-input--ltr:-ms-input-placeholder {
         text-align: left !important;
         direction: ltr;
-      }
-      [dir='rtl'] input::placeholder,
-      [dir='rtl'] input::-webkit-input-placeholder,
-      [dir='rtl'] input::-moz-placeholder,
-      [dir='rtl'] input:-ms-input-placeholder {
-        text-align: right !important;
       }
     `;
     document.head.appendChild(style);
@@ -104,7 +95,7 @@ export function SearchForm({
 
   const hasInput = url.trim().length > 0 || keyword.trim().length > 0;
 
-  const inputClass = `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 ${inputAlign} text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
+  const inputClass = `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
 
   return (
     <form
@@ -116,23 +107,22 @@ export function SearchForm({
         <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="url">
           {t('form.urlLabel')}
         </label>
-        <div className="relative">
+        <div className="relative" dir="ltr">
           <span
-            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${fieldIconSide} text-slate-400 flex items-center justify-center w-8`}
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400"
           >
             <IconVideo size={18} />
           </span>
           <input
             id="url"
             type="url"
-            dir={keywordDir}
+            dir="ltr"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             placeholder={t('form.urlPlaceholder')}
             aria-describedby={urlError ? 'url-error' : undefined}
             aria-invalid={urlError ? true : undefined}
-            className={`${inputClass} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
-            style={{ textAlign: textAlignStyle, direction: keywordDir }}
+            className={`${inputClass} search-input--ltr text-left placeholder:text-left`}
           />
         </div>
         {urlError ? (
@@ -150,10 +140,8 @@ export function SearchForm({
         <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="keyword">
           {t('form.keywordLabel')}
         </label>
-        <div className="relative">
-          <span
-            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${fieldIconSide} text-slate-400 flex items-center justify-center w-8`}
-          >
+        <div className="relative" dir={keywordDir}>
+          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400">
             <IconSearch size={18} />
           </span>
           <input
@@ -165,12 +153,16 @@ export function SearchForm({
             placeholder={t('form.keywordPlaceholder')}
             aria-describedby={keywordError ? 'keyword-error' : undefined}
             aria-invalid={keywordError ? true : undefined}
-            className={`${inputClass} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
+            className={`${inputClass} ${keywordDir === 'rtl' ? 'search-input--rtl text-right placeholder:text-right' : 'search-input--ltr text-left placeholder:text-left'}`}
             style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
         </div>
         {keywordError ? (
-          <p className="text-sm font-semibold text-rose-600" role="alert" id="keyword-error">
+          <p
+            className="text-sm font-semibold text-rose-600 rtl:text-right"
+            role="alert"
+            id="keyword-error"
+          >
             {keywordError}
           </p>
         ) : null}
@@ -180,7 +172,7 @@ export function SearchForm({
         <button
           type="submit"
           disabled={disabled}
-          className="group relative inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#0296c7] px-6 py-3 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-[#027aa8] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#0296c7]/30 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50 disabled:shadow-none overflow-hidden active:scale-[0.98]"
+          className="group relative inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-primary/90 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50 disabled:shadow-none overflow-hidden active:scale-[0.98]"
         >
           <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
           {disabled ? (
