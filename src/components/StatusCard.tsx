@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 interface Props {
   progress: number | null;
   keyword?: string;
+  estimatedSeconds?: number | null;
   skeleton?: boolean;
 }
 
@@ -11,7 +12,12 @@ interface Props {
  * Transcription progress card with a spinner, status stepper and an
  * accessible determinate/indeterminate progress bar.
  */
-export function StatusCard({ progress, keyword = '', skeleton = false }: Props) {
+export function StatusCard({
+  progress,
+  keyword = '',
+  estimatedSeconds = null,
+  skeleton = false,
+}: Props) {
   const { t } = useTranslation();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -35,6 +41,10 @@ export function StatusCard({ progress, keyword = '', skeleton = false }: Props) 
   const progressLabel = indeterminate
     ? t('status.message')
     : t('status.progress', { progress: value });
+  const etaLabel =
+    estimatedSeconds !== null && estimatedSeconds !== undefined
+      ? t('status.estimatedTime', { seconds: estimatedSeconds })
+      : null;
 
   return (
     <section
@@ -82,6 +92,11 @@ export function StatusCard({ progress, keyword = '', skeleton = false }: Props) 
       </div>
 
       <p className="m-0 text-sm text-slate-600">{progressLabel}</p>
+      {etaLabel ? (
+        <p className="m-0 text-xs text-slate-500" aria-live="polite">
+          {etaLabel}
+        </p>
+      ) : null}
 
       <ol className="mx-auto flex max-w-sm list-none flex-col gap-2 text-start">
         <li

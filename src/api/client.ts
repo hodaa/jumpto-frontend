@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { SearchResponse, StatusResponse, VideoLanguageResponse, VideoSearchResponse } from '../types';
+import type { SearchResponse, StatusResponse, VideoSearchResponse } from '../types';
 
 /** Error whose message can be shown to the user. */
 export class ApiError extends Error {
@@ -43,10 +43,7 @@ function toApiError(error: unknown): ApiError {
 }
 
 /** Submit a search; resolves to found results or a created job. */
-export async function submitSearch(
-  youtubeUrl: string,
-  keyword: string,
-): Promise<SearchResponse> {
+export async function submitSearch(youtubeUrl: string, keyword: string): Promise<SearchResponse> {
   try {
     const { data } = await http.post<SearchResponse>('/api/search', {
       youtube_url: youtubeUrl,
@@ -77,18 +74,6 @@ export async function fetchVideoSearch(
     const { data } = await http.get<VideoSearchResponse>(`/api/video/${videoId}/search`, {
       params: { keyword },
     });
-    return data;
-  } catch (error) {
-    throw toApiError(error);
-  }
-}
-
-/** Fetch the detected language of a video from its transcript. */
-export async function fetchVideoLanguage(
-  videoId: string,
-): Promise<VideoLanguageResponse> {
-  try {
-    const { data } = await http.get<VideoLanguageResponse>(`/api/video/${videoId}/language`);
     return data;
   } catch (error) {
     throw toApiError(error);

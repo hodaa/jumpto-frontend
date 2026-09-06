@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { ApiError, fetchJobStatus, fetchVideoSearch, submitSearch } from '../api/client';
+import { clearResultsCache } from '../utils/resultsCache';
 import type { SearchMatch, SearchResponse } from '../types';
 
 vi.mock('../api/client', async (importOriginal) => {
@@ -33,6 +34,7 @@ async function fillAndSubmit(): Promise<void> {
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearResultsCache();
   });
 
   it('shows cached results when the video is already transcribed', async () => {
@@ -149,5 +151,97 @@ describe('App', () => {
 
     expect(await screen.findByRole('progressbar')).toHaveAttribute('aria-valuenow', '5');
     expect(screen.getByText('Transcribing video')).toBeInTheDocument();
+  });
+
+  it('serves repeat searches for the same video/keyword from the in-memory cache', async () => {
+    mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
+    await fillAndSubmit();
+    await screen.findByText('00:05');
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(await screen.findByText('00:05')).toBeInTheDocument();
+    expect(mockSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the real progress reported by the backend while processing', async () => {
+    mockSubmit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'vid-1' });
+    mockStatus.mockResolvedValue({
+      status: 'processing',
+      video_id: 'vid-1',
+      progress: 10,
+      results: null,
+      error: null,
+      video_language: null,
+    });
+
+    await fillAndSubmit();
+    const bar = await screen.findByRole('progressbar');
+    await waitFor(() =>
+      expect(Number(bar.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(10),
+    );
+  });
+
+  it('shows an estimated wait derived from backend progress', async () => {
+    mockSubmit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'vid-1' });
+    mockStatus.mockResolvedValue({
+      status: 'processing',
+      video_id: 'vid-1',
+      progress: 10,
+      results: null,
+      error: null,
+      video_language: null,
+    });
+
+    await fillAndSubmit();
+    expect(await screen.findByText(/Estimated time remaining/)).toBeInTheDocument();
+  });
+
+  it('prefers a server-provided estimated time over the computed estimate', async () => {
+    mockSubmit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'vid-1' });
+    mockStatus.mockResolvedValue({
+      status: 'processing',
+      video_id: 'vid-1',
+      progress: 10,
+      results: null,
+      error: null,
+      video_language: null,
+      estimatedTimeSeconds: 42,
+    });
+
+    await fillAndSubmit();
+    expect(await screen.findByText('Estimated time remaining: ~42s')).toBeInTheDocument();
+  });
+
+  it('cancels an in-progress search and returns to the idle state', async () => {
+    mockSubmit.mockImplementation(() => new Promise<SearchResponse>(() => {}));
+
+    await fillAndSubmit();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Cancel search' }));
+    expect(await screen.findByText('Ready to find your moment')).toBeInTheDocument();
+  });
+
+  it('copies all results to the clipboard', async () => {
+    mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
+
+    await fillAndSubmit();
+    await screen.findByText('00:05');
+
+    const user = userEvent.setup();
+
+    // userEvent.setup() installs a navigator.clipboard getter stub, so we
+    // must define our mock AFTER setup has run.
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Copy all' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole('button', { name: 'Copied!' })).toBeInTheDocument();
   });
 });

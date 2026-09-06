@@ -1,4 +1,3 @@
-import { fetchVideoLanguage } from '../api/client';
 import { useRef, useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,27 +33,10 @@ export function SearchForm({
   const { t } = useTranslation();
   const [url, setUrl] = useState(initialUrl);
   const [keyword, setKeyword] = useState(initialKeyword);
-  const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [keywordError, setKeywordError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const videoId = parseYouTubeId(url);
-    if (!videoId) return;
-    const timer = window.setTimeout(async () => {
-      try {
-        const { language } = await fetchVideoLanguage(videoId);
-        if (language === 'ar' || language === 'en') {
-          setDetectedLanguage(language);
-        }
-      } catch {
-        // detection failed; keep default
-      }
-    }, 500);
-    return () => window.clearTimeout(timer);
-  }, [url]);
-
-  const isArabicLanguage = detectedLanguage === 'ar' || (!detectedLanguage && getLanguage() === 'ar');
+  const isArabicLanguage = getLanguage() === 'ar';
   const keywordDir = isArabicText(keyword) || isArabicLanguage ? 'rtl' : 'ltr';
   const inputAlign = keywordDir === 'rtl' ? 'text-right' : 'text-left';
   const textAlignStyle = keywordDir === 'rtl' ? 'right' : 'left';
@@ -118,7 +100,6 @@ export function SearchForm({
     setKeyword('');
     setUrlError(null);
     setKeywordError(null);
-    setDetectedLanguage(null);
   };
 
   const hasInput = url.trim().length > 0 || keyword.trim().length > 0;

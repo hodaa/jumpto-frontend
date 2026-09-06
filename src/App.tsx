@@ -11,9 +11,10 @@ import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
 import { useJobPolling } from './hooks/useJobPolling';
 import type { VideoPlayerHandle } from './hooks/useYouTubePlayer';
-import type { SearchMatch } from './types';
+import type { SearchMatch, StatusResponse } from './types';
 import { csvCell } from './utils/csv';
 import { parseYouTubeId } from './utils/youtube';
+import { getCachedResults, setCachedResults } from './utils/resultsCache';
 
 const PROGRESS_DONE_DELAY_MS = 350;
 const COPY_NOTICE_MS = 2000;
@@ -45,11 +46,13 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [matches, setMatches] = useState<SearchMatch[]>([]);
   const [progress, setProgress] = useState<number | null>(null);
+  const [estimatedWait, setEstimatedWait] = useState<number | null>(null);
   const [errorText, setErrorText] = useState('');
   const [job, setJob] = useState<ActiveJob | null>(null);
   const [query, setQuery] = useState<Query>({ url: '', keyword: '' });
   const playerRef = useRef<VideoPlayerHandle | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const startedAtRef = useRef<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const [formKey, setFormKey] = useState(0);
@@ -96,6 +99,24 @@ export default function App() {
 
   const handleSubmit = useCallback(
     async (url: string, keyword: string) => {
+      const youtubeId = parseYouTubeId(url) ?? '';
+      const cached = youtubeId ? getCachedResults(youtubeId, keyword) : undefined;
+      if (cached !== undefined) {
+        // Same video + keyword was already searched this session: show the
+        // cached results immediately instead of re-submitting and re-polling.
+        startedAtRef.current = Date.now();
+        setQuery({ url, keyword });
+        setErrorText('');
+        setJob(null);
+        setMatches(cached);
+        setCopyFailed(false);
+        setCurrentPlayingTimestamp(null);
+        clearPendingTransition();
+        setProgress(100);
+        setPhase('done');
+        return;
+      }
+      startedAtRef.current = Date.now();
       setQuery({ url, keyword });
       setErrorText('');
       setJob(null);
@@ -105,11 +126,13 @@ export default function App() {
       clearPendingTransition();
       // Start the progress count the moment the button is clicked, before the
       // search request resolves, so the user sees counting immediately.
+      setEstimatedWait(null);
       setProgress(PROGRESS_INITIAL);
       setPhase('processing');
       try {
         const response = await submitSearch(url, keyword);
         if (response.status === 'found' || response.status === 'not_found') {
+          if (youtubeId) setCachedResults(youtubeId, keyword, response.results);
           setMatches(response.results);
           setProgress(100);
           setPhase('done');
@@ -128,8 +151,31 @@ export default function App() {
     [t, clearPendingTransition],
   );
 
+  const handlePollProgress = useCallback((status: StatusResponse) => {
+    const serverValue = typeof status.progress === 'number' ? status.progress : null;
+    const serverEta =
+      typeof status.estimatedTimeSeconds === 'number' ? status.estimatedTimeSeconds : null;
+    // Prefer the server-provided estimate; otherwise derive one from how
+    // long the job has been running versus its reported progress.
+    if (serverEta !== null) {
+      setEstimatedWait(serverEta);
+    } else if (serverValue !== null && serverValue > 0 && startedAtRef.current !== null) {
+      const elapsed = (Date.now() - startedAtRef.current) / 1000;
+      setEstimatedWait(Math.max(1, Math.round((elapsed * (100 - serverValue)) / serverValue)));
+    } else {
+      setEstimatedWait(null);
+    }
+    if (serverValue !== null) {
+      setProgress((current) =>
+        Math.max(current ?? PROGRESS_INITIAL, Math.min(serverValue, PROGRESS_MAX)),
+      );
+    }
+  }, []);
+
   const handlePollSuccess = useCallback(
     (value: SearchMatch[]) => {
+      const youtubeId = parseYouTubeId(query.url) ?? '';
+      if (youtubeId) setCachedResults(youtubeId, query.keyword, value);
       setProgress(100);
       clearPendingTransition();
       transitionTimerRef.current = window.setTimeout(() => {
@@ -137,7 +183,7 @@ export default function App() {
         setPhase('done');
       }, PROGRESS_DONE_DELAY_MS);
     },
-    [clearPendingTransition],
+    [query, clearPendingTransition],
   );
   const handlePollError = useCallback(
     (message: string) => {
@@ -152,6 +198,7 @@ export default function App() {
     jobId: job?.jobId ?? '',
     videoId: job?.videoId ?? '',
     keyword: query.keyword,
+    onProgress: handlePollProgress,
     onSuccess: handlePollSuccess,
     onError: handlePollError,
   });
@@ -199,6 +246,7 @@ export default function App() {
     setPhase('idle');
     setMatches([]);
     setProgress(null);
+    setEstimatedWait(null);
     setErrorText('');
     setJob(null);
     setCopied(false);
@@ -213,6 +261,7 @@ export default function App() {
     setPhase('idle');
     setMatches([]);
     setProgress(null);
+    setEstimatedWait(null);
     setErrorText('');
     setJob(null);
     setCopied(false);
@@ -224,6 +273,7 @@ export default function App() {
     clearPendingTransition();
     setPhase('idle');
     setProgress(null);
+    setEstimatedWait(null);
     setJob(null);
     setCurrentPlayingTimestamp(null);
   }, [clearPendingTransition]);
@@ -261,6 +311,7 @@ export default function App() {
             <ResultsPanel
               phase={phase}
               progress={progress}
+              estimatedSeconds={estimatedWait}
               matches={matches}
               errorText={errorText}
               keyword={query.keyword}

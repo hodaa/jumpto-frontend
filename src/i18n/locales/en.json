@@ -6,7 +6,7 @@
     "howItWorks": "How it works",
     "whyJumpto": "Why JumpTo"
   },
-"hero": {
+  "hero": {
     "title": "Jump to the exact moment a phrase is spoken",
     "subtitle": "Paste a YouTube link, enter a phrase, find the exact moment. jump there instantly."
   },
@@ -50,6 +50,7 @@
     "message": "This can take a few minutes. We will show your results as soon as the transcript is ready.",
     "searchingFor": "Searching for \"{{keyword}}\"",
     "progress": "Progress: {{progress}}%",
+    "estimatedTime": "Estimated time remaining: ~{{seconds}}s",
     "fetching": "Fetching transcript...",
     "finding": "Finding timestamps..."
   },

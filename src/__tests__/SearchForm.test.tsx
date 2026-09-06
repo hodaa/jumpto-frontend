@@ -1,8 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { SearchForm } from '../components/SearchForm';
-import * as api from '../api/client';
 
 const onSubmit = vi.fn();
 
@@ -102,30 +101,5 @@ describe('SearchForm', () => {
     expect(keyword.getAttribute('dir')).toBe('rtl');
     expect(keyword).toHaveStyle({ textAlign: 'right', direction: 'rtl' });
     expect(keyword.className).toContain('search-input--rtl');
-  });
-
-  it('auto-detects the video language from a valid YouTube URL', async () => {
-    const fetchVideoLanguage = vi.spyOn(api, 'fetchVideoLanguage').mockResolvedValue({
-      language: 'ar',
-    });
-    const user = userEvent.setup();
-    render(<SearchForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Video URL'), 'https://www.youtube.com/watch?v=abcdef12345');
-    await waitFor(() => expect(fetchVideoLanguage).toHaveBeenCalledWith('abcdef12345'));
-    const url = screen.getByLabelText('Video URL');
-    await waitFor(() => expect(url.getAttribute('dir')).toBe('rtl'));
-    fetchVideoLanguage.mockRestore();
-  });
-
-  it('keeps the keyword input LTR when language detection fails', async () => {
-    const fetchVideoLanguage = vi.spyOn(api, 'fetchVideoLanguage').mockRejectedValue(
-      new Error('not found'),
-    );
-    const user = userEvent.setup();
-    render(<SearchForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Video URL'), 'https://www.youtube.com/watch?v=abcdef12345');
-    await waitFor(() => expect(fetchVideoLanguage).toHaveBeenCalledWith('abcdef12345'));
-    expect(screen.getByLabelText('Video URL').getAttribute('dir')).toBe('ltr');
-    fetchVideoLanguage.mockRestore();
   });
 });

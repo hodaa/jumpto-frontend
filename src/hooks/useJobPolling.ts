@@ -1,15 +1,17 @@
 import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, fetchJobStatus, fetchVideoSearch } from '../api/client';
-import type { SearchMatch } from '../types';
+import type { SearchMatch, StatusResponse } from '../types';
 
-const POLL_INTERVAL_MS = 2000;
+// Poll cadence backs off as the job ages, so fast jobs update quickly while
+// long jobs (e.g. AI transcription) don't hammer the status endpoint.
+const POLL_INTERVALS_MS = [2000, 3000, 5000, 8000];
 const RETRY_DELAY_MS = 250;
 const MAX_CONSECUTIVE_FAILURES = 2;
-const POLL_MAX_DURATION_MS =
-  Number(import.meta.env.VITE_POLL_TIMEOUT_MS) || 5 * 60_000;
+const POLL_MAX_DURATION_MS = Number(import.meta.env.VITE_POLL_TIMEOUT_MS) || 5 * 60_000;
 
 interface PollCallbacks {
+  onProgress: (status: StatusResponse) => void;
   onSuccess: (matches: SearchMatch[]) => void;
   onError: (message: string) => void;
 }
@@ -25,12 +27,14 @@ export function useJobPolling({
   jobId,
   videoId,
   keyword,
+  onProgress,
   onSuccess,
   onError,
 }: PollInput): void {
   const { t } = useTranslation();
   const handle = useCallback(async (): Promise<boolean> => {
     const status = await fetchJobStatus(jobId);
+    onProgress(status);
     if (status.status === 'pending' || status.status === 'processing') {
       return true;
     }
@@ -41,13 +45,14 @@ export function useJobPolling({
     const video = await fetchVideoSearch(videoId, keyword);
     onSuccess(video.results);
     return false;
-  }, [jobId, videoId, keyword, onError, onSuccess, t]);
+  }, [jobId, videoId, keyword, onProgress, onError, onSuccess, t]);
 
   useEffect(() => {
     if (!jobId) return;
     let cancelled = false;
     let timerId: number | undefined;
     let failures = 0;
+    let pollSteps = 0;
     const startedAt = Date.now();
 
     const tick = async (): Promise<void> => {
@@ -59,7 +64,9 @@ export function useJobPolling({
         const keepPolling = await handle();
         failures = 0;
         if (keepPolling && !cancelled) {
-          timerId = window.setTimeout(() => void tick(), POLL_INTERVAL_MS);
+          pollSteps += 1;
+          const interval = POLL_INTERVALS_MS[Math.min(pollSteps - 1, POLL_INTERVALS_MS.length - 1)];
+          timerId = window.setTimeout(() => void tick(), interval);
         }
       } catch (error) {
         if (cancelled) return;

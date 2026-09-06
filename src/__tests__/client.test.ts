@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, fetchJobStatus, fetchVideoLanguage, fetchVideoSearch, submitSearch } from '../api/client';
+import { ApiError, fetchJobStatus, fetchVideoSearch, submitSearch } from '../api/client';
 
 const { postMock, getMock, createMock } = vi.hoisted(() => {
   const postMock = vi.fn();
@@ -77,13 +77,6 @@ describe('api client', () => {
     const result = await fetchJobStatus('job-1');
     expect(getMock).toHaveBeenCalledWith('/api/status/job-1');
     expect(result).toMatchObject({ status: 'processing' });
-  });
-
-  it('fetches video language', async () => {
-    getMock.mockResolvedValue({ data: { language: 'ar' } });
-    const result = await fetchVideoLanguage('vid-1');
-    expect(getMock).toHaveBeenCalledWith('/api/video/vid-1/language');
-    expect(result).toEqual({ language: 'ar' });
   });
 
   it('fetches video search results with keyword param', async () => {

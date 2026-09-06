@@ -14,6 +14,7 @@ export type Phase = 'idle' | 'processing' | 'done' | 'error';
 interface Props {
   phase: Phase;
   progress: number | null;
+  estimatedSeconds?: number | null;
   matches: SearchMatch[];
   errorText: string;
   keyword: string;
@@ -37,6 +38,7 @@ const CARD = 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 
 export function ResultsPanel({
   phase,
   progress,
+  estimatedSeconds,
   matches,
   errorText,
   keyword,
@@ -85,7 +87,11 @@ export function ResultsPanel({
   if (phase === 'processing') {
     return (
       <section className={CARD} aria-label={t('status.title')}>
-        <StatusCard progress={progress} keyword={keyword} />
+        <StatusCard
+          progress={progress}
+          keyword={keyword}
+          estimatedSeconds={estimatedSeconds ?? null}
+        />
       </section>
     );
   }

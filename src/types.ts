@@ -28,9 +28,7 @@ export interface SearchProcessingResponse {
 
 /** Union of possible POST /api/search responses. */
 export type SearchResponse =
-  | SearchFoundResponse
-  | SearchNotFoundResponse
-  | SearchProcessingResponse;
+  SearchFoundResponse | SearchNotFoundResponse | SearchProcessingResponse;
 
 /** Lifecycle states for a transcription job. */
 export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
@@ -43,11 +41,8 @@ export interface StatusResponse {
   results: SearchMatch[] | null;
   error: string | null;
   video_language: string | null;
-}
-
-/** Response shape for GET /api/video/{video_id}/language. */
-export interface VideoLanguageResponse {
-  language: string | null;
+  /** Server-provided seconds until completion; absent when the backend doesn't send it. */
+  estimatedTimeSeconds?: number | null;
 }
 
 /** Response shape for GET /api/video/{video_id}/search. */
