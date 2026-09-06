@@ -328,20 +328,6 @@ body {
   text-align: center;
 }
 
-/* ── RTL SiteHeader ── */
-[dir='rtl'] header {
-  flex-direction: row-reverse;
-}
-
-[dir='rtl'] header nav {
-  margin-left: 0;
-  margin-right: auto;
-}
-
-[dir='rtl'] header nav a {
-  text-align: right;
-}
-
 /* ── RTL Features ── */
 [dir='rtl'] .features article {
   text-align: right;
@@ -567,10 +553,10 @@ body {
   text-align: right;
 }
 
-[dir='rtl'] input::placeholder,
-[dir='rtl'] input::-webkit-input-placeholder,
-[dir='rtl'] input::-moz-placeholder,
-[dir='rtl'] input:-ms-input-placeholder {
+[dir='rtl'] input:not([dir='ltr'])::placeholder,
+[dir='rtl'] input:not([dir='ltr'])::-webkit-input-placeholder,
+[dir='rtl'] input:not([dir='ltr'])::-moz-placeholder,
+[dir='rtl'] input:not([dir='ltr']):-ms-input-placeholder {
   text-align: right !important;
 }
 
