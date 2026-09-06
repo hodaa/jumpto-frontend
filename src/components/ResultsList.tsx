@@ -159,14 +159,15 @@ export function ResultsList({
                   </p>
                 </button>
                 {youtubeId ? (
-                  <a
-                    href={`https://www.youtube.com/watch?v=${youtubeId}&t=${match.progress_seconds}s`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 self-start rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm sm:self-stretch"
-                  >
-                    Watch on YouTube
-                  </a>
+<a
+                      href={`https://www.youtube.com/watch?v=${youtubeId}&t=${match.progress_seconds}s`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={t('results.watchOnYouTube')}
+                      className="inline-flex items-center gap-1 self-start rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm sm:self-stretch"
+                    >
+                      {t('results.watchOnYouTube')}
+                    </a>
                 ) : null}
               </div>
             </li>

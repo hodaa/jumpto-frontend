@@ -32,6 +32,8 @@ describe('ResultsPanel', () => {
   it('renders matches when done', () => {
     render(<ResultsPanel {...baseProps} phase="done" />);
     expect(screen.getByText('00:05')).toBeInTheDocument();
+    const watch = screen.getByRole('link', { name: 'Watch on YouTube' });
+    expect(watch).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abcdef12345&t=5s');
   });
 
   it('renders the keyword inside the title without leaking [object Object]', () => {

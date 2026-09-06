@@ -56,7 +56,16 @@ describe('ResultsList', () => {
     render(<ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} />);
     const playIcons = screen.getAllByText('▶');
     expect(playIcons).toHaveLength(2);
-    expect(screen.queryByText('Watch on YouTube')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Watch on YouTube' })).not.toBeInTheDocument();
+  });
+
+  it('opens each match on YouTube at its timestamp when a video id is known', () => {
+    render(<ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />);
+    const watch = screen.getAllByRole('link', { name: 'Watch on YouTube' });
+    expect(watch).toHaveLength(2);
+    expect(watch[0]).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc123&t=3s');
+    expect(watch[0]).toHaveAttribute('target', '_blank');
+    expect(watch[1]).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc123&t=75s');
   });
 
   it('caps the visible matches and reveals more on demand', async () => {

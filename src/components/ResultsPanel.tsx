@@ -132,6 +132,7 @@ export function ResultsPanel({
             onClear={onClear}
             matchLimit={matchLimit}
             currentPlayingTimestamp={currentPlayingTimestamp}
+            youtubeId={youtubeId}
           />
         </div>
       </section>
