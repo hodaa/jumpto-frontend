@@ -63,10 +63,10 @@ export function SearchForm({
         text-align: left !important;
         direction: ltr;
       }
-      [dir='rtl'] input::placeholder,
-      [dir='rtl'] input::-webkit-input-placeholder,
-      [dir='rtl'] input::-moz-placeholder,
-      [dir='rtl'] input:-ms-input-placeholder {
+      [dir='rtl'] input:not([dir='ltr'])::placeholder,
+      [dir='rtl'] input:not([dir='ltr'])::-webkit-input-placeholder,
+      [dir='rtl'] input:not([dir='ltr'])::-moz-placeholder,
+      [dir='rtl'] input:not([dir='ltr']):-ms-input-placeholder {
         text-align: right !important;
       }
     `;
@@ -104,7 +104,8 @@ export function SearchForm({
 
   const hasInput = url.trim().length > 0 || keyword.trim().length > 0;
 
-  const inputClass = `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 ${inputAlign} text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
+  const inputClass =
+    'w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30';
 
   return (
     <form
@@ -125,14 +126,14 @@ export function SearchForm({
           <input
             id="url"
             type="url"
-            dir={keywordDir}
+            dir="ltr"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             placeholder={t('form.urlPlaceholder')}
             aria-describedby={urlError ? 'url-error' : undefined}
             aria-invalid={urlError ? true : undefined}
-            className={`${inputClass} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
-            style={{ textAlign: textAlignStyle, direction: keywordDir }}
+            className={`${inputClass} search-input--ltr text-left placeholder:text-left`}
+            style={{ textAlign: 'left', direction: 'ltr' }}
           />
         </div>
         {urlError ? (
@@ -165,7 +166,7 @@ export function SearchForm({
             placeholder={t('form.keywordPlaceholder')}
             aria-describedby={keywordError ? 'keyword-error' : undefined}
             aria-invalid={keywordError ? true : undefined}
-            className={`${inputClass} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
+            className={`${inputClass} ${inputAlign} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
             style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
         </div>

@@ -45,6 +45,8 @@ The largest risks are not visual polish; they are **mobile header fit, RTL handl
 
 #### 2. The URL field incorrectly switches to RTL
 
+**Status:** Resolved on `arena/01a07895-jumpto-frontend`: the URL field and its placeholder remain explicitly LTR and left-aligned, while direction switching is limited to the phrase field.
+
 **Evidence:** The URL input uses `dir={keywordDir}` and the keyword’s alignment styles (`src/components/SearchForm.tsx:39-44, 125-136`). In Arabic UI—or whenever the phrase contains Arabic—the URL is right-aligned and RTL.
 
 **User impact:** URLs are intrinsically LTR. Reversing their visual flow makes editing, caret movement, error spotting, and pasting harder, especially with query parameters.
