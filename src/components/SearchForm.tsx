@@ -166,7 +166,7 @@ export function SearchForm({
         <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="url">
           {t('form.urlLabel')}
         </label>
-        <div className="relative" dir="ltr">
+        <div className="relative" dir={keywordDir}>
           <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400">
             <IconVideo size={18} />
           </span>
@@ -174,14 +174,14 @@ export function SearchForm({
             id="url"
             ref={urlRef}
             type="url"
-            dir="ltr"
+            dir={keywordDir}
             value={url}
             onChange={handleUrlChange}
             placeholder={t('form.urlPlaceholder')}
             aria-describedby={urlError ? 'url-error' : undefined}
             aria-invalid={urlError ? true : undefined}
-            className={`${inputClass} ${fieldStateClass(urlError !== null)} search-input--ltr text-left placeholder:text-left`}
-            style={{ textAlign: 'left', direction: 'ltr' }}
+            className={`${inputClass} ${fieldStateClass(keywordError !== null)} ${keywordDir === 'rtl' ? 'search-input--rtl text-right placeholder:text-right' : 'search-input--ltr text-left placeholder:text-left'}`}
+  
           />
           {urlError ? (
             <span
