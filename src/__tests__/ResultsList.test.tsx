@@ -85,7 +85,7 @@ describe('ResultsList', () => {
 
   it('shows an empty state when there are no matches', () => {
     render(<ResultsList matches={[]} keyword="zzz" onSeek={vi.fn()} />);
-    expect(screen.getByText('No exact matches found. Try a different phrase.')).toBeInTheDocument();
+    expect(screen.getByText('No exact matches found. Try a different word or phrase.')).toBeInTheDocument();
   });
 });
 

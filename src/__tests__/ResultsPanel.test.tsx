@@ -24,8 +24,8 @@ const baseProps = {
 describe('ResultsPanel', () => {
   it('renders the status stepper while processing', () => {
     render(<ResultsPanel {...baseProps} phase="processing" />);
-    expect(screen.getByText('Fetching transcript...')).toBeInTheDocument();
-    expect(screen.getByText('Finding timestamps...')).toBeInTheDocument();
+    expect(screen.getByText('Fetching transcript…')).toBeInTheDocument();
+    expect(screen.getByText('Finding timestamps…')).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
   });
 
@@ -38,7 +38,7 @@ describe('ResultsPanel', () => {
 
   it('renders the keyword inside the title without leaking [object Object]', () => {
     render(<ResultsPanel {...baseProps} phase="done" />);
-    expect(screen.getByRole('heading', { name: 'Matches for "hello"' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Matches for “hello”' })).toBeInTheDocument();
     expect(screen.queryByText(/object Object/)).not.toBeInTheDocument();
   });
 

@@ -32,7 +32,14 @@ interface Props {
   currentPlayingTimestamp?: number | null;
 }
 
-const CARD = 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 h-full';
+// Idle panel: softer border, subtle background tint, no shadow — intentionally
+// de-emphasized so the form carries visual weight before a search starts.
+const CARD_IDLE =
+  'rounded-2xl border border-slate-100 bg-slate-50/60 p-6 shadow-none sm:p-8 h-full transition-all duration-300';
+// Active panel (processing/done/error): crisp white surface, full border and
+// elevated shadow to draw the eye to results/status.
+const CARD_ACTIVE =
+  'rounded-2xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8 h-full transition-all duration-300';
 
 /** Right-column white card that shows all phases of a search. */
 export function ResultsPanel({
@@ -67,18 +74,18 @@ export function ResultsPanel({
   if (phase === 'idle') {
     return (
       <section
-        className={`${CARD} flex items-center justify-center min-h-[300px]`}
+        className={`${CARD_IDLE} flex items-center justify-center min-h-[300px]`}
         aria-label={t('results.idleTitle')}
       >
         <div className="flex flex-col items-center justify-center gap-3 text-center">
           <span
             aria-hidden="true"
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-500"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-200/70 text-slate-400"
           >
             <IconTarget size={26} />
           </span>
-          <p className="text-lg font-bold text-[#01124e]">{t('results.idleTitle')}</p>
-          <p className="-mt-1 max-w-md text-sm text-slate-500">{t('results.idle')}</p>
+          <p className="text-lg font-bold text-slate-500">{t('results.idleTitle')}</p>
+          <p className="-mt-1 max-w-md text-sm text-slate-400">{t('results.idle')}</p>
         </div>
       </section>
     );
@@ -86,7 +93,7 @@ export function ResultsPanel({
 
   if (phase === 'processing') {
     return (
-      <section className={CARD} aria-label={t('status.title')}>
+      <section className={`${CARD_ACTIVE} animate-fade-in`} aria-label={t('status.title')}>
         <StatusCard
           progress={progress}
           keyword={keyword}
@@ -98,12 +105,12 @@ export function ResultsPanel({
 
   if (phase === 'done') {
     return (
-      <section className={CARD} aria-label={t('results.title', { keyword })}>
+      <section className={`${CARD_ACTIVE} animate-fade-in`} aria-label={t('results.title', { keyword })}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <h2
             ref={headingRef}
             tabIndex={-1}
-            className="text-lg font-bold text-[#01124e] focus:outline-none min-w-0 rtl:text-right"
+            className="text-lg font-bold text-brand focus:outline-none min-w-0 rtl:text-right"
             dir="auto"
           >
             <Trans
@@ -140,7 +147,7 @@ export function ResultsPanel({
   }
 
   return (
-    <section className={CARD} role="alert">
+    <section className={`${CARD_ACTIVE} animate-fade-in`} role="alert">
       <ErrorView message={errorText} onRetry={onRetry} />
     </section>
   );

@@ -21,10 +21,10 @@ export function Features() {
               key={item.title}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-accent/10 to-[#000520]/10 text-accent group-hover:from-accent/20 group-hover:to-[#000520]/20 transition-all duration-300 group-hover:scale-110">
+              <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-accent/10 to-brand/10 text-accent group-hover:from-accent/20 group-hover:to-brand/20 transition-all duration-300 group-hover:scale-110">
                 {item.icon}
               </span>
-              <h3 className="text-base font-bold text-[#01124e]">{item.title}</h3>
+              <h3 className="text-base font-bold text-brand">{item.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.desc}</p>
             </article>
           ))}
