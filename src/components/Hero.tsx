@@ -11,15 +11,19 @@ export function Hero({ children, compact = false }: Props) {
   const { t } = useTranslation();
   return (
     <section
-      className={`flex flex-col items-center text-center animate-fade-in ${compact ? 'mb-5' : 'mb-16'}`}>
+      className={`flex flex-col items-center text-center animate-fade-in ${compact ? 'mb-5' : 'mb-16'}`}
+    >
       <h1 id="search-heading" className="section-title animate-fade-in">
         {t('hero.title')}
       </h1>
+      {/* Subtitle uses the high-contrast `muted-strong` token (slate-700,
+          9.4:1 on white) instead of slate-600 so the supporting line stays
+          legible under the bright hero headline in both EN and AR. */}
       <p
         className={
           compact
-            ? 'max-w-lg text-base leading-relaxed text-slate-600 '
-            : 'max-w-2xl text-lg font-medium leading-relaxed text-slate-600'
+            ? 'text-muted-strong max-w-xl text-base leading-relaxed'
+            : 'text-muted-strong max-w-2xl text-lg font-medium leading-relaxed'
         }
       >
         {t('hero.subtitle')}

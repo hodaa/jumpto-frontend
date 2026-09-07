@@ -18,6 +18,12 @@
   --color-accent: #ea580c;           /* orange-600 — brand accent (adjusted from #fe5d01) */
   --color-accent-strong: #c2410c;    /* orange-700 for hover */
   --color-primary: var(--color-action); /* alias used by existing .bg-primary utilities */
+
+  /* Supporting text tones. Declared inside `@theme` (not just `:root`) so
+     Tailwind actually generates `text-muted` / `text-muted-strong` for use in
+     JSX; both are AA-compliant on white and on slate-50 surfaces. */
+  --color-muted: #475569;            /* slate-600 — 7.1:1 on white */
+  --color-muted-strong: #334155;     /* slate-700 — 9.4:1 on white */
 }
 
 :root {
@@ -27,8 +33,7 @@
   --color-border: #e2e8f0; /* slate-200               */
   --color-border-hover: #cbd5e1; /* slate-300               */
   --color-text: #0f172a; /* slate-900  — 15.9:1 on white */
-  --color-muted: #475569; /* slate-600  — 7.1:1 on white */
-  --color-muted-strong: #334155; /* slate-700  — 9.4:1 on white */
+  /* --color-muted / --color-muted-strong come from @theme (single source of truth). */
   --color-gradient: linear-gradient(135deg, var(--color-action) 0%, var(--color-brand) 100%);
   --color-placeholder: #94a3b8; /* slate-400 */
   --radius-sm: 10px;
