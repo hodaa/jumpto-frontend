@@ -29,6 +29,25 @@ describe('ResultsPanel', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
   });
 
+  it('replaces the bare idle box with a labelled mock preview of the results', () => {
+    const { container } = render(<ResultsPanel {...baseProps} phase="idle" />);
+    expect(screen.getByText('Ready to find your moment')).toBeInTheDocument();
+    expect(screen.getByText('Your matches will appear here after you search.')).toBeInTheDocument();
+
+    // Preview: a faux player frame plus timestamped skeleton rows.
+    expect(container.querySelector('.aspect-video')).toBeInTheDocument();
+    expect(screen.getAllByText('04:12').length).toBeGreaterThanOrEqual(2);
+    expect(container.querySelectorAll('li')).toHaveLength(3);
+    // A visible caption keeps the fake rows from being read as real results.
+    expect(
+      screen.getByText('Illustrative preview of what a search returns'),
+    ).toBeInTheDocument();
+
+    // The mock is decorative: it must not be announced by assistive tech.
+    const mock = screen.getAllByText('04:12')[0].closest('[aria-hidden="true"]');
+    expect(mock).toBeInTheDocument();
+  });
+
   it('renders matches when done', () => {
     render(<ResultsPanel {...baseProps} phase="done" />);
     expect(screen.getByText('00:05')).toBeInTheDocument();

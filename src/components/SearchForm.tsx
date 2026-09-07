@@ -63,6 +63,17 @@ function validateKeyword(value: string): KeywordError | null {
 const inputBase =
   'w-full rounded-lg border px-4 py-2.5 ps-10 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2';
 
+/**
+ * Quiet "ghost" action shown inside a field's trailing rail (the clear × and
+ * the paste button). Deliberately borderless, flat and low-contrast so it can
+ * never be mistaken for the primary submit CTA.
+ */
+const RAIL_ICON_BUTTON =
+  'pointer-events-auto inline-flex h-8 w-8 items-center justify-center text-slate-500 transition-colors duration-200 hover:bg-slate-200/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40 disabled:hover:bg-transparent';
+
+/** Short bullet keys shown under the CTA; the long form goes in the popover. */
+const HELPER_BULLETS = ['form.helperAccepted', 'form.helperSpeed', 'form.helperPrivacy'] as const;
+
 function withTrailingPad(pe: string, extra = ''): string {
   return `${inputBase} ${pe} ${extra}`;
 }
@@ -122,7 +133,13 @@ function PasteFallbackNotice() {
  * Clipboard Paste has a persistent failure state with manual fallback: if the
  * Clipboard API is unavailable or denied, we leave a clear actionable notice
  * up, select the URL input contents, and let the user paste manually with
- * Ctrl/Cmd+V. Nothing is cleared automatically.
+ * Ctrl/Cmd+V. Nothing is cleared automatically. The Paste affordance itself is
+ * a quiet in-field icon button — flat, borderless, secondary colour — so it
+ * never competes with the primary submit CTA.
+ *
+ * The accepted-sources / timing / privacy microcopy is condensed into three
+ * scannable bullets; the full explanation sits behind a "Privacy & how it
+ * works" popover (Escape or an outside click dismisses it).
  */
 export function SearchForm({
   onSubmit,
@@ -141,6 +158,34 @@ export function SearchForm({
   const [pasteFailed, setPasteFailed] = useState(false);
   const urlRef = useRef<HTMLInputElement>(null);
   const keywordRef = useRef<HTMLInputElement>(null);
+  // Disclosure for the detailed privacy/how-it-works copy kept out of the
+  // reading flow: a small popover anchored to a quiet text trigger.
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detailsRef = useRef<HTMLDivElement | null>(null);
+  const detailsTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!detailsOpen) return;
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!detailsRef.current?.contains(event.target as Node)) {
+        setDetailsOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setDetailsOpen(false);
+        detailsTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [detailsOpen]);
 
   // Clipboard API is available only in secure contexts (HTTPS / localhost) and
   // when granted permission; otherwise we fall back to selecting the URL field
@@ -282,14 +327,15 @@ export function SearchForm({
   const hasInput = hasUrl || hasKeyword;
 
   // Trailing-area sizing is computed from which controls are visible:
-  //   URL: Paste (~64px) + optional × (~28px) + optional error (~24px), gaps 6px
-  //     → 3 items (× + error + Paste on invalid+hasInput): pe-52
-  //     → 2 items (Paste + ×): pe-40 ; (Paste + error on invalid empty): pe-40
-  //     → 1 item (Paste only): pe-24
-  //   Keyword: optional × (~28px) + optional error (~24px), gap 6px
-  const urlTrailing =
-    urlError && hasUrl ? 'pe-52' : urlError || hasUrl ? 'pe-40' : 'pe-24';
-  const keywordTrailing = keywordError && hasKeyword ? 'pe-24' : keywordError ? 'pe-20' : hasKeyword ? 'pe-10' : 'pe-4';
+  //   URL: Paste (32px) + optional × (24px) + optional error (24px), 6px gaps,
+  //   plus the 8px end offset:
+  //     → 3 items (Paste + × + error): 8 + 32 + 6 + 24 + 6 + 24 = 100 → pe-26
+  //     → 2 items (Paste + × / Paste + error): 8 + 32 + 6 + 24 = 70 → pe-18
+  //     → 1 item (Paste only): 8 + 32 = 40 → pe-10
+  //   Keyword: optional × (32px) + optional error (24px), gap 6px, end 8px
+  const urlTrailing = urlError && hasUrl ? 'pe-26' : urlError || hasUrl ? 'pe-18' : 'pe-10';
+  const keywordTrailing =
+    keywordError && hasKeyword ? 'pe-18' : keywordError ? 'pe-8' : hasKeyword ? 'pe-10' : 'pe-4';
 
   return (
     <form
@@ -302,34 +348,33 @@ export function SearchForm({
         <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="url">
           {t('form.urlLabel')}
         </label>
-        <div className="relative" dir={keywordDir}>
-          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400">
+        {/* URLs are intrinsically LTR: the field never follows the phrase's
+            direction, so caret movement and editing stay predictable. */}
+        <div className="relative" dir="ltr">
+          <span className="pointer-events-none absolute start-3 top-1/2 flex w-8 -translate-y-1/2 items-center justify-center text-slate-400">
             <IconVideo size={18} />
           </span>
           <input
             id="url"
             ref={urlRef}
             type="url"
-            dir={keywordDir}
+            dir="ltr"
             value={url}
             onChange={handleUrlChange}
             placeholder={t('form.urlPlaceholder')}
-            aria-describedby={
-              urlError ? 'url-error' : pasteFailed ? 'url-paste-notice' : undefined
-            }
+            aria-describedby={urlError ? 'url-error' : pasteFailed ? 'url-paste-notice' : undefined}
             aria-invalid={urlError ? true : undefined}
             className={`${withTrailingPad(
               urlTrailing,
-              keywordDir === 'rtl'
-                ? 'search-input--rtl text-right placeholder:text-right'
-                : 'search-input--ltr text-left placeholder:text-left',
+              'search-input--ltr text-left placeholder:text-left',
             )} ${fieldStateClass(urlError !== null)}`}
-          style={{ textAlign: textAlignStyle, direction: keywordDir }}
+            style={{ textAlign: 'left', direction: 'ltr' }}
           />
 
           {/* Trailing controls: × clear → error icon → Paste, in a fixed flex
-              rail at end-2 so they never overlap. Order matches LTR visual. */}
-          <span className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              rail at end-2 so they never overlap. Both actions share the same
+              flat ghost chrome so neither reads as a submit button. */}
+          <span className="pointer-events-none absolute end-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
             {/* Per-field clear (×) — only when URL has text. */}
             {hasUrl && !disabled ? (
               <button
@@ -337,7 +382,7 @@ export function SearchForm({
                 onClick={handleClearUrl}
                 aria-label={t('form.clearUrl')}
                 title={t('form.clearUrl')}
-                className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                className={`${RAIL_ICON_BUTTON} rounded-full`}
               >
                 <IconX size={14} />
               </button>
@@ -355,11 +400,11 @@ export function SearchForm({
               onClick={() => void handlePaste()}
               disabled={disabled}
               title={t('form.pasteTooltip')}
-              aria-label={t('form.pasteTooltip')}
-              className="pointer-events-auto inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:border-action/40 hover:text-action hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50"
+              aria-label={t('form.paste')}
+              aria-keyshortcuts="Control+V Meta+V"
+              className={`${RAIL_ICON_BUTTON} rounded-lg`}
             >
-              <IconClipboard size={14} />
-              <span>{t('form.paste')}</span>
+              <IconClipboard size={16} />
             </button>
           </span>
         </div>
@@ -373,9 +418,7 @@ export function SearchForm({
             {t(URL_ERROR_KEY[urlError])}
           </p>
         ) : null}
-        {pasteFailed && !urlError ? (
-          <PasteFallbackNotice />
-        ) : null}
+        {pasteFailed && !urlError ? <PasteFallbackNotice /> : null}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -405,14 +448,14 @@ export function SearchForm({
             style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
           {/* Trailing controls for keyword: × → error icon */}
-          <span className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+          <span className="pointer-events-none absolute end-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
             {hasKeyword && !disabled ? (
               <button
                 type="button"
                 onClick={handleClearKeyword}
                 aria-label={t('form.clearKeywordField')}
                 title={t('form.clearKeywordField')}
-                className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                className={`${RAIL_ICON_BUTTON} rounded-full`}
               >
                 <IconX size={14} />
               </button>
@@ -481,13 +524,46 @@ export function SearchForm({
         ) : null}
       </div>
 
-      {/* Helper disclosure: accepted sources + expected wait + privacy */}
-      <p className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-relaxed text-muted rtl:text-right">
-        <span className="mt-0.5 shrink-0 text-slate-400" aria-hidden="true">
-          <IconInfo size={14} />
-        </span>
-        <span>{t('form.helperLine')}</span>
-      </p>
+      {/* Helper block: three scannable bullets replace the long paragraph; the
+          detailed privacy/how-it-works copy lives in a click-through popover
+          so the form itself stays quiet. */}
+      <div className="flex items-start justify-between gap-x-3 rounded-lg border border-slate-200/80 bg-slate-50 px-3.5 py-3">
+        <ul className="flex flex-col gap-1.5 text-xs leading-relaxed text-muted-strong">
+          {HELPER_BULLETS.map((key) => (
+            <li key={key} className="flex items-start gap-2">
+              <span
+                aria-hidden="true"
+                className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+              />
+              <span className="text-start">{t(key)}</span>
+            </li>
+          ))}
+        </ul>
+        <div ref={detailsRef} className="relative shrink-0">
+          <button
+            type="button"
+            ref={detailsTriggerRef}
+            onClick={() => setDetailsOpen((value) => !value)}
+            aria-expanded={detailsOpen}
+            aria-controls="form-helper-details"
+            className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-semibold text-muted-strong transition-colors duration-200 hover:text-action-hover hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            <IconInfo size={14} />
+            {t('form.helperDetailsTrigger')}
+          </button>
+          {detailsOpen ? (
+            <div
+              id="form-helper-details"
+              className="animate-fade-in absolute bottom-full end-0 z-20 mb-2 w-[min(20rem,calc(100vw-3rem))] rounded-xl border border-slate-200 bg-white p-3 text-start text-xs leading-relaxed text-muted-strong shadow-lg"
+              role="group"
+              aria-label={t('form.helperDetailsTitle')}
+            >
+              <p className="mb-1 text-xs font-bold text-brand">{t('form.helperDetailsTitle')}</p>
+              <p className="m-0 rtl:text-right">{t('form.helperDetails')}</p>
+            </div>
+          ) : null}
+        </div>
+      </div>
     </form>
   );
 }

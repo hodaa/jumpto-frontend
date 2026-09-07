@@ -35,7 +35,7 @@ The largest risks are not visual polish; they are **mobile header fit, RTL handl
 
 #### 1. The header is likely to overflow or become crowded on narrow screens
 
-**Status:** Resolved on `arena/01a07895-jumpto-frontend`: the logo and language control remain on the first row, while marketing links move to a dedicated second row below 640 px.
+**Status:** Resolved on `arena/01a07895-jumpto-frontend` and balanced further on `arena/01a07b63-jumpto-frontend`: the logo and language control remain on the first row, while marketing links move to a dedicated second row below 640 px. From `sm` up the bar is now a `1fr auto 1fr` grid instead of `justify-between` + `ms-auto`, which pooled every leftover pixel into a single void between the logo and the links — the nav owns the centre track with equal air on both sides, mirrored correctly under `rtl`.
 
 **Evidence:** `src/components/SiteHeader.tsx:19-37` keeps a 100 px logo, two navigation links, gaps, and a padded language control in one non-wrapping flex row. The mobile content width is only about 288 px on a 320 px viewport (`src/index.css:253-256`). Arabic labels are longer and increase the risk.
 
@@ -45,7 +45,7 @@ The largest risks are not visual polish; they are **mobile header fit, RTL handl
 
 #### 2. The URL field incorrectly switches to RTL
 
-**Status:** Resolved on `arena/01a07895-jumpto-frontend`: the URL field and its placeholder remain explicitly LTR and left-aligned, while direction switching is limited to the phrase field.
+**Status:** Resolved on `arena/01a07895-jumpto-frontend`; that fix had regressed on `main` (the URL input still read `dir={keywordDir}` and its pinning test failed), so it was re-landed on `arena/01a07b63-jumpto-frontend`: the URL field, its placeholder and its trailing control rail are explicitly LTR, and direction switching is limited to the phrase field.
 
 **Evidence:** The URL input uses `dir={keywordDir}` and the keyword’s alignment styles (`src/components/SearchForm.tsx:39-44, 125-136`). In Arabic UI—or whenever the phrase contains Arabic—the URL is right-aligned and RTL.
 
@@ -79,6 +79,8 @@ The largest risks are not visual polish; they are **mobile header fit, RTL handl
 
 #### 6. The pre-search visual hierarchy gives the empty results panel more weight than the task
 
+**Status:** Partially resolved on `arena/01a07b63-jumpto-frontend`: the idle panel keeps its de-emphasized treatment (soft border, no shadow) and now shows a small, width-capped preview mockup instead of a bare box; the desktop split still favours the form while idle.
+
 **Evidence:** Desktop columns are approximately 41% form / 59% results (`src/App.tsx:322`), while the form has the main interaction and the larger panel is only an idle placeholder.
 
 **User impact:** The eye is pulled toward an inactive surface. The long URL field gets less horizontal room than the blank destination panel.
@@ -96,6 +98,8 @@ The largest risks are not visual polish; they are **mobile header fit, RTL handl
 **Recommendation:** Use “YouTube URL” consistently. Replace “Any Video URL” with “Any public YouTube video.” Add concise helper text covering accepted YouTube formats and any limitations (private, age-restricted, live, or missing-caption videos).
 
 #### 8. The form misses low-effort speed and reassurance affordances
+
+**Status:** Resolved on `arena/01a07b63-jumpto-frontend`: the Paste action is a quiet in-field ghost icon button (no fill, border or shadow, so it cannot be mistaken for the submit CTA) with `aria-label`, tooltip and `aria-keyshortcuts`; the long disclaimer is now three scannable bullets, with the detailed privacy/timing copy behind a dismissible “Privacy & how it works” popover.
 
 **Observation:** Pasting is the dominant URL action, but there is no paste button. There is also no note about whether links/search terms are stored or how long transcription can take before submission.
 
@@ -136,6 +140,8 @@ The largest risks are not visual polish; they are **mobile header fit, RTL handl
 ### P3 — Polish
 
 #### 13. Brand color roles are inconsistent
+
+**Status:** Partly addressed on `arena/01a07b63-jumpto-frontend`: the hero subtitle now uses `text-muted-strong` (slate-700, 9.4:1) instead of `text-slate-600`, and `--color-muted`/`--color-muted-strong` moved into `@theme` so `text-muted*` actually generates utilities (they were silently dead before).
 
 **Evidence:** `primary` is dark navy (`src/index.css:3-5`), while the main CTA and title accent use separate hard-coded cyan values. Progress, links, highlights, and CTA therefore use different interpretations of “primary.”
 

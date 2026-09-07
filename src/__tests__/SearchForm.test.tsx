@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { setLanguage } from '../i18n';
@@ -199,5 +199,74 @@ describe('SearchForm', () => {
     });
     expect(screen.getByText('يرجى إدخال رابط يوتيوب.')).toBeInTheDocument();
     expect(screen.queryByText('Please enter a YouTube URL.')).not.toBeInTheDocument();
+  });
+
+  it('renders Paste as a quiet in-field icon action, never a primary button', () => {
+    render(<SearchForm onSubmit={onSubmit} />);
+    const paste = screen.getByRole('button', { name: 'Paste' });
+    expect(paste).toBeInTheDocument();
+    // Icon-only: no visible label, and none of the primary CTA's fill/shadow.
+    expect(paste.querySelector('svg')).toBeInTheDocument();
+    expect(paste.textContent).toBe('');
+    expect(paste.className).not.toContain('bg-action');
+    expect(paste.className).not.toContain('shadow');
+    expect(paste.className).not.toContain('border-');
+    // Kept discoverable for AT + mouse users.
+    expect(paste).toHaveAttribute('title', 'Paste YouTube URL from clipboard');
+    expect(paste).toHaveAttribute('aria-keyshortcuts', 'Control+V Meta+V');
+  });
+
+  it('condenses the helper microcopy into bullets with the detail behind a popover', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+
+    const bullets = screen.getByRole('list');
+    expect(within(bullets).getAllByRole('listitem')).toHaveLength(3);
+    expect(screen.getByText('Accepts YouTube links (youtube.com / youtu.be).')).toBeInTheDocument();
+    expect(screen.getByText('Seconds if already transcribed — otherwise a few minutes.')).toBeInTheDocument();
+    expect(screen.getByText('Nothing is stored beyond the session cache.')).toBeInTheDocument();
+    // The long paragraph no longer sits in the reading flow.
+    expect(screen.queryByText(/Transcripts are kept only in the session cache/)).not.toBeInTheDocument();
+
+    const trigger = screen.getByRole('button', { name: 'Privacy & how it works' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      screen.getByText(/Transcripts are kept only in the session cache/),
+    ).toBeInTheDocument();
+  });
+
+  it('closes the helper popover on Escape and on an outside click', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    const trigger = screen.getByRole('button', { name: 'Privacy & how it works' });
+
+    await user.click(trigger);
+    expect(screen.getByText(/Transcripts are kept only in the session cache/)).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByText(/Transcripts are kept only in the session cache/)).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+
+    await user.click(trigger);
+    await user.click(document.body);
+    expect(screen.queryByText(/Transcripts are kept only in the session cache/)).not.toBeInTheDocument();
+  });
+
+  it('translates the helper bullets and the popover trigger with the UI language', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.click(screen.getByRole('button', { name: 'Privacy & how it works' }));
+    expect(screen.getByText('Accepts YouTube links (youtube.com / youtu.be).')).toBeInTheDocument();
+
+    await act(async () => {
+      setLanguage('ar');
+    });
+    expect(screen.getByRole('button', { name: 'الخصوصية وطريقة العمل' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByText('لا يُخزَّن شيء بعد انتهاء جلسة المتصفح.')).toBeInTheDocument();
+    expect(screen.queryByText('Accepts YouTube links (youtube.com / youtu.be).')).not.toBeInTheDocument();
   });
 });
