@@ -11,7 +11,13 @@ function Logo() {
       href="/"
       aria-label="قفزه home"
     >
-      <img className="h-12 w-auto object-contain" src="/logo.svg" alt="قفزه" width="72" height="48" />
+      <img
+        className="h-12 w-auto object-contain"
+        src="/logo.svg"
+        alt="قفزه"
+        width="124"
+        height="48"
+      />
     </a>
   );
 }
