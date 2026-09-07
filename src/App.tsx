@@ -309,12 +309,14 @@ export default function App() {
 
   const searching = phase === 'processing';
   const showMarketing = phase === 'idle';
-  // Layout is state-dependent: equal columns (slight form bias) while idle;
-  // once processing/done we widen the results column to give it emphasis.
+  // Layout is state-dependent. While idle the form is the hero: it takes the
+  // wider track and the placeholder preview sits in a narrower, de-emphasized
+  // "empty state" column beside it. Once processing/done we flip the emphasis
+  // and widen the results column so the output carries the weight.
   const resultsActive = phase === 'processing' || phase === 'done' || phase === 'error';
   const gridCols = resultsActive
     ? 'lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]'
-    : 'lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]';
+    : 'lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.85fr)]';
 
   return (
     <div className="app">

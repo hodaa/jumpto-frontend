@@ -35,7 +35,7 @@ export function SiteHeader() {
     <header className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-slate-200 pb-3 sm:mb-8 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-y-0 sm:pb-4">
       <Logo />
       <nav
-        className="order-3 flex w-full items-center justify-center gap-x-6 border-t border-slate-100 pt-3 sm:order-2 sm:w-auto sm:border-0 sm:pt-0"
+        className="order-3 flex w-full items-center justify-center gap-x-8 border-t border-slate-100 pt-3 sm:order-2 sm:w-auto sm:gap-x-6 sm:border-0 sm:pt-0"
         aria-label="Primary"
       >
         <a className={NAV_LINK} href="#how-it-works">
@@ -45,7 +45,7 @@ export function SiteHeader() {
           {t('nav.whyJumpto')}
         </a>
       </nav>
-      <div className="order-2 flex flex-1 justify-end sm:order-3">
+      <div className="order-2 flex flex-1 items-center justify-end sm:order-3 sm:flex-none sm:justify-self-end">
         <LanguageToggle />
       </div>
     </header>
