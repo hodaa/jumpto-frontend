@@ -84,8 +84,8 @@ export function ResultsPanel({
           >
             <IconTarget size={26} />
           </span>
-          <p className="text-lg font-bold text-slate-500">{t('results.idleTitle')}</p>
-          <p className="-mt-1 max-w-md text-sm text-slate-400">{t('results.idle')}</p>
+          <p className="text-lg font-bold text-muted-strong">{t('results.idleTitle')}</p>
+          <p className="-mt-1 max-w-md text-sm text-muted">{t('results.idle')}</p>
         </div>
       </section>
     );

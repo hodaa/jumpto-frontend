@@ -13,7 +13,7 @@
   --color-success-soft: #d1fae5;     /* emerald-100 background tint */
   --color-danger: #be123c;           /* rose-600 adjusted — 5.9:1 on white */
   --color-danger-soft: #fff1f2;      /* rose-50 background tint */
-  --color-warning: #b45309;          /* amber-700 — 6.2:1 on white */
+  --color-warning: #92400e;          /* amber-800 — 6.9:1 on white, 7.7:1 on warning-soft */
   --color-warning-soft: #fef3c7;     /* amber-100 background tint */
   --color-accent: #ea580c;           /* orange-600 — brand accent (adjusted from #fe5d01) */
   --color-accent-strong: #c2410c;    /* orange-700 for hover */
