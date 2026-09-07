@@ -18,8 +18,8 @@ export function Hero({ children, compact = false }: Props) {
       <p
         className={
           compact
-            ? 'mt-3 max-w-lg text-base leading-relaxed text-slate-600 '
-            : 'mt-4 max-w-2xl text-lg font-medium leading-relaxed text-slate-600'
+            ? 'max-w-lg text-base leading-relaxed text-slate-600 '
+            : 'max-w-2xl text-lg font-medium leading-relaxed text-slate-600'
         }
       >
         {t('hero.subtitle')}
