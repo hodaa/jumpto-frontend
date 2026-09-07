@@ -1,17 +1,17 @@
 {
   "app": {
-    "title": "JumpTo"
+    "title": "قفزه"
   },
   "nav": {
-    "howItWorks": "How it works",
-    "whyJumpto": "Why JumpTo"
+    "howItWorks": "How it works?",
+    "whyJumpto": "Why قفزه?"
   },
   "hero": {
     "title": "Jump to the exact moment a phrase is spoken",
     "subtitle": "Paste a video link, enter a word or phrase, and jump straight to every matching moment."
   },
   "features": {
-    "title": "Why JumpTo",
+    "title": "Why قفزه",
     "exactTitle": "Exact phrase matching",
     "exactDesc": "We search the full transcript word by word, so you only get timestamps where the exact phrase appears — no fuzzy matches.",
     "fastTitle": "Instant on repeat searches",
@@ -30,8 +30,8 @@
     "stepLabel": "Step {{n}}"
   },
   "footer": {
-    "note": "JumpTo — Find the moments that matter",
-    "rights": "© {{year}} JumpTo. All rights reserved."
+    "note": "قفزه — Find the moments that matter",
+    "rights": "© {{year}} قفزه. All rights reserved."
   },
   "form": {
     "title": "Search a YouTube video for a word or phrase",
@@ -49,7 +49,7 @@
     "helperPrivacy": "Nothing is stored beyond the session cache.",
     "helperDetailsTrigger": "Privacy & how it works",
     "helperDetailsTitle": "Data & timing",
-    "helperDetails": "JumpTo sends the link and phrase to our server to fetch the transcript and match it word for word. Transcripts are kept only in the session cache so repeat searches on the same video come back instantly, nothing is written to a database, and your search phrase is never stored.",
+    "helperDetails": "قفزه sends the link and phrase to our server to fetch the transcript and match it word for word. Transcripts are kept only in the session cache so repeat searches on the same video come back instantly, nothing is written to a database, and your search phrase is never stored.",
     "submit": "Jump to the moment",
     "searching": "Searching…",
     "clear": "Clear fields"

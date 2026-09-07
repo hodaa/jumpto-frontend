@@ -41,7 +41,7 @@ function safeFilenamePart(value: string): string {
   return cleaned.slice(0, 50) || 'results';
 }
 
-/** JumpTo app: two-column split — search on the left, results on the right. */
+/** قفزه app: two-column split — search on the left, results on the right. */
 export default function App() {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>('idle');

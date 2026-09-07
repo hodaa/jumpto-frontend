@@ -9,9 +9,9 @@ function Logo() {
     <a
       className="order-1 flex shrink-0 items-center rounded-lg transition-opacity duration-200 hover:opacity-80 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 sm:justify-self-start"
       href="/"
-      aria-label="JumpTo home"
+      aria-label="قفزه home"
     >
-      <img className="object-contain" src="/logo.png" alt="JumpTo" width="100" height="48" />
+      <img className="h-12 w-auto object-contain" src="/logo.svg" alt="قفزه" width="72" height="48" />
     </a>
   );
 }

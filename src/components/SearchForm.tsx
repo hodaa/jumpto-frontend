@@ -132,7 +132,7 @@ function PasteFallbackNotice() {
 }
 
 /**
- * JumpTo search form. Renders centered card fields with auto-RTL support
+ * قفزه search form. Renders centered card fields with auto-RTL support
  * for the keyword input based on the detected language or typed text.
  *
  * Validation is fully custom (localized, YouTube-aware) and is the only
@@ -271,6 +271,16 @@ export function SearchForm({
         text-align: left !important;
         direction: ltr;
       }
+      /* URL field stays LTR for typed URLs, but in Arabic mode its placeholder
+         is right-aligned so it reads from the right edge exactly like the
+         keyword field's Arabic placeholder. */
+      .search-input--ph-rtl::placeholder,
+      .search-input--ph-rtl::-webkit-input-placeholder,
+      .search-input--ph-rtl::-moz-placeholder,
+      .search-input--ph-rtl:-ms-input-placeholder {
+        text-align: right !important;
+        direction: rtl;
+      }
     `;
     document.head.appendChild(style);
   }, []);
@@ -376,7 +386,9 @@ export function SearchForm({
             aria-invalid={urlError ? true : undefined}
             className={`${withTrailingPad(
               urlTrailing,
-              'search-input--ltr text-left placeholder:text-left',
+              `search-input--ltr text-left ${
+                isArabicLanguage ? 'search-input--ph-rtl' : 'placeholder:text-left'
+              }`,
             )} ${fieldStateClass(urlError !== null)}`}
             style={{ textAlign: 'left', direction: 'ltr' }}
           />
