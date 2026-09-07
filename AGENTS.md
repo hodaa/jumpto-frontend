@@ -18,6 +18,14 @@
 - The keyword input switches direction based on the detected script of the typed text (`dir={keywordDir}` in `SearchForm.tsx`) — keep the inline `style={{ textAlign, direction }}` (a test pins it) and the injected `.search-input--rtl/--ltr::placeholder` rules.
 - There is no global `[dir='rtl']` input override. Do not reintroduce one (it fights per-field `text-left`/`text-right` utilities).
 
+## Form Validation (single strategy — `SearchForm.tsx`)
+
+- **Custom validation is the only validation.** The `<form>` carries `noValidate`, so the browser never shows its own English-only tooltips in an EN/AR app. Validity comes from `validateUrl` (backed by `parseYouTubeId`) and `validateKeyword`; use those functions rather than re-implementing checks.
+- Field state stores untranslated **error codes** (`'required' | 'invalid'`) that are resolved with `t()` at render time, so a visible error re-translates when the user switches language.
+- Errors surface on submit only (typing is quiet until then). On an invalid submit, focus the **first** invalid field in DOM order (`urlRef` / `keywordRef`).
+- Once a field has an error, `onChange` re-validates it, so the error clears or updates as soon as the value is corrected.
+- An invalid field must be marked three ways: `aria-invalid` + `aria-describedby` (error text), a **red border/tint** (`fieldStateClass`, `border-rose-500`), and an `IconAlert` icon in the field and beside the message. `inputClass` holds no colour utilities on purpose — never add a second `border-*`/`bg-*` that would fight the error state.
+
 ## Layout
 
 - Shell lives in `src/App.tsx`: `SiteHeader`, then a responsive two-column grid `lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]` (stacks to one column below `lg`). Left column = `SearchForm`; right column = `ResultsPanel`. `Hero` renders compact above the grid; `HowItWorks` + `Features` render below the grid only in the `idle` phase.

@@ -126,6 +126,27 @@ export function IconDownload({ size = 16 }: IconProps) {
   );
 }
 
+/** Warning icon used for invalid form fields (red border + error message). */
+export function IconAlert({ size = 18 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+
 /** Video icon used for the Video URL field. */
 export function IconVideo({ size = 18 }: IconProps) {
   return (

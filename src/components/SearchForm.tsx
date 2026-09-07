@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect } from 'react';
-import type { FormEvent } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLanguage } from '../i18n';
 import { parseYouTubeId } from '../utils/youtube';
-import { IconSearch, IconTarget, IconVideo } from './icons';
+import { IconAlert, IconSearch, IconTarget, IconVideo } from './icons';
 
 interface Props {
   onSubmit: (url: string, keyword: string) => void;
@@ -13,15 +13,63 @@ interface Props {
   initialKeyword?: string;
 }
 
+/**
+ * Field error codes. They are stored untranslated and resolved with `t()` at
+ * render time, so a visible error follows the active language (EN/AR) live.
+ */
+type UrlError = 'required' | 'invalid';
+type KeywordError = 'required';
+
+const URL_ERROR_KEY: Record<UrlError, string> = {
+  required: 'error.urlRequired',
+  invalid: 'error.invalidUrl',
+};
+
+const KEYWORD_ERROR_KEY: Record<KeywordError, string> = {
+  required: 'error.keywordRequired',
+};
+
 const ARABIC_PATTERN = /[\u0600-\u06FF\u0750-\u077F]/;
 
 function isArabicText(value: string): boolean {
   return ARABIC_PATTERN.test(value);
 }
 
+/** The single source of truth for URL validity — custom, language-independent. */
+function validateUrl(value: string): UrlError | null {
+  const clean = value.trim();
+  if (!clean) return 'required';
+  return parseYouTubeId(clean) ? null : 'invalid';
+}
+
+/** The single source of truth for keyword validity. */
+function validateKeyword(value: string): KeywordError | null {
+  return value.trim() ? null : 'required';
+}
+
+/**
+ * Shared input chrome. Border colour, background and focus ring colour are
+ * supplied by `fieldStateClass` so a valid field can never carry two
+ * competing `border-*` utilities.
+ */
+const inputClass =
+  'w-full rounded-lg border px-4 py-2.5 ps-10 pe-10 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2';
+
+/** Red border + tint for invalid fields, neutral border for valid ones. */
+function fieldStateClass(hasError: boolean): string {
+  return hasError
+    ? 'border-rose-500 bg-rose-50 focus:border-rose-500 focus:ring-rose-500/30'
+    : 'border-slate-200 bg-slate-50 focus:border-primary focus:ring-primary/30';
+}
+
 /**
  * JumpTo search form. Renders centered card fields with auto-RTL support
  * for the keyword input based on the detected language or typed text.
+ *
+ * Validation is fully custom (localized, YouTube-aware) and is the only
+ * validation that runs: the form is `noValidate`, so the browser never shows
+ * its own English-only tooltips. Errors appear on submit, the first invalid
+ * field is focused, and each error re-validates as the user edits.
  */
 export function SearchForm({
   onSubmit,
@@ -33,8 +81,10 @@ export function SearchForm({
   const { t } = useTranslation();
   const [url, setUrl] = useState(initialUrl);
   const [keyword, setKeyword] = useState(initialKeyword);
-  const [urlError, setUrlError] = useState<string | null>(null);
-  const [keywordError, setKeywordError] = useState<string | null>(null);
+  const [urlError, setUrlError] = useState<UrlError | null>(null);
+  const [keywordError, setKeywordError] = useState<KeywordError | null>(null);
+  const urlRef = useRef<HTMLInputElement>(null);
+  const keywordRef = useRef<HTMLInputElement>(null);
 
   const isArabicLanguage = getLanguage() === 'ar';
   const keywordDir = isArabicText(keyword) || isArabicLanguage ? 'rtl' : 'ltr';
@@ -60,36 +110,37 @@ export function SearchForm({
         text-align: left !important;
         direction: ltr;
       }
-<<<<<<< HEAD
-=======
-      [dir='rtl'] input:not([dir='ltr'])::placeholder,
-      [dir='rtl'] input:not([dir='ltr'])::-webkit-input-placeholder,
-      [dir='rtl'] input:not([dir='ltr'])::-moz-placeholder,
-      [dir='rtl'] input:not([dir='ltr']):-ms-input-placeholder {
-        text-align: right !important;
-      }
->>>>>>> d0779353b5f799cb0e8ce74beb586cddf487f640
     `;
     document.head.appendChild(style);
   }, []);
 
+  const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setUrl(value);
+    // Only re-validate once an error has been shown, so typing stays quiet
+    // until the first submit; afterwards the error clears (or updates) live.
+    if (urlError !== null) setUrlError(validateUrl(value));
+  };
+
+  const handleKeywordChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setKeyword(value);
+    if (keywordError !== null) setKeywordError(validateKeyword(value));
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setUrlError(null);
-    setKeywordError(null);
     const cleanUrl = url.trim();
     const cleanKeyword = keyword.trim();
 
-    const hasUrlError = !cleanUrl || !parseYouTubeId(cleanUrl);
-    const hasKeywordError = !cleanKeyword;
+    const nextUrlError = validateUrl(url);
+    const nextKeywordError = validateKeyword(keyword);
+    setUrlError(nextUrlError);
+    setKeywordError(nextKeywordError);
 
-    if (hasUrlError) {
-      setUrlError(cleanUrl ? t('error.invalidUrl') : t('error.urlRequired'));
-    }
-    if (hasKeywordError) {
-      setKeywordError(t('error.keywordRequired'));
-    }
-    if (hasUrlError || hasKeywordError) {
+    if (nextUrlError || nextKeywordError) {
+      // Put the caret on the first field that still needs attention (DOM order).
+      (nextUrlError ? urlRef : keywordRef).current?.focus();
       return;
     }
     onSubmit(cleanUrl, cleanKeyword);
@@ -104,52 +155,51 @@ export function SearchForm({
 
   const hasInput = url.trim().length > 0 || keyword.trim().length > 0;
 
-<<<<<<< HEAD
-  const inputClass = `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
-=======
-  const inputClass =
-    'w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30';
->>>>>>> d0779353b5f799cb0e8ce74beb586cddf487f640
-
   return (
     <form
       className="grid w-full max-w-2xl gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg hover:shadow-xl transition-shadow sm:p-8 animate-fade-in-up"
       onSubmit={handleSubmit}
       aria-label={t('form.title')}
+      noValidate
     >
       <div className="flex flex-col gap-2">
         <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="url">
           {t('form.urlLabel')}
         </label>
         <div className="relative" dir="ltr">
-          <span
-            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400"
-          >
+          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400">
             <IconVideo size={18} />
           </span>
           <input
             id="url"
+            ref={urlRef}
             type="url"
             dir="ltr"
             value={url}
-            onChange={(event) => setUrl(event.target.value)}
+            onChange={handleUrlChange}
             placeholder={t('form.urlPlaceholder')}
             aria-describedby={urlError ? 'url-error' : undefined}
             aria-invalid={urlError ? true : undefined}
-            className={`${inputClass} search-input--ltr text-left placeholder:text-left`}
-<<<<<<< HEAD
-=======
+            className={`${inputClass} ${fieldStateClass(urlError !== null)} search-input--ltr text-left placeholder:text-left`}
             style={{ textAlign: 'left', direction: 'ltr' }}
->>>>>>> d0779353b5f799cb0e8ce74beb586cddf487f640
           />
+          {urlError ? (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 flex w-6 items-center justify-center text-rose-600"
+            >
+              <IconAlert size={18} />
+            </span>
+          ) : null}
         </div>
         {urlError ? (
           <p
-            className="text-sm font-semibold text-rose-600 rtl:text-right"
+            className="flex items-center gap-1.5 text-sm font-semibold text-rose-600 rtl:text-right"
             role="alert"
             id="url-error"
           >
-            {urlError}
+            <IconAlert size={16} />
+            {t(URL_ERROR_KEY[urlError])}
           </p>
         ) : null}
       </div>
@@ -164,28 +214,34 @@ export function SearchForm({
           </span>
           <input
             id="keyword"
+            ref={keywordRef}
             type="text"
             dir={keywordDir}
             value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
+            onChange={handleKeywordChange}
             placeholder={t('form.keywordPlaceholder')}
             aria-describedby={keywordError ? 'keyword-error' : undefined}
             aria-invalid={keywordError ? true : undefined}
-<<<<<<< HEAD
-            className={`${inputClass} ${keywordDir === 'rtl' ? 'search-input--rtl text-right placeholder:text-right' : 'search-input--ltr text-left placeholder:text-left'}`}
-=======
-            className={`${inputClass} ${inputAlign} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
->>>>>>> d0779353b5f799cb0e8ce74beb586cddf487f640
+            className={`${inputClass} ${fieldStateClass(keywordError !== null)} ${keywordDir === 'rtl' ? 'search-input--rtl text-right placeholder:text-right' : 'search-input--ltr text-left placeholder:text-left'}`}
             style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
+          {keywordError ? (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 flex w-6 items-center justify-center text-rose-600"
+            >
+              <IconAlert size={18} />
+            </span>
+          ) : null}
         </div>
         {keywordError ? (
           <p
-            className="text-sm font-semibold text-rose-600 rtl:text-right"
+            className="flex items-center gap-1.5 text-sm font-semibold text-rose-600 rtl:text-right"
             role="alert"
             id="keyword-error"
           >
-            {keywordError}
+            <IconAlert size={16} />
+            {t(KEYWORD_ERROR_KEY[keywordError])}
           </p>
         ) : null}
       </div>

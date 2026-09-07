@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { setLanguage } from '../i18n';
 import { SearchForm } from '../components/SearchForm';
 
 const onSubmit = vi.fn();
@@ -105,5 +106,98 @@ describe('SearchForm', () => {
     expect(keyword.getAttribute('dir')).toBe('rtl');
     expect(keyword).toHaveStyle({ textAlign: 'right', direction: 'rtl' });
     expect(keyword.className).toContain('search-input--rtl');
+  });
+
+  it('opts out of native browser validation so only the localized errors show', () => {
+    const { container } = render(<SearchForm onSubmit={onSubmit} />);
+    expect(container.querySelector('form')).toHaveAttribute('novalidate');
+  });
+
+  it('focuses the url field when both fields are empty', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(screen.getByLabelText('Video URL')).toHaveFocus();
+    expect(screen.getByLabelText('Keyword or phrase')).not.toHaveFocus();
+  });
+
+  it('focuses the url field first when it is invalid and the keyword is empty', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.type(screen.getByLabelText('Video URL'), 'https://example.com/video');
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(screen.getByLabelText('Video URL')).toHaveFocus();
+  });
+
+  it('focuses the keyword field when only the keyword is missing', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.type(
+      screen.getByLabelText('Video URL'),
+      'https://www.youtube.com/watch?v=abcdef12345',
+    );
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(screen.getByLabelText('Keyword or phrase')).toHaveFocus();
+  });
+
+  it('marks the invalid field with a red border and exposes the error to AT', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    const url = screen.getByLabelText('Video URL');
+    await user.type(screen.getByLabelText('Keyword or phrase'), 'hello');
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(url).toHaveAttribute('aria-invalid', 'true');
+    expect(url.className).toContain('border-rose-500');
+    expect(url).toHaveAccessibleDescription('Please enter a Video URL.');
+  });
+
+  it('clears the url error as soon as the url is corrected', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    const url = screen.getByLabelText('Video URL');
+    await user.type(url, 'https://example.com/video');
+    await user.type(screen.getByLabelText('Keyword or phrase'), 'hello');
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(screen.getByText('Please enter a valid Video URL.')).toBeInTheDocument();
+
+    await user.clear(url);
+    await user.type(url, 'https://youtu.be/abcdef12345');
+    expect(screen.queryByText('Please enter a valid Video URL.')).not.toBeInTheDocument();
+    expect(url).not.toHaveAttribute('aria-invalid');
+    expect(url.className).not.toContain('border-rose-500');
+  });
+
+  it('clears the keyword error as soon as a keyword is typed', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.type(
+      screen.getByLabelText('Video URL'),
+      'https://www.youtube.com/watch?v=abcdef12345',
+    );
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(screen.getByText('Please enter a keyword.')).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Keyword or phrase'), 'h');
+    expect(screen.queryByText('Please enter a keyword.')).not.toBeInTheDocument();
+  });
+
+  it('leaves a valid form untouched until submit', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.type(screen.getByLabelText('Video URL'), 'not a url yet');
+    expect(screen.queryByText('Please enter a valid Video URL.')).not.toBeInTheDocument();
+  });
+
+  it('keeps the error message in the language the user switches to', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(screen.getByText('Please enter a Video URL.')).toBeInTheDocument();
+
+    await act(async () => {
+      setLanguage('ar');
+    });
+    expect(screen.getByText('يرجى إدخال رابط فيديو.')).toBeInTheDocument();
+    expect(screen.queryByText('Please enter a Video URL.')).not.toBeInTheDocument();
   });
 });
