@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
+import { isReadingHelp } from '../utils/focus';
 import { useTranslation } from 'react-i18next';
 
 interface SecondaryAction {
@@ -10,6 +11,7 @@ interface Props {
   message: string;
   onRetry: () => void;
   secondaryAction?: SecondaryAction;
+  retryHint?: string;
 }
 
 function WarningIcon() {
@@ -32,12 +34,13 @@ function WarningIcon() {
 }
 
 /** Centered error state with a warning icon and retry / secondary actions. */
-export function ErrorView({ message, onRetry, secondaryAction }: Props) {
+export function ErrorView({ message, onRetry, secondaryAction, retryHint }: Props) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
+  const hintId = useId();
 
   useEffect(() => {
-    containerRef.current?.focus();
+    if (!isReadingHelp()) containerRef.current?.focus();
   }, []);
 
   return (
@@ -53,6 +56,9 @@ export function ErrorView({ message, onRetry, secondaryAction }: Props) {
         <WarningIcon />
       </span>
       <p className="max-w-md text-base text-slate-600">{t(message, { defaultValue: message })}</p>
+      {retryHint ? (
+        <p id={hintId} className="max-w-md text-sm text-muted">{retryHint}</p>
+      ) : null}
       <div className="flex flex-wrap items-center justify-center gap-3">
         {secondaryAction ? (
           <button
@@ -67,6 +73,7 @@ export function ErrorView({ message, onRetry, secondaryAction }: Props) {
           type="button"
           className="rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-300"
           onClick={onRetry}
+          aria-describedby={retryHint ? hintId : undefined}
         >
           {t('actions.retry')}
         </button>

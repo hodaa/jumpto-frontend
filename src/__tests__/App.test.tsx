@@ -26,7 +26,7 @@ const RESULTS: SearchMatch[] = [{ timestamp: '00:05', progress_seconds: 5, text_
 async function fillAndSubmit(): Promise<void> {
   const user = userEvent.setup();
   render(<App />);
-  await user.type(screen.getByLabelText('Video URL'), URL);
+  await user.type(screen.getByLabelText('YouTube URL'), URL);
   await user.type(screen.getByLabelText('Word or phrase'), 'hello world');
   await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
 }
@@ -78,7 +78,7 @@ describe('App', () => {
 
     await fillAndSubmit();
     expect(await screen.findByText('Exact match')).toBeInTheDocument();
-    expect(mockVideoSearch).toHaveBeenCalledWith('vid-1', 'hello world');
+    expect(mockVideoSearch).toHaveBeenCalledWith('vid-1', 'hello world', expect.any(AbortSignal));
   });
 
   it('shows the failure message reported by the job', async () => {
@@ -103,14 +103,14 @@ describe('App', () => {
 
     await fillAndSubmit();
     expect(
-      await screen.findByText('Could not reach the server. Check that the backend is running.'),
+      await screen.findByText('Could not connect. Check your internet connection and try again. If it continues, please try later.'),
     ).toBeInTheDocument();
   });
 
   it('shows a validation error with retry', async () => {
     mockSubmit.mockRejectedValue(new ApiError('error.validation'));
     await fillAndSubmit();
-    expect(await screen.findByText('Please enter a video URL and a word or phrase.')).toBeInTheDocument();
+    expect(await screen.findByText('Please enter a YouTube URL and a word or phrase.')).toBeInTheDocument();
     const user = userEvent.setup();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
@@ -259,7 +259,7 @@ describe('App', () => {
     });
 
     await user.click(screen.getByRole('button', { name: 'Copy all' }));
-    const status = await screen.findByRole('status');
+    const status = await screen.findByRole('status', { name: 'Copy status' });
     expect(status).toHaveTextContent(
       'Could not copy results to the clipboard. Please try again.',
     );

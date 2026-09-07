@@ -49,8 +49,6 @@ export function StatusCard({
   return (
     <section
       className="flex flex-col items-center justify-center gap-5 text-center"
-      aria-live="polite"
-      aria-atomic="true"
       aria-busy="true"
     >
       <div className="flex flex-col items-center gap-3">
@@ -93,7 +91,7 @@ export function StatusCard({
 
       <p className="m-0 text-sm text-slate-600">{progressLabel}</p>
       {etaLabel ? (
-        <p className="m-0 text-xs text-slate-500" aria-live="polite">
+        <p className="m-0 text-xs text-slate-500">
           {etaLabel}
         </p>
       ) : null}

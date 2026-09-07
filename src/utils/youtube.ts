@@ -4,24 +4,44 @@ const YOUTUBE_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
 
 const YOUTUBE_HOSTS = new Set(['www.youtube.com', 'youtube.com', 'm.youtube.com']);
 
-/** Extract the 11-character YouTube video id from a URL, or null when invalid. */
-export function parseYouTubeId(url: string): string | null {
+export type YouTubeUrlIssue = 'invalid' | 'unsupportedSource' | 'unsupportedFormat';
+
+type YouTubeUrlInfo =
+  | { id: string; issue: null }
+  | { id: null; issue: YouTubeUrlIssue };
+
+/**
+ * Only accept the watch/share formats currently offered by the search form.
+ * Distinguish unsupported sources/formats so the form can explain how to fix a link.
+ */
+export function inspectYouTubeUrl(url: string): YouTubeUrlInfo {
   try {
     const parsed = new URL(url);
-    let id: string | null = null;
+    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+      return { id: null, issue: 'invalid' };
+    }
+    let id: string | null;
     if (parsed.hostname === 'youtu.be') {
-      const first = parsed.pathname.split('/').filter(Boolean)[0];
-      id = first ?? null;
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      if (parts.length !== 1) return { id: null, issue: 'unsupportedFormat' };
+      id = parts[0];
     } else if (YOUTUBE_HOSTS.has(parsed.hostname) || parsed.hostname.endsWith('.youtube.com')) {
+      if (parsed.pathname !== '/watch') return { id: null, issue: 'unsupportedFormat' };
       id = parsed.searchParams.get('v');
+    } else {
+      return { id: null, issue: 'unsupportedSource' };
     }
-    if (id && YOUTUBE_ID_REGEX.test(id)) {
-      return id;
-    }
+    return id && YOUTUBE_ID_REGEX.test(id)
+      ? { id, issue: null }
+      : { id: null, issue: 'invalid' };
   } catch {
-    return null;
+    return { id: null, issue: 'invalid' };
   }
-  return null;
+}
+
+/** Extract the 11-character id from a supported YouTube URL. */
+export function parseYouTubeId(url: string): string | null {
+  return inspectYouTubeUrl(url).id;
 }
 
 /** Build a YouTube watch URL that starts playback at the given second. */

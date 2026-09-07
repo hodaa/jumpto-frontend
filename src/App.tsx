@@ -7,12 +7,14 @@ import { HowItWorks } from './components/HowItWorks';
 import { ResultsPanel } from './components/ResultsPanel';
 import type { Phase } from './components/ResultsPanel';
 import { SearchForm } from './components/SearchForm';
+import type { SearchFormHandle } from './components/SearchForm';
 import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
 import { useJobPolling } from './hooks/useJobPolling';
 import type { VideoPlayerHandle } from './hooks/useYouTubePlayer';
 import type { SearchMatch, StatusResponse } from './types';
 import { csvCell } from './utils/csv';
+import { isReadingHelp } from './utils/focus';
 import { parseYouTubeId } from './utils/youtube';
 import { getCachedResults, setCachedResults } from './utils/resultsCache';
 
@@ -26,6 +28,7 @@ const PROGRESS_MIN_TICK_MS = 1000; // floor so a tiny estimate doesn't spin wild
 const PROGRESS_MAX = 90; // cap below 100% so we never look done before results arrive
 
 interface ActiveJob {
+  signal: AbortSignal;
   jobId: string;
   videoId: string;
   youtubeId: string;
@@ -41,7 +44,7 @@ function safeFilenamePart(value: string): string {
   return cleaned.slice(0, 50) || 'results';
 }
 
-/** قفزه app: two-column split — search on the left, results on the right. */
+/** قفزة app: two-column split — search on the left, results on the right. */
 export default function App() {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>('idle');
@@ -57,13 +60,15 @@ export default function App() {
   const estimatedWaitRef = useRef<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
-  const [formKey, setFormKey] = useState(0);
+  const formRef = useRef<SearchFormHandle>(null);
+  const searchControllerRef = useRef<AbortController | null>(null);
   const [currentPlayingTimestamp, setCurrentPlayingTimestamp] = useState<number | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
   const transitionTimerRef = useRef<number | null>(null);
 
   useEffect(
     () => () => {
+      searchControllerRef.current?.abort();
       if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
       if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current);
     },
@@ -71,11 +76,15 @@ export default function App() {
   );
 
   useEffect(() => {
-    if (phase === 'idle') return;
+    if (phase === 'idle' || isReadingHelp()) return;
     const mobile =
       typeof window.matchMedia === 'function' ? window.matchMedia('(max-width: 1023px)') : null;
     if (mobile?.matches) {
-      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      resultsRef.current?.scrollIntoView?.({
+        behavior: reducedMotion ? 'instant' : 'smooth',
+        block: 'start',
+      });
     }
   }, [phase]);
 
@@ -99,12 +108,16 @@ export default function App() {
   }, []);
 
   const handleSeek = useCallback((seconds: number) => {
-    setCurrentPlayingTimestamp(seconds);
     playerRef.current?.seekTo(seconds);
   }, []);
 
   const handleSubmit = useCallback(
     async (url: string, keyword: string) => {
+      // A signal identifies the whole search, including its polling lifecycle.
+      // Even a transport that resolves after abort cannot publish stale results.
+      searchControllerRef.current?.abort();
+      const controller = new AbortController();
+      searchControllerRef.current = controller;
       const youtubeId = parseYouTubeId(url) ?? '';
       const cached = youtubeId ? getCachedResults(youtubeId, keyword) : undefined;
       if (cached !== undefined) {
@@ -136,7 +149,8 @@ export default function App() {
       setProgress(PROGRESS_INITIAL);
       setPhase('processing');
       try {
-        const response = await submitSearch(url, keyword);
+        const response = await submitSearch(url, keyword, controller.signal);
+        if (controller.signal.aborted) return;
         if (response.status === 'found' || response.status === 'not_found') {
           if (youtubeId) setCachedResults(youtubeId, keyword, response.results);
           setMatches(response.results);
@@ -145,11 +159,13 @@ export default function App() {
           return;
         }
         setJob({
+          signal: controller.signal,
           jobId: response.job_id,
           videoId: response.video_id,
           youtubeId: parseYouTubeId(url) ?? '',
         });
       } catch (error) {
+        if (controller.signal.aborted) return;
         setErrorText(error instanceof ApiError ? error.messageKey : t('error.server'));
         setPhase('error');
       }
@@ -184,7 +200,9 @@ export default function App() {
       if (youtubeId) setCachedResults(youtubeId, query.keyword, value);
       setProgress(100);
       clearPendingTransition();
+      const signal = searchControllerRef.current?.signal;
       transitionTimerRef.current = window.setTimeout(() => {
+        if (signal?.aborted) return;
         setMatches(value);
         setPhase('done');
       }, PROGRESS_DONE_DELAY_MS);
@@ -201,6 +219,7 @@ export default function App() {
   );
 
   useJobPolling({
+    signal: job?.signal,
     jobId: job?.jobId ?? '',
     videoId: job?.videoId ?? '',
     keyword: query.keyword,
@@ -238,14 +257,17 @@ export default function App() {
   }, [phase]);
 
   const handleCopyResults = useCallback(async () => {
+    const signal = searchControllerRef.current?.signal;
     const text = matches
       .map((m) => `${m.timestamp} — ${m.text_snippet ?? t('results.noSnippet')}`)
       .join('\n');
     try {
       await navigator.clipboard.writeText(text);
+      if (signal?.aborted) return;
       setCopyFailed(false);
       setCopied(true);
     } catch {
+      if (signal?.aborted) return;
       setCopied(false);
       setCopyFailed(true);
     }
@@ -264,7 +286,8 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [matches, query.keyword]);
 
-  const handleClearKeyword = useCallback(() => {
+  const resetSearch = useCallback(() => {
+    searchControllerRef.current?.abort();
     clearPendingTransition();
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
     setPhase('idle');
@@ -276,39 +299,29 @@ export default function App() {
     setCopied(false);
     setCopyFailed(false);
     setCurrentPlayingTimestamp(null);
-    setFormKey((k) => k + 1);
   }, [clearPendingTransition]);
+
+  const handleClearKeyword = useCallback(() => {
+    resetSearch();
+    setQuery((current) => ({ ...current, keyword: '' }));
+    formRef.current?.focusKeyword(true);
+  }, [resetSearch]);
 
   const handleNewSearch = useCallback(() => {
-    clearPendingTransition();
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
-    setPhase('idle');
-    setMatches([]);
-    setProgress(null);
-    setEstimatedWait(null);
-    setErrorText('');
-    setJob(null);
-    setCopied(false);
-    setCopyFailed(false);
-    setCurrentPlayingTimestamp(null);
-  }, [clearPendingTransition]);
+    resetSearch();
+    formRef.current?.focusKeyword();
+  }, [resetSearch]);
 
   const handleCancelSearch = useCallback(() => {
-    clearPendingTransition();
-    setPhase('idle');
-    setProgress(null);
-    setEstimatedWait(null);
-    setJob(null);
-    setCurrentPlayingTimestamp(null);
-  }, [clearPendingTransition]);
+    resetSearch();
+    formRef.current?.focusKeyword();
+  }, [resetSearch]);
 
-  const handleRetry = useCallback(
-    () => void handleSubmit(query.url, query.keyword),
-    [handleSubmit, query],
-  );
+  const handleRetry = useCallback(() => {
+    formRef.current?.submit();
+  }, []);
 
   const searching = phase === 'processing';
-  const showMarketing = phase === 'idle';
   // Layout is state-dependent. While idle the form is the hero: it takes the
   // wider track and the placeholder preview sits in a narrower, de-emphasized
   // "empty state" column beside it. Once processing/done we flip the emphasis
@@ -331,7 +344,7 @@ export default function App() {
         <div className={`grid grid-cols-1 items-stretch gap-8 ${gridCols} lg:gap-10`}>
           <section aria-labelledby="search-heading" className="min-w-0">
             <SearchForm
-              key={formKey}
+              ref={formRef}
               onSubmit={handleSubmit}
               onCancel={searching ? handleCancelSearch : undefined}
               disabled={searching}
@@ -355,6 +368,7 @@ export default function App() {
               onCopy={() => void handleCopyResults()}
               onExport={handleExportResults}
               onSeek={handleSeek}
+              onPlaybackChange={setCurrentPlayingTimestamp}
               onClear={handleClearKeyword}
               onNewSearch={handleNewSearch}
               onRetry={handleRetry}
@@ -362,12 +376,8 @@ export default function App() {
             />
           </section>
         </div>
-        {showMarketing ? (
-          <>
-            <HowItWorks />
-            <Features />
-          </>
-        ) : null}
+        <HowItWorks />
+        <Features />
       </main>
       <SiteFooter />
     </div>

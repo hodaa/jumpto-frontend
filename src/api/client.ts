@@ -43,12 +43,17 @@ function toApiError(error: unknown): ApiError {
 }
 
 /** Submit a search; resolves to found results or a created job. */
-export async function submitSearch(youtubeUrl: string, keyword: string): Promise<SearchResponse> {
+export async function submitSearch(
+  youtubeUrl: string,
+  keyword: string,
+  signal?: AbortSignal,
+): Promise<SearchResponse> {
   try {
-    const { data } = await http.post<SearchResponse>('/api/search', {
-      youtube_url: youtubeUrl,
-      keyword,
-    });
+    const { data } = await http.post<SearchResponse>(
+      '/api/search',
+      { youtube_url: youtubeUrl, keyword },
+      { signal },
+    );
     return data;
   } catch (error) {
     throw toApiError(error);
@@ -56,9 +61,12 @@ export async function submitSearch(youtubeUrl: string, keyword: string): Promise
 }
 
 /** Fetch the current status of a transcription job. */
-export async function fetchJobStatus(jobId: string): Promise<StatusResponse> {
+export async function fetchJobStatus(
+  jobId: string,
+  signal?: AbortSignal,
+): Promise<StatusResponse> {
   try {
-    const { data } = await http.get<StatusResponse>(`/api/status/${jobId}`);
+    const { data } = await http.get<StatusResponse>(`/api/status/${jobId}`, { signal });
     return data;
   } catch (error) {
     throw toApiError(error);
@@ -69,10 +77,12 @@ export async function fetchJobStatus(jobId: string): Promise<StatusResponse> {
 export async function fetchVideoSearch(
   videoId: string,
   keyword: string,
+  signal?: AbortSignal,
 ): Promise<VideoSearchResponse> {
   try {
     const { data } = await http.get<VideoSearchResponse>(`/api/video/${videoId}/search`, {
       params: { keyword },
+      signal,
     });
     return data;
   } catch (error) {

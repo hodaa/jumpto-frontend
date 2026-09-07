@@ -66,17 +66,6 @@
   direction: ltr;
 }
 
-/* Placeholder-only RTL: keeps the input's typed value LTR (e.g. the URL field)
-   while aligning its Arabic placeholder to the right edge. Declared after the
-   --ltr rule so it wins the cascade when both classes are present. */
-.search-input--ph-rtl::placeholder,
-.search-input--ph-rtl::-webkit-input-placeholder,
-.search-input--ph-rtl::-moz-placeholder,
-.search-input--ph-rtl:-ms-input-placeholder {
-  text-align: right !important;
-  direction: rtl;
-}
-
 /* Arabic text renders with a dedicated Latin+Arabic friendly typeface. */
 .u-ar-font {
   font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI Arabic', system-ui, sans-serif;
@@ -219,7 +208,6 @@ body {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--color-accent);
   color: #fff;
   font-weight: 800;
   font-size: 1.1rem;
@@ -380,15 +368,7 @@ body {
   text-align: right;
 }
 
-[dir='rtl'] .match-card__snippet {
-  text-align: right;
-}
-
 [dir='rtl'] .matches {
-  text-align: right;
-}
-
-[dir='rtl'] .matches p {
   text-align: right;
 }
 
@@ -425,7 +405,7 @@ body {
   text-align: center;
 }
 
-/* ── Why قفزه section ── */
+/* ── Why قفزة section ── */
 .features {
   margin-top: 4rem;
   margin-left: calc(-50vw + 50%);

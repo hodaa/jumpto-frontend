@@ -14,6 +14,13 @@ function initialLanguage(): Language {
 function applyDocumentLanguage(lang: Language): void {
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  // Use the imported messages so branding is correct even before i18next initializes.
+  const messages = lang === 'ar' ? ar : en;
+  document.title = messages.app.pageTitle;
+  document.querySelector('meta[name="description"]')?.setAttribute(
+    'content',
+    messages.app.metaDescription,
+  );
 }
 
 /** The language currently active in i18n. */
@@ -21,7 +28,7 @@ export function getLanguage(): Language {
   return (i18n.language === 'ar' ? 'ar' : 'en') as Language;
 }
 
-/** Switch the UI language and update document direction/language attributes. */
+/** Switch the UI language and keep document direction and branding in sync. */
 export function setLanguage(lang: Language): void {
   localStorage.setItem(STORAGE_KEY, lang);
   applyDocumentLanguage(lang);

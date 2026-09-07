@@ -11,7 +11,7 @@ export function Features() {
   ];
 
   return (
-    <section className="features" id="why-jumpto" aria-label={t('features.title')}>
+    <section className="features scroll-mt-6 focus:outline-none" id="why-jumpto" tabIndex={-1} aria-label={t('features.title')}>
       <div className="features__inner">
         <h2 className="section-title animate-fade-in">{t('features.title')}</h2>
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">

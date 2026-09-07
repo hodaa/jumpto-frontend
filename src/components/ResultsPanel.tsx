@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
+import { isReadingHelp } from '../utils/focus';
 import { Trans, useTranslation } from 'react-i18next';
 import { ErrorView } from './ErrorView';
 import { IconPlay, IconTarget } from './icons';
@@ -26,17 +27,17 @@ interface Props {
   onCopy: () => void;
   onExport: () => void;
   onSeek: (seconds: number) => void;
+  onPlaybackChange?: (seconds: number | null) => void;
   onClear: () => void;
   onNewSearch?: () => void;
   onRetry: () => void;
   currentPlayingTimestamp?: number | null;
 }
 
-// Idle panel: a clearly disabled "empty state". Dashed, low-contrast border,
-// muted tinted background and no shadow — intentionally de-emphasized so the
-// form is unmistakably the center of attention before a search starts.
+// Idle panel: a dashed brand-orange border with a muted background and no
+// shadow. The illustrative preview stays visually distinct from active results.
 const CARD_IDLE =
-  'rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6 shadow-none sm:p-8 h-full transition-all duration-300';
+  'rounded-2xl border border-dashed border-accent bg-slate-50/70 p-6 shadow-none sm:p-8 h-full transition-all duration-300';
 // Active panel (processing/done/error): crisp white surface, full border and
 // elevated shadow to draw the eye to results/status.
 const CARD_ACTIVE =
@@ -80,7 +81,7 @@ function IdleMockup() {
             key={row.time}
             className="flex items-center gap-2.5 rounded-lg border border-slate-100 bg-white/70 px-2.5 py-2"
           >
-            <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-bold text-accent-strong tabular-nums">
+            <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-bold text-brand tabular-nums">
               {row.time}
             </span>
             <span className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -102,7 +103,7 @@ function IdleMockup() {
 }
 
 /** Right-column white card that shows all phases of a search. */
-export function ResultsPanel({
+function ResultsPanelContent({
   phase,
   progress,
   estimatedSeconds,
@@ -117,6 +118,7 @@ export function ResultsPanel({
   onCopy,
   onExport,
   onSeek,
+  onPlaybackChange,
   onClear,
   onNewSearch,
   onRetry,
@@ -124,9 +126,10 @@ export function ResultsPanel({
 }: Props) {
   const { t } = useTranslation();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const headingId = useId();
 
   useEffect(() => {
-    if (phase === 'done') {
+    if (phase === 'done' && !isReadingHelp()) {
       headingRef.current?.focus();
     }
   }, [phase]);
@@ -173,19 +176,20 @@ export function ResultsPanel({
 
   if (phase === 'done') {
     return (
-      <section className={`${CARD_ACTIVE} animate-fade-in`} aria-label={t('results.title', { keyword })}>
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <section className={`${CARD_ACTIVE} animate-fade-in`} aria-labelledby={headingId}>
+        <div className="mb-5 flex min-w-0 flex-col gap-3">
           <h2
+            id={headingId}
             ref={headingRef}
             tabIndex={-1}
-            className="text-lg font-bold text-brand focus:outline-none min-w-0 rtl:text-right"
+            className="w-full min-w-0 text-lg font-bold text-brand focus:outline-none rtl:text-right [overflow-wrap:anywhere]"
             dir="auto"
           >
             <Trans
               i18nKey="results.title"
               values={{ keyword }}
               components={{
-                keyword: <span className="results-keyword" dir="auto" />,
+                keyword: <bdi className="results-keyword" dir="auto" />,
               }}
             />
           </h2>
@@ -198,7 +202,9 @@ export function ResultsPanel({
             hasMatches={matches.length > 0}
           />
         </div>
-        {youtubeId ? <VideoPlayer ref={playerRef} videoId={youtubeId} /> : null}
+        {youtubeId ? (
+          <VideoPlayer ref={playerRef} videoId={youtubeId} onPlaybackChange={onPlaybackChange} />
+        ) : null}
         <div className="mt-5">
           <ResultsList
             matches={matches}
@@ -215,8 +221,28 @@ export function ResultsPanel({
   }
 
   return (
-    <section className={`${CARD_ACTIVE} animate-fade-in`} role="alert">
-      <ErrorView message={errorText} onRetry={onRetry} />
+    <section className={`${CARD_ACTIVE} animate-fade-in`} aria-label={t('error.title')}>
+      <ErrorView message={errorText} onRetry={onRetry} retryHint={t('error.retryHint')} />
     </section>
+  );
+}
+
+/** Keep one concise search live region mounted and outside the busy status card. */
+export function ResultsPanel(props: Props) {
+  const { t } = useTranslation();
+  const announcement = props.phase === 'processing'
+    // Mirror the existing visual stage threshold; never announce each percentage/ETA tick.
+    ? t(props.progress !== null && props.progress >= 50 ? 'announcements.finding' : 'announcements.fetching')
+    : props.phase === 'done'
+      ? t('announcements.complete', { summary: t('results.matchCount', { count: props.matches.length }) })
+      : props.phase === 'error' ? t('announcements.failed') : '';
+
+  return (
+    <>
+      <p role="status" aria-live="polite" aria-atomic="true" aria-label={t('announcements.label')} className="sr-only">
+        {announcement}
+      </p>
+      <ResultsPanelContent {...props} />
+    </>
   );
 }

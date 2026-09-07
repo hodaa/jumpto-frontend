@@ -1,20 +1,22 @@
 import { useTranslation } from 'react-i18next';
 import { LanguageToggle } from './LanguageToggle';
+import { getLanguage } from '../i18n';
 
 const NAV_LINK =
   'rounded-md px-2.5 py-1.5 text-sm font-semibold whitespace-nowrap text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/20';
 
 function Logo() {
+  const { t } = useTranslation();
   return (
     <a
       className="order-1 flex shrink-0 items-center rounded-lg transition-opacity duration-200 hover:opacity-80 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 sm:justify-self-start"
       href="/"
-      aria-label="قفزه home"
+      aria-label={t('nav.home')}
     >
       <img
         className="h-12 w-auto object-contain"
-        src="/logo.svg"
-        alt="قفزه"
+        src={getLanguage() === 'ar' ? '/logo.svg' : '/logo-en.svg?v=icon-left'}
+        alt={t('app.logoAlt')}
         width="124"
         height="48"
       />
@@ -42,7 +44,7 @@ export function SiteHeader() {
       <Logo />
       <nav
         className="order-3 flex w-full items-center justify-center gap-x-8 border-t border-slate-100 pt-3 sm:order-2 sm:w-auto sm:gap-x-6 sm:border-0 sm:pt-0"
-        aria-label="Primary"
+        aria-label={t('nav.primary')}
       >
         <a className={NAV_LINK} href="#how-it-works">
           {t('nav.howItWorks')}
