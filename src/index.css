@@ -66,6 +66,17 @@
   direction: ltr;
 }
 
+/* Placeholder-only RTL: keeps the input's typed value LTR (e.g. the URL field)
+   while aligning its Arabic placeholder to the right edge. Declared after the
+   --ltr rule so it wins the cascade when both classes are present. */
+.search-input--ph-rtl::placeholder,
+.search-input--ph-rtl::-webkit-input-placeholder,
+.search-input--ph-rtl::-moz-placeholder,
+.search-input--ph-rtl:-ms-input-placeholder {
+  text-align: right !important;
+  direction: rtl;
+}
+
 /* Arabic text renders with a dedicated Latin+Arabic friendly typeface. */
 .u-ar-font {
   font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI Arabic', system-ui, sans-serif;
@@ -286,7 +297,7 @@ body {
   .steps-track {
     flex-direction: column;
     align-items: center;
-    gap: 0;
+    gap: 2.75rem;
   }
 
   .step {
@@ -295,17 +306,21 @@ body {
     max-width: 280px;
   }
 
+  /* Stack the connector in the gap BELOW each step (between it and the next),
+     never over the title/description text. It bridges the vertical space the
+     track's row gap opens up. */
   .step:not(:last-child)::after {
-    top: calc(56px + 1.2rem);
+    top: calc(100% + 0.5rem);
     left: 50%;
     right: auto;
     width: 2px;
-    height: 2.5rem;
+    height: 1.75rem;
     transform: translateX(-50%);
     background: linear-gradient(180deg, #fed7aa 0%, #fdba74 50%, #fed7aa 100%);
   }
 
   .step:hover:not(:last-child)::after {
+    top: calc(100% + 0.5rem);
     width: 3px;
     background: linear-gradient(180deg, #f97316 0%, #fb923c 50%, #f97316 100%);
   }
@@ -410,7 +425,7 @@ body {
   text-align: center;
 }
 
-/* ── Why JumpTo section ── */
+/* ── Why قفزه section ── */
 .features {
   margin-top: 4rem;
   margin-left: calc(-50vw + 50%);
@@ -421,8 +436,17 @@ body {
 }
 
 .features__inner {
-  max-width: 1080px;
+  /* Match the main content box (.app: max-width 1200 + 1.5rem side padding)
+     so the Why cards share the exact left/right margins as the search card. */
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .features__inner {
+    padding: 0 1rem;
+  }
 }
 
 /* ── Match list scrollbar ── */

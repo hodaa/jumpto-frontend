@@ -10,10 +10,10 @@ import { SiteHeader } from '../components/SiteHeader';
 describe('Landing sections', () => {
   it('renders the brand header with the logo and language toggle', () => {
     render(<SiteHeader />);
-    expect(screen.getByAltText('JumpTo')).toHaveAttribute('src', '/logo.png');
-    expect(screen.getByRole('link', { name: 'JumpTo home' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Why JumpTo' })).toHaveAttribute('href', '#why-jumpto');
-    expect(screen.getByRole('link', { name: 'How it works' })).toHaveAttribute(
+    expect(screen.getByAltText('قفزه')).toHaveAttribute('src', '/logo.svg');
+    expect(screen.getByRole('link', { name: 'قفزه home' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Why قفزه?' })).toHaveAttribute('href', '#why-jumpto');
+    expect(screen.getByRole('link', { name: 'How it works?' })).toHaveAttribute(
       'href',
       '#how-it-works',
     );
@@ -53,7 +53,7 @@ describe('Landing sections', () => {
 
   it('renders the three feature cards', () => {
     render(<Features />);
-    expect(screen.getByText('Why JumpTo')).toBeInTheDocument();
+    expect(screen.getByText('Why قفزه')).toBeInTheDocument();
     expect(screen.getByText('Exact phrase matching')).toBeInTheDocument();
     expect(screen.getByText('Instant on repeat searches')).toBeInTheDocument();
     expect(screen.getByText('Watch at the right second')).toBeInTheDocument();
@@ -69,15 +69,15 @@ describe('Landing sections', () => {
 
   it('renders the footer with the current year', () => {
     render(<SiteFooter />);
-    expect(screen.getByText('JumpTo — Find the moments that matter')).toBeInTheDocument();
+    expect(screen.getByText('قفزه — Find the moments that matter')).toBeInTheDocument();
     expect(
-      screen.getByText(`© ${new Date().getFullYear()} JumpTo. All rights reserved.`),
+      screen.getByText(`© ${new Date().getFullYear()} قفزه. All rights reserved.`),
     ).toBeInTheDocument();
   });
 
   it('composes all landing sections on the idle home page', () => {
     render(<App />);
-    expect(screen.getByRole('heading', { name: 'Why JumpTo' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Why قفزه' })).toBeInTheDocument();
     expect(screen.getByText('Exact phrase matching')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'How it works' })).toBeInTheDocument();
     expect(screen.getByText('Paste a YouTube URL')).toBeInTheDocument();

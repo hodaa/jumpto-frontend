@@ -22,8 +22,8 @@ export function Hero({ children, compact = false }: Props) {
       <p
         className={
           compact
-            ? 'text-muted-strong max-w-xl text-base leading-relaxed'
-            : 'text-muted-strong max-w-2xl text-lg font-medium leading-relaxed'
+            ? 'text-muted-strong max-w-xl text-[1.0625rem] font-medium leading-relaxed sm:text-lg'
+            : 'text-muted-strong max-w-2xl text-lg font-semibold leading-relaxed sm:text-xl'
         }
       >
         {t('hero.subtitle')}

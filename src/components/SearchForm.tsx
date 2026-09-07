@@ -61,7 +61,7 @@ function validateKeyword(value: string): KeywordError | null {
  *  - trailing Paste/clear buttons + error icon: pe-[value] set per field
  */
 const inputBase =
-  'w-full rounded-lg border px-4 py-2.5 ps-10 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2';
+  'w-full rounded-lg border px-4 py-2.5 ps-10 text-slate-900 placeholder:text-slate-500 transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2';
 
 /**
  * Quiet "ghost" action shown inside a field's trailing rail (the clear × and
@@ -70,6 +70,16 @@ const inputBase =
  */
 const RAIL_ICON_BUTTON =
   'pointer-events-auto inline-flex h-8 w-8 items-center justify-center text-slate-500 transition-colors duration-200 hover:bg-slate-200/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40 disabled:hover:bg-transparent';
+
+/**
+ * Paste action inside the URL field. Deliberately more prominent than the quiet
+ * clear (×) rail button: an accent-tinted pill with an interactive hover/active
+ * state so users immediately recognise it as the one-tap way to drop a link in.
+ * It stays borderless and shadow-free (a test pins this) so it still reads as a
+ * secondary in-field affordance, never a rival to the primary submit CTA.
+ */
+const PASTE_ICON_BUTTON =
+  'pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-accent-strong transition-all duration-200 hover:bg-accent/20 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-40 disabled:hover:scale-100 disabled:hover:bg-accent/10';
 
 /** Short bullet keys shown under the CTA; the long form goes in the popover. */
 const HELPER_BULLETS = ['form.helperAccepted', 'form.helperSpeed', 'form.helperPrivacy'] as const;
@@ -122,7 +132,7 @@ function PasteFallbackNotice() {
 }
 
 /**
- * JumpTo search form. Renders centered card fields with auto-RTL support
+ * قفزه search form. Renders centered card fields with auto-RTL support
  * for the keyword input based on the detected language or typed text.
  *
  * Validation is fully custom (localized, YouTube-aware) and is the only
@@ -261,6 +271,16 @@ export function SearchForm({
         text-align: left !important;
         direction: ltr;
       }
+      /* URL field stays LTR for typed URLs, but in Arabic mode its placeholder
+         is right-aligned so it reads from the right edge exactly like the
+         keyword field's Arabic placeholder. */
+      .search-input--ph-rtl::placeholder,
+      .search-input--ph-rtl::-webkit-input-placeholder,
+      .search-input--ph-rtl::-moz-placeholder,
+      .search-input--ph-rtl:-ms-input-placeholder {
+        text-align: right !important;
+        direction: rtl;
+      }
     `;
     document.head.appendChild(style);
   }, []);
@@ -339,7 +359,7 @@ export function SearchForm({
 
   return (
     <form
-      className="grid w-full max-w-2xl gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg hover:shadow-xl transition-shadow sm:p-8 animate-fade-in-up"
+      className="mx-auto grid w-full max-w-2xl gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl ring-1 ring-slate-900/5 hover:shadow-2xl transition-shadow sm:p-8 lg:p-9 animate-fade-in-up"
       onSubmit={handleSubmit}
       aria-label={t('form.title')}
       noValidate
@@ -366,7 +386,9 @@ export function SearchForm({
             aria-invalid={urlError ? true : undefined}
             className={`${withTrailingPad(
               urlTrailing,
-              'search-input--ltr text-left placeholder:text-left',
+              `search-input--ltr text-left ${
+                isArabicLanguage ? 'search-input--ph-rtl' : 'placeholder:text-left'
+              }`,
             )} ${fieldStateClass(urlError !== null)}`}
             style={{ textAlign: 'left', direction: 'ltr' }}
           />
@@ -402,7 +424,7 @@ export function SearchForm({
               title={t('form.pasteTooltip')}
               aria-label={t('form.paste')}
               aria-keyshortcuts="Control+V Meta+V"
-              className={`${RAIL_ICON_BUTTON} rounded-lg`}
+              className={PASTE_ICON_BUTTON}
             >
               <IconClipboard size={16} />
             </button>
@@ -486,7 +508,7 @@ export function SearchForm({
         <button
           type="submit"
           disabled={disabled}
-          className="group relative inline-flex w-full items-center justify-center gap-2 rounded-lg bg-action px-6 py-3 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-action-hover focus:outline-none focus-visible:ring-4 focus-visible:ring-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50 disabled:shadow-none overflow-hidden active:scale-[0.98]"
+          className="group relative inline-flex w-full items-center justify-center gap-2.5 rounded-lg bg-action px-6 py-3.5 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-action-hover focus:outline-none focus-visible:ring-4 focus-visible:ring-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50 disabled:shadow-none overflow-hidden active:scale-[0.98]"
         >
           <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
           {disabled ? (
@@ -502,7 +524,9 @@ export function SearchForm({
               <IconTarget size={18} />
             </span>
           )}
-          <span className="relative z-10">{disabled ? t('form.searching') : t('form.submit')}</span>
+          <span className="relative z-10 ms-0.5 tracking-wide">
+            {disabled ? t('form.searching') : t('form.submit')}
+          </span>
         </button>
         {hasInput && !disabled ? (
           <button

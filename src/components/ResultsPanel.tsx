@@ -32,10 +32,11 @@ interface Props {
   currentPlayingTimestamp?: number | null;
 }
 
-// Idle panel: softer border, subtle background tint, no shadow — intentionally
-// de-emphasized so the form carries visual weight before a search starts.
+// Idle panel: a clearly disabled "empty state". Dashed, low-contrast border,
+// muted tinted background and no shadow — intentionally de-emphasized so the
+// form is unmistakably the center of attention before a search starts.
 const CARD_IDLE =
-  'rounded-2xl border border-slate-100 bg-slate-50/60 p-6 shadow-none sm:p-8 h-full transition-all duration-300';
+  'rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6 shadow-none sm:p-8 h-full transition-all duration-300';
 // Active panel (processing/done/error): crisp white surface, full border and
 // elevated shadow to draw the eye to results/status.
 const CARD_ACTIVE =
@@ -133,10 +134,10 @@ export function ResultsPanel({
   if (phase === 'idle') {
     return (
       <section
-        className={`${CARD_IDLE} flex min-h-[300px] flex-col items-center justify-center gap-5`}
+        className={`${CARD_IDLE} flex min-h-[300px] flex-col items-center justify-center gap-6`}
         aria-label={t('results.idleTitle')}
       >
-        <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex flex-col items-center gap-2.5 text-center">
           <span
             aria-hidden="true"
             className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-accent/15 to-primary/10 text-accent"
@@ -146,9 +147,11 @@ export function ResultsPanel({
           <p className="text-lg font-bold text-muted-strong">{t('results.idleTitle')}</p>
           <p className="-mt-1 max-w-md text-sm text-muted">{t('results.idle')}</p>
         </div>
-        <div className="flex w-full flex-col items-center gap-2">
+        {/* The mock is a dimmed, disabled preview so it can never be mistaken
+            for a live, interactive result list. */}
+        <div className="flex w-full flex-col items-center gap-2.5 opacity-80">
           <IdleMockup />
-          <p className="m-0 text-[11px] font-semibold text-muted-strong">
+          <p className="m-0 text-[11px] font-semibold tracking-wide text-muted-strong">
             {t('results.idleMockLabel')}
           </p>
         </div>

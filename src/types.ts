@@ -1,4 +1,4 @@
-/** Shared API types mirroring the JumpTo backend contract. */
+/** Shared API types mirroring the قفزه backend contract. */
 
 /** A single timestamp result for a keyword match. */
 export interface SearchMatch {
