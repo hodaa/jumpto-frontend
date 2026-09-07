@@ -281,8 +281,15 @@ export function SearchForm({
   const hasKeyword = keyword.trim().length > 0;
   const hasInput = hasUrl || hasKeyword;
 
-  const urlTrailing = urlError ? 'pe-44' : hasUrl ? 'pe-34' : 'pe-24';
-  const keywordTrailing = keywordError ? 'pe-20' : hasKeyword ? 'pe-10' : 'pe-4';
+  // Trailing-area sizing is computed from which controls are visible:
+  //   URL: Paste (~64px) + optional × (~28px) + optional error (~24px), gaps 6px
+  //     → 3 items (× + error + Paste on invalid+hasInput): pe-52
+  //     → 2 items (Paste + ×): pe-40 ; (Paste + error on invalid empty): pe-40
+  //     → 1 item (Paste only): pe-24
+  //   Keyword: optional × (~28px) + optional error (~24px), gap 6px
+  const urlTrailing =
+    urlError && hasUrl ? 'pe-52' : urlError || hasUrl ? 'pe-40' : 'pe-24';
+  const keywordTrailing = keywordError && hasKeyword ? 'pe-24' : keywordError ? 'pe-20' : hasKeyword ? 'pe-10' : 'pe-4';
 
   return (
     <form
@@ -320,44 +327,41 @@ export function SearchForm({
           style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
 
-          {/* Inline Paste button — clipped to the input's trailing end. */}
-          <button
-            type="button"
-            onClick={() => void handlePaste()}
-            disabled={disabled}
-            title={t('form.pasteTooltip')}
-            aria-label={t('form.pasteTooltip')}
-            className={`absolute top-1/2 -translate-y-1/2 inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:border-action/40 hover:text-action hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50 ${
-              hasUrl || urlError ? 'end-11' : 'end-2'
-            }`}
-          >
-            <IconClipboard size={14} />
-            <span>{t('form.paste')}</span>
-          </button>
-
-          {/* Per-field clear (×) — only visible when the URL has text. */}
-          {hasUrl && !disabled ? (
+          {/* Trailing controls: × clear → error icon → Paste, in a fixed flex
+              rail at end-2 so they never overlap. Order matches LTR visual. */}
+          <span className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            {/* Per-field clear (×) — only when URL has text. */}
+            {hasUrl && !disabled ? (
+              <button
+                type="button"
+                onClick={handleClearUrl}
+                aria-label={t('form.clearUrl')}
+                title={t('form.clearUrl')}
+                className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              >
+                <IconX size={14} />
+              </button>
+            ) : null}
+            {urlError ? (
+              <span
+                aria-hidden="true"
+                className="flex h-6 w-6 items-center justify-center text-danger"
+              >
+                <IconAlert size={18} />
+              </span>
+            ) : null}
             <button
               type="button"
-              onClick={handleClearUrl}
-              aria-label={t('form.clearUrl')}
-              title={t('form.clearUrl')}
-              className={`absolute top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
-                urlError ? 'end-9' : 'end-2'
-              }`}
+              onClick={() => void handlePaste()}
+              disabled={disabled}
+              title={t('form.pasteTooltip')}
+              aria-label={t('form.pasteTooltip')}
+              className="pointer-events-auto inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:border-action/40 hover:text-action hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50"
             >
-              <IconX size={14} />
+              <IconClipboard size={14} />
+              <span>{t('form.paste')}</span>
             </button>
-          ) : null}
-
-          {urlError ? (
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 flex w-6 items-center justify-center text-danger"
-            >
-              <IconAlert size={18} />
-            </span>
-          ) : null}
+          </span>
         </div>
         {urlError ? (
           <p
@@ -400,28 +404,28 @@ export function SearchForm({
             )} ${fieldStateClass(keywordError !== null)}`}
             style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
-          {/* Per-field clear (×) on keyword. */}
-          {hasKeyword && !disabled ? (
-            <button
-              type="button"
-              onClick={handleClearKeyword}
-              aria-label={t('form.clearKeywordField')}
-              title={t('form.clearKeywordField')}
-              className={`absolute top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
-                keywordError ? 'end-9' : 'end-2'
-              }`}
-            >
-              <IconX size={14} />
-            </button>
-          ) : null}
-          {keywordError ? (
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 flex w-6 items-center justify-center text-danger"
-            >
-              <IconAlert size={18} />
-            </span>
-          ) : null}
+          {/* Trailing controls for keyword: × → error icon */}
+          <span className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            {hasKeyword && !disabled ? (
+              <button
+                type="button"
+                onClick={handleClearKeyword}
+                aria-label={t('form.clearKeywordField')}
+                title={t('form.clearKeywordField')}
+                className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              >
+                <IconX size={14} />
+              </button>
+            ) : null}
+            {keywordError ? (
+              <span
+                aria-hidden="true"
+                className="flex h-6 w-6 items-center justify-center text-danger"
+              >
+                <IconAlert size={18} />
+              </span>
+            ) : null}
+          </span>
         </div>
         {keywordError ? (
           <p
