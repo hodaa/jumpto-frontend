@@ -37,7 +37,8 @@
 
 ## Progress Counting
 
-- Constants at the top of `src/App.tsx`: `PROGRESS_INITIAL=10`, `PROGRESS_TICK_STEP=10`, `PROGRESS_FALLBACK_TICK_MS=3000`, `PROGRESS_MIN_TICK_MS=1000`, `PROGRESS_MAX=90`. The counter is a self-rescheduling `setTimeout` in `App.tsx` that spreads the remaining +10 steps across the estimated wait so it reaches ~90% as the job finishes. Preserve 10-step values and the `PROGRESS_MAX=90` cap (never 100 before results).
+- Constants at the top of `src/App.tsx`: `PROGRESS_INITIAL=10`, `PROGRESS_TICK_STEP=10`, `PROGRESS_FALLBACK_TICK_MS=3000`, `PROGRESS_MIN_TICK_MS=1000`, `PROGRESS_TOTAL_STEPS=10`, `PROGRESS_MAX=90`. The counter is a self-rescheduling `setTimeout` in `App.tsx` that divides the estimated wait into 10 equal segments (one per 10% step): a 60s estimate advances the bar by 10 every 6 seconds. Preserve 10-step values and the `PROGRESS_MAX=90` cap (never 100 before results).
+- **The displayed percentage must always be a multiple of 10 (10 → 20 → 30 → … → 90), and the counter must only ever advance by exactly one 10-step at a time — never jump (e.g. 40 → 60).** The local timer only ticks `PROGRESS_TICK_STEP` at a time and must schedule its next tick from the timeout callback, never from inside a `setState` updater (React double-invokes updaters, which forks the chain into double ticks). `handlePollProgress` in `App.tsx` must snap any server progress value down to the nearest multiple of `PROGRESS_TICK_STEP` and then clamp it to at most `current + PROGRESS_TICK_STEP` (one step per poll) — never pass a raw server number to `setProgress`. Do not change this.
 
 ## Rules for Generated Artifacts & Code Coverage
 

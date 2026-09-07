@@ -25,6 +25,7 @@ const PROGRESS_INITIAL = 10; // shown the moment the user clicks Jump, before su
 const PROGRESS_TICK_STEP = 10;
 const PROGRESS_FALLBACK_TICK_MS = 3000; // no estimate → one step every 3s
 const PROGRESS_MIN_TICK_MS = 1000; // floor so a tiny estimate doesn't spin wildly
+const PROGRESS_TOTAL_STEPS = 10; // the estimate is divided into 10 equal segments
 const PROGRESS_MAX = 90; // cap below 100% so we never look done before results arrive
 
 interface ActiveJob {
@@ -54,6 +55,9 @@ export default function App() {
   const [errorText, setErrorText] = useState('');
   const [job, setJob] = useState<ActiveJob | null>(null);
   const [query, setQuery] = useState<Query>({ url: '', keyword: '' });
+  // Live field values coming in from the form, so the submit CTA can tell
+  // whether the user has edited anything since the last completed search.
+  const [liveQuery, setLiveQuery] = useState<Query>({ url: '', keyword: '' });
   const playerRef = useRef<VideoPlayerHandle | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const startedAtRef = useRef<number | null>(null);
@@ -188,9 +192,16 @@ export default function App() {
       setEstimatedWait(null);
     }
     if (serverValue !== null) {
-      setProgress((current) =>
-        Math.max(current ?? PROGRESS_INITIAL, Math.min(serverValue, PROGRESS_MAX)),
-      );
+      // Snap the server value down to the nearest multiple of PROGRESS_TICK_STEP
+      // (10, 20, … 90) AND allow it to move the counter forward by at most one
+      // step per poll, so the bar always climbs strictly 10 → 20 → … → 90 and
+      // never jumps (e.g. 40 → 60) even when the backend reports coarse stages.
+      const serverStep =
+        Math.floor(Math.min(serverValue, PROGRESS_MAX) / PROGRESS_TICK_STEP) * PROGRESS_TICK_STEP;
+      setProgress((current) => {
+        const base = current ?? PROGRESS_INITIAL;
+        return Math.max(base, Math.min(serverStep, base + PROGRESS_TICK_STEP));
+      });
     }
   }, []);
 
@@ -234,20 +245,20 @@ export default function App() {
     const scheduleNext = (current: number) => {
       if (current >= PROGRESS_MAX) return;
       const remaining = estimatedWaitRef.current;
-      const stepsLeft = Math.ceil((PROGRESS_MAX - current) / PROGRESS_TICK_STEP);
       let delay = PROGRESS_FALLBACK_TICK_MS;
-      if (remaining !== null && remaining > 1 && stepsLeft > 0) {
-        // Spread the remaining +10% steps across the remaining estimate so the
-        // counter reaches ~90% around when the job is expected to finish.
-        delay = Math.max(PROGRESS_MIN_TICK_MS, (remaining * 1000) / stepsLeft);
+      if (remaining !== null && remaining > 1) {
+        // Divide the estimated wait into 10 equal segments, one per 10% step:
+        // a 60s estimate advances the bar by 10 every 6 seconds.
+        delay = Math.max(PROGRESS_MIN_TICK_MS, (remaining * 1000) / PROGRESS_TOTAL_STEPS);
       }
       timer = window.setTimeout(() => {
-        setProgress((value) => {
-          if (value === null) return PROGRESS_INITIAL;
-          const next = Math.min(value + PROGRESS_TICK_STEP, PROGRESS_MAX);
-          scheduleNext(next);
-          return next;
-        });
+        // Schedule the next tick here (outside the setState updater): React
+        // double-invokes updaters in dev/StrictMode, and a timer scheduled from
+        // inside one would fork the chain into two +10 ticks → visible 40→60
+        // jumps. Threading `current` keeps the chain strictly one 10-step at a time.
+        const next = Math.min(current + PROGRESS_TICK_STEP, PROGRESS_MAX);
+        setProgress(next);
+        scheduleNext(next);
       }, delay);
     };
     scheduleNext(PROGRESS_INITIAL);
@@ -321,7 +332,19 @@ export default function App() {
     formRef.current?.submit();
   }, []);
 
+  const handleSearchInput = useCallback((url: string, keyword: string) => {
+    setLiveQuery({ url, keyword });
+  }, []);
+
   const searching = phase === 'processing';
+  // Once a search finishes, keep the Jump button latched off until the user
+  // actually changes the URL or phrase — clicking it again would only replay
+  // the exact same query. Retry (from an error panel) stays imperative, so it
+  // is unaffected by the latch.
+  const editedSinceSubmit =
+    liveQuery.url !== query.url || liveQuery.keyword !== query.keyword;
+  const submitLocked =
+    (phase === 'done' || phase === 'error') && !editedSinceSubmit;
   // Layout is state-dependent. While idle the form is the hero: it takes the
   // wider track and the placeholder preview sits in a narrower, de-emphasized
   // "empty state" column beside it. Once processing/done we flip the emphasis
@@ -348,6 +371,8 @@ export default function App() {
               onSubmit={handleSubmit}
               onCancel={searching ? handleCancelSearch : undefined}
               disabled={searching}
+              submitLocked={submitLocked}
+              onChange={handleSearchInput}
               initialUrl={query.url}
               initialKeyword={query.keyword}
             />

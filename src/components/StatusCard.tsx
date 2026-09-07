@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getLanguage } from '../i18n';
 
 interface Props {
   progress: number | null;
@@ -19,6 +20,7 @@ export function StatusCard({
   skeleton = false,
 }: Props) {
   const { t } = useTranslation();
+  const isRtl = getLanguage() === 'ar';
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -37,6 +39,10 @@ export function StatusCard({
 
   const indeterminate = progress === null;
   const value = progress ?? 0;
+  // Mirrors App.tsx PROGRESS_MAX — the cap the counter parks on while it waits,
+  // so a job stuck at 90% gets an explicit "still working" signal instead of
+  // looking like a hang.
+  const atStallCap = !indeterminate && value >= 90;
   const fetchingDone = progress !== null && progress >= 50;
   const progressLabel = indeterminate
     ? t('status.message')
@@ -45,6 +51,11 @@ export function StatusCard({
     estimatedSeconds !== null && estimatedSeconds !== undefined
       ? t('status.estimatedTime', { seconds: estimatedSeconds })
       : null;
+  // Clip the filled bar (and its in-bar label) to the logged progress so the
+  // percentage is always centered inside the track no matter the fill width.
+  const fillClipPath = isRtl
+    ? `inset(0 0 0 ${100 - value}% round 9999px)`
+    : `inset(0 ${100 - value}% 0 0 round 9999px)`;
 
   return (
     <section
@@ -71,7 +82,7 @@ export function StatusCard({
       </div>
 
       <div
-        className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-100"
+        className="relative h-8 w-full max-w-md overflow-hidden rounded-full bg-slate-100"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
@@ -80,19 +91,46 @@ export function StatusCard({
         aria-label={t('status.title')}
       >
         {indeterminate ? (
-          <div className="progress-indeterminate absolute inset-y-0 w-1/3 rounded-full bg-primary" />
+          <div className="progress-indeterminate absolute inset-y-0 w-1/3 rounded-full bg-accent" />
         ) : (
-          <div
-            className="h-full rounded-full bg-primary transition-[width] duration-500"
-            style={{ width: `${value}%` }}
-          />
+          <>
+            {/* Dark label stays readable across the unfilled track. */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full text-sm font-bold tabular-nums text-slate-700"
+            >
+              {progressLabel}
+            </span>
+            {/* White label clipped to the filled segment — flips colour exactly
+                at the progress edge, so it is legible at any fill width. */}
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 transition-[clip-path] duration-500 ease-out"
+              style={{ clipPath: fillClipPath }}
+            >
+              <span className="flex h-full w-full items-center justify-center rounded-full bg-accent text-sm font-bold tabular-nums text-white">
+                {progressLabel}
+              </span>
+            </span>
+          </>
         )}
       </div>
 
-      <p className="m-0 text-sm text-slate-600">{progressLabel}</p>
+      {indeterminate ? (
+        <p className="m-0 max-w-md text-sm text-slate-600">{progressLabel}</p>
+      ) : null}
       {etaLabel ? (
         <p className="m-0 text-xs text-slate-500">
           {etaLabel}
+        </p>
+      ) : null}
+      {atStallCap ? (
+        <p className="m-0 flex items-center gap-2 text-sm font-medium text-slate-600">
+          <span
+            aria-hidden="true"
+            className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-accent"
+          />
+          {t('status.stillWorking')}
         </p>
       ) : null}
 

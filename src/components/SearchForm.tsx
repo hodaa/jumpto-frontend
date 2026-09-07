@@ -26,6 +26,9 @@ interface Props {
   onSubmit: (url: string, keyword: string) => void;
   onCancel?: () => void;
   disabled?: boolean;
+  /** Latches the submit button off after a finished search until the fields change. */
+  submitLocked?: boolean;
+  onChange?: (url: string, keyword: string) => void;
   initialUrl?: string;
   initialKeyword?: string;
 }
@@ -168,6 +171,8 @@ export function SearchForm({
   onSubmit,
   onCancel,
   disabled = false,
+  submitLocked = false,
+  onChange,
   initialUrl = '',
   initialKeyword = '',
 }: Props) {
@@ -231,6 +236,12 @@ export function SearchForm({
     },
     [],
   );
+
+  // Report the live field values so the parent can latch the submit button
+  // off after a finished search until the inputs actually change.
+  useEffect(() => {
+    onChange?.(url, keyword);
+  }, [onChange, url, keyword]);
 
   useEffect(() => {
     if (disabled) cancelPendingFieldAction();
@@ -611,14 +622,16 @@ export function SearchForm({
         ) : null}
         <button
           type="submit"
-          disabled={disabled}
-          className="group relative inline-flex w-full items-center justify-center gap-2.5 rounded-lg bg-action px-6 py-3.5 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-action-hover focus:outline-none focus-visible:ring-4 focus-visible:ring-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50 disabled:shadow-none overflow-hidden active:scale-[0.98]"
+          disabled={disabled || submitLocked}
+          className={`group relative inline-flex w-full items-center justify-center gap-2.5 rounded-lg bg-action px-6 py-3.5 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-action-hover focus:outline-none focus-visible:ring-4 focus-visible:ring-focus focus-visible:ring-offset-2 overflow-hidden active:scale-[0.98] ${
+            disabled ? 'disabled:cursor-wait' : 'disabled:cursor-not-allowed'
+          }`}
         >
           <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
           {disabled ? (
             <span
               aria-hidden="true"
-              className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white relative z-10"
+              className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/50 border-t-white relative z-10"
             />
           ) : (
             <span
@@ -629,7 +642,11 @@ export function SearchForm({
             </span>
           )}
           <span className="relative z-10 ms-0.5 tracking-wide">
-            {disabled ? t('form.searching') : t('form.submit')}
+            {disabled
+              ? t('form.searching')
+              : submitLocked
+                ? t('form.searchAgainHint')
+                : t('form.submit')}
           </span>
         </button>
         {hasInput && !disabled ? (
@@ -655,19 +672,22 @@ export function SearchForm({
       {/* Helper block: three scannable bullets replace the long paragraph; the
           detailed privacy/how-it-works copy lives in a click-through popover
           so the form itself stays quiet. */}
-      <div className="flex min-w-0 flex-col items-start gap-3 rounded-lg border border-slate-200/80 bg-slate-50 px-3.5 py-3 @min-[32rem]/search-form:flex-row @min-[32rem]/search-form:justify-between">
-        <ul className="flex min-w-0 flex-1 flex-col gap-1.5 text-xs leading-relaxed text-muted-strong [overflow-wrap:anywhere]">
+      <div className="flex min-w-0 flex-col items-center gap-3.5 rounded-lg border border-slate-200/80 bg-slate-50 px-4 py-4">
+        <ul className="flex w-full min-w-0 flex-col gap-2.5 text-sm leading-relaxed text-muted-strong [overflow-wrap:anywhere]">
           {HELPER_BULLETS.map((key) => (
             <li key={key} className="flex items-start gap-2">
               <span
                 aria-hidden="true"
-                className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+                className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-accent"
               />
               <span className="text-start">{t(key)}</span>
             </li>
           ))}
         </ul>
-        <div ref={detailsRef} className="relative w-full min-w-0 @min-[32rem]/search-form:w-auto @min-[32rem]/search-form:shrink-0">
+        <div
+          ref={detailsRef}
+          className="relative flex w-full min-w-0 justify-center"
+        >
           <button
             type="button"
             ref={detailsTriggerRef}
@@ -677,7 +697,7 @@ export function SearchForm({
             }}
             aria-expanded={detailsOpen}
             aria-controls="form-helper-details"
-            className="inline-flex max-w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-semibold text-muted-strong transition-colors duration-200 hover:text-action-hover hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            className="inline-flex max-w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-sm font-semibold text-muted-strong transition-colors duration-200 hover:text-action-hover hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             <IconInfo size={14} />
             {t('form.helperDetailsTrigger')}

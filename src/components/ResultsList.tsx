@@ -35,7 +35,7 @@ function highlightKeyword(text: string, keyword: string): ReactNode {
     parts.push(
       <mark
         key={index}
-        className="match-card__highlight rounded bg-primary px-1 text-white transition-colors duration-200 group-hover:bg-accent-strong"
+        className="match-card__highlight rounded bg-accent px-1 text-white transition-colors duration-200 group-hover:bg-accent-strong"
       >
         {text.slice(index, index + key.length)}
       </mark>,
@@ -145,7 +145,7 @@ export function ResultsList({
       <ol
         id={listId}
         ref={listRef}
-        className="matches flex flex-col gap-3 lg:max-h-[60vh] lg:overflow-y-auto lg:pe-1"
+        className="matches flex flex-col gap-4 lg:max-h-[60vh] lg:overflow-y-auto lg:pe-2"
       >
         {matches.slice(0, maxVisible).map((match) => {
           const snippet = match.text_snippet ?? t('results.noSnippet');
@@ -153,22 +153,22 @@ export function ResultsList({
           const highlighted = highlightKeyword(snippet, keyword);
           return (
             <li key={`${match.timestamp}-${match.progress_seconds}`}>
-              <div className="flex flex-col gap-2 @min-[36rem]/matches:flex-row @min-[36rem]/matches:items-stretch">
+              <div className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm @min-[36rem]/matches:flex-row @min-[36rem]/matches:items-stretch">
                 <button
                   type="button"
-                  className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-start transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 cursor-pointer"
+                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-3 ps-4 pe-2 text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   onClick={() => onSeek(match.progress_seconds)}
                   aria-label={t('results.seek', { timestamp, snippet })}
                 >
-                  <span className="flex shrink-0 items-center gap-2">
+                  <span className="flex shrink-0 items-center gap-2.5">
                     <span
                       aria-hidden="true"
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm text-white shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-primary/90"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm text-white shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-primary/90"
                     >
                       ▶
                     </span>
                     <span
-                      className={`rounded-md px-2 py-1 text-sm font-bold tabular-nums ${
+                      className={`shrink-0 rounded-md px-2 py-1 text-sm font-bold tabular-nums ${
                         currentPlayingTimestamp === match.progress_seconds
                           ? 'bg-primary text-white'
                           : 'bg-slate-100 text-slate-600'
@@ -191,10 +191,10 @@ export function ResultsList({
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={t('results.watchMoment', { timestamp })}
-                    className="inline-flex min-h-11 max-w-full items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-action @min-[36rem]/matches:self-stretch"
+                    className="inline-flex max-w-full items-center gap-1.5 self-start rounded-lg border-t border-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-500 transition-colors duration-200 hover:text-primary focus-visible:outline-2 focus-visible:outline-action @min-[36rem]/matches:self-stretch @min-[36rem]/matches:border-t-0 @min-[36rem]/matches:px-2.5 @min-[36rem]/matches:pe-3"
                   >
-                    {t('results.watchOnYouTube')}
                     <IconExternalLink />
+                    {t('results.watchOnYouTube')}
                   </a>
                 ) : null}
               </div>

@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { VideoPlayerHandle } from '../hooks/useYouTubePlayer';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
-import { buildWatchUrl, formatYouTubeTime } from '../utils/youtube';
+import { formatYouTubeTime } from '../utils/youtube';
 import { IconVideo } from './icons';
 import { StatusCard } from './StatusCard';
 
@@ -64,15 +64,6 @@ const PlayerInstance = forwardRef<VideoPlayerHandle, Props>(function PlayerInsta
         <p aria-live="polite" aria-atomic="true" className={message ? 'text-start text-sm text-muted' : 'sr-only'}>
           {message}
         </p>
-        <a
-          href={buildWatchUrl(videoId, requestedTimestamp ?? 0)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-11 max-w-full items-center justify-center rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
-        >
-          {timestamp ? t('player.openMoment', { timestamp }) : t('player.openOnYouTube')}
-          <span className="sr-only"> — {t('player.newTab')}</span>
-        </a>
       </div>
     </div>
   );

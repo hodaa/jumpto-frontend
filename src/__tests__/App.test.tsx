@@ -158,10 +158,31 @@ describe('App', () => {
     await fillAndSubmit();
     await screen.findByText('00:05');
 
+    // After results the Jump button is latched off (label swaps to the hint), so
+    // clicking it is a no-op and the cached results are served only once.
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    const latched = screen.getByRole('button', {
+      name: 'Edit the URL or phrase to search again.',
+    });
+    await user.click(latched);
     expect(await screen.findByText('00:05')).toBeInTheDocument();
     expect(mockSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('latches the Jump button off after results until the inputs change', async () => {
+    mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
+    await fillAndSubmit();
+    await screen.findByText('00:05');
+
+    const latched = screen.getByRole('button', {
+      name: 'Edit the URL or phrase to search again.',
+    });
+    expect(latched).toBeDisabled();
+    expect(latched).not.toHaveAccessibleName('Jump to the moment');
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText('Word or phrase'), 'x');
+    expect(screen.getByRole('button', { name: 'Jump to the moment' })).toBeEnabled();
   });
 
   it('uses the real progress reported by the backend while processing', async () => {
@@ -180,6 +201,27 @@ describe('App', () => {
     await waitFor(() =>
       expect(Number(bar.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(10),
     );
+  });
+
+  it('always shows the progress counter in 10-step increments', async () => {
+    mockSubmit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'vid-1' });
+    // Non-multiples of 10 from the backend must be snapped, never shown raw.
+    mockStatus.mockResolvedValue({
+      status: 'processing',
+      video_id: 'vid-1',
+      progress: 45,
+      results: null,
+      error: null,
+      video_language: null,
+    });
+
+    await fillAndSubmit();
+    const bar = await screen.findByRole('progressbar');
+    await waitFor(() => {
+      const value = Number(bar.getAttribute('aria-valuenow'));
+      expect(value).toBeGreaterThanOrEqual(10);
+      expect(value % 10).toBe(0);
+    });
   });
 
   it('shows an estimated wait derived from backend progress', async () => {

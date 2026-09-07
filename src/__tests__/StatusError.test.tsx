@@ -29,8 +29,18 @@ describe('ErrorView', () => {
 describe('StatusCard', () => {
   it('renders a determinate progress value', () => {
     render(<StatusCard progress={42} />);
-    expect(screen.getByText('Progress: 42%')).toBeInTheDocument();
+    expect(screen.getAllByText('Progress: 42%')[0]).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '42');
+    expect(
+      screen.queryByText('Still working… this is taking longer than usual.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows a "still working" stall cue at the 90% cap', () => {
+    render(<StatusCard progress={90} />);
+    expect(
+      screen.getByText('Still working… this is taking longer than usual.'),
+    ).toBeInTheDocument();
   });
 
   it('renders an indeterminate progress bar when progress is unknown', () => {

@@ -145,7 +145,7 @@ export function LanguageToggle() {
           </svg>
         ) : null}
         <GlobeIcon />
-        <span>{currentLabel}</span>
+        <span className="text-primary">{currentLabel}</span>
         {!isArabic ? (
           <svg
             aria-hidden="true"

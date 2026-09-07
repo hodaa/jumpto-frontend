@@ -61,6 +61,7 @@
     "pasteEmpty": "Your clipboard is empty. Copy a YouTube URL first, then try Paste again.",
     "pasteManual": "On a phone, touch and hold the URL field and choose Paste. On a computer, press <strong>Ctrl/⌘+V</strong>.",
     "processingHint": "Search in progress. Cancel to edit the URL or phrase.",
+    "searchAgainHint": "Edit the URL or phrase to search again.",
     "helperSources": "Use a public YouTube video, not a channel or playlist. Shorts, live and embed links need a watch/share link instead. Private or restricted videos may be unavailable."
   },
   "status": {
@@ -69,6 +70,7 @@
     "searchingFor": "Searching for “{{keyword}}”",
     "progress": "Progress: {{progress}}%",
     "estimatedTime": "Estimated time remaining: ~{{seconds}}s",
+    "stillWorking": "Still working… this is taking longer than usual.",
     "fetching": "Fetching transcript…",
     "finding": "Finding timestamps…"
   },
@@ -78,10 +80,7 @@
     "loadingMoment": "Loading video — we’ll jump to {{timestamp}} when it’s ready.",
     "unavailable": "Video preview unavailable",
     "unavailableHint": "The embedded player couldn’t load. You can still open the video or a matching moment on YouTube.",
-    "playbackBlocked": "Playback didn’t start. Press Play in the video, or open this moment on YouTube.",
-    "openOnYouTube": "Open on YouTube",
-    "openMoment": "Open {{timestamp}} on YouTube",
-    "newTab": "opens in a new tab"
+    "playbackBlocked": "Playback didn’t start. Press Play in the video, or open this moment on YouTube."
   },
   "results": {
     "title": "Matches for “<keyword>{{keyword}}</keyword>”",
@@ -95,7 +94,6 @@
     "idleTitle": "Ready to find your moment",
     "idleMockLabel": "Illustrative preview of what a search returns",
     "seek": "Play at {{timestamp}} — {{snippet}}",
-    "watchOnYouTube": "Watch on YouTube",
     "noSnippet": "Exact match",
     "copy": "Copy all",
     "export": "Export CSV",
@@ -106,10 +104,11 @@
     "showing": "Showing {{shown}} of {{total}} matches",
     "listLabel": "Matching moments for “{{keyword}}”",
     "matchCount_zero": "0 matches",
-    "watchMoment": "Watch on YouTube at {{timestamp}} (opens in a new tab)",
     "showMore_one": "Show {{count}} more match",
     "showMore_other": "Show {{count}} more matches",
-    "copyStatus": "Copy status"
+    "copyStatus": "Copy status",
+    "watchOnYouTube": "Watch on YouTube",
+    "watchMoment": "Watch on YouTube at {{timestamp}} (opens in a new tab)"
   },
   "error": {
     "validation": "Please enter a YouTube URL and a word or phrase.",

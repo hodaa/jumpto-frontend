@@ -44,9 +44,6 @@ describe('VideoPlayer', () => {
   it('shows a loading skeleton and a usable fallback until the player is ready', async () => {
     render(<VideoPlayer videoId="abcdef12345" />);
     expect(screen.getByText('Loading video preview…')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Open on YouTube/ })).toHaveAttribute(
-      'href', 'https://www.youtube.com/watch?v=abcdef12345&t=0',
-    );
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
     ready();
     expect(screen.queryByText('Loading video preview…')).not.toBeInTheDocument();
@@ -78,9 +75,6 @@ describe('VideoPlayer', () => {
     act(() => document.getElementById('youtube-iframe-api')?.dispatchEvent(new Event('error')));
     expect(await screen.findByText('Video preview unavailable')).toBeInTheDocument();
     act(() => ref.current?.seekTo(83));
-    const link = screen.getByRole('link', { name: /Open 01:23 on YouTube/ });
-    expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abcdef12345&t=83');
-    expect(link).toHaveAttribute('target', '_blank');
     expect(construct).not.toHaveBeenCalled();
   });
 
@@ -113,9 +107,6 @@ describe('VideoPlayer', () => {
     act(() => ref.current?.seekTo(65));
     act(() => instances[0].options.events?.onError?.({ data: 101 }));
     expect(screen.getByText('Video preview unavailable')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Open 01:05 on YouTube/ })).toHaveAttribute(
-      'href', 'https://www.youtube.com/watch?v=abcdef12345&t=65',
-    );
   });
 
   it('explains blocked autoplay without claiming the requested match is playing', async () => {
@@ -145,9 +136,6 @@ describe('VideoPlayer', () => {
     rerender(<VideoPlayer videoId="second-video" ref={ref} />);
     await waitFor(() => expect(construct).toHaveBeenCalledTimes(2));
     expect(instances[0].player.destroy).toHaveBeenCalledOnce();
-    expect(screen.getByRole('link', { name: /Open on YouTube/ })).toHaveAttribute(
-      'href', 'https://www.youtube.com/watch?v=second-video&t=0',
-    );
     ready(0); // Stale first-video events must not change the second player.
     expect(screen.getByText('Loading video preview…')).toBeInTheDocument();
     ready(1);
@@ -173,6 +161,5 @@ describe('VideoPlayer', () => {
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
     act(() => instances[0].options.events?.onError?.({ data: 100 }));
     expect(screen.getByText('معاينة الفيديو غير متاحة')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /فتح على يوتيوب/ })).toBeInTheDocument();
   });
 });
