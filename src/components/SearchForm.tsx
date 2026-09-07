@@ -281,11 +281,6 @@ export function SearchForm({
   const hasKeyword = keyword.trim().length > 0;
   const hasInput = hasUrl || hasKeyword;
 
-  // Trailing-space requirements for the URL field:
-  //  • default: Paste button (≈end-2, ~64px)            → pe-24
-  //  • + × clear (when URL has text): ~20px extra      → pe-34
-  //  • + error icon (when invalid): ~24px extra         → pe-44  (× + error)
-  // For the keyword field only × (and optional error).
   const urlTrailing = urlError ? 'pe-44' : hasUrl ? 'pe-34' : 'pe-24';
   const keywordTrailing = keywordError ? 'pe-20' : hasKeyword ? 'pe-10' : 'pe-4';
 
@@ -300,7 +295,7 @@ export function SearchForm({
         <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="url">
           {t('form.urlLabel')}
         </label>
-        <div className="relative" dir="ltr">
+        <div className="relative" dir={keywordDir}>
           <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400">
             <IconVideo size={18} />
           </span>
@@ -308,7 +303,7 @@ export function SearchForm({
             id="url"
             ref={urlRef}
             type="url"
-            dir="ltr"
+            dir={keywordDir}
             value={url}
             onChange={handleUrlChange}
             placeholder={t('form.urlPlaceholder')}
