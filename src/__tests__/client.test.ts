@@ -21,7 +21,7 @@ describe('api client', () => {
     expect(postMock).toHaveBeenCalledWith('/api/search', {
       youtube_url: 'https://www.youtube.com/watch?v=abcdef12345',
       keyword: 'hello',
-    });
+    }, { signal: undefined });
     expect(result).toEqual({ status: 'found', results: [] });
   });
 
@@ -75,7 +75,7 @@ describe('api client', () => {
       },
     });
     const result = await fetchJobStatus('job-1');
-    expect(getMock).toHaveBeenCalledWith('/api/status/job-1');
+    expect(getMock).toHaveBeenCalledWith('/api/status/job-1', { signal: undefined });
     expect(result).toMatchObject({ status: 'processing' });
   });
 
@@ -84,8 +84,25 @@ describe('api client', () => {
     const result = await fetchVideoSearch('vid-1', 'hello');
     expect(getMock).toHaveBeenCalledWith('/api/video/vid-1/search', {
       params: { keyword: 'hello' },
+      signal: undefined,
     });
     expect(result).toEqual({ status: 'found', results: [] });
+  });
+
+  it('forwards cancellation signals through submission, polling and result requests', async () => {
+    const { signal } = new AbortController();
+    postMock.mockResolvedValue({ data: { status: 'not_found', results: [] } });
+    getMock.mockResolvedValue({ data: { status: 'found', results: [] } });
+    await submitSearch('https://youtu.be/abcdef12345', 'hello', signal);
+    await fetchJobStatus('job-1', signal);
+    await fetchVideoSearch('vid-1', 'hello', signal);
+    expect(postMock).toHaveBeenCalledWith('/api/search', {
+      youtube_url: 'https://youtu.be/abcdef12345', keyword: 'hello',
+    }, { signal });
+    expect(getMock).toHaveBeenCalledWith('/api/status/job-1', { signal });
+    expect(getMock).toHaveBeenCalledWith('/api/video/vid-1/search', {
+      params: { keyword: 'hello' }, signal,
+    });
   });
 
   it('exposes ApiError instances with server messages', () => {

@@ -1,78 +1,187 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** Handle to control an embedded YouTube player. */
 export interface VideoPlayerHandle {
-  /** Seek the player to a given second and begin playback. */
+  /** Queue the latest seek while loading; request playback once ready. */
   seekTo(seconds: number): void;
 }
 
-const API_SCRIPT_URL = 'https://www.youtube.com/iframe_api';
-
-let apiScriptInjected = false;
-
-/** Injects the YouTube IFrame Player API script tag once. */
-function injectApiScript(): void {
-  if (apiScriptInjected) return;
-  apiScriptInjected = true;
-  if (document.getElementById('youtube-iframe-api')) return;
-  const tag = document.createElement('script');
-  tag.id = 'youtube-iframe-api';
-  tag.src = API_SCRIPT_URL;
-  document.head.appendChild(tag);
+interface PlayerState {
+  status: 'loading' | 'ready' | 'unavailable';
+  requestedTimestamp: number | null;
+  playbackBlocked: boolean;
 }
 
-/** Wait until the YT namespace is available. */
-function whenYouTubeReady(timeoutMs = 8000): Promise<YTNamespace> {
+const API_SCRIPT_ID = 'youtube-iframe-api';
+const API_SCRIPT_URL = 'https://www.youtube.com/iframe_api';
+const PLAYER_TIMEOUT_MS = 8000;
+
+/** Share the API script, but give each waiting player cancellable listeners/timers. */
+function whenYouTubeReady(signal: AbortSignal): Promise<YTNamespace> {
+  if (signal.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+  if (typeof window.YT?.Player === 'function') return Promise.resolve(window.YT);
+
   return new Promise((resolve, reject) => {
-    const started = Date.now();
-    const poll = () => {
-      if (window.YT) {
-        resolve(window.YT);
-        return;
-      }
-      if (Date.now() - started > timeoutMs) {
-        reject(new Error('YouTube player API timed out'));
-        return;
-      }
-      window.setTimeout(poll, 50);
+    let script = document.getElementById(API_SCRIPT_ID) as HTMLScriptElement | null;
+    if (script?.dataset.loadFailed === 'true') {
+      script.remove();
+      script = null;
+    }
+    const existing = script !== null;
+    script ??= document.createElement('script');
+    const tag = script;
+    tag.id = API_SCRIPT_ID;
+    if (!existing) tag.src = API_SCRIPT_URL;
+    let pollTimer: number | undefined;
+
+    const cleanup = () => {
+      window.clearTimeout(timeoutTimer);
+      if (pollTimer !== undefined) window.clearTimeout(pollTimer);
+      tag.removeEventListener('error', onError);
+      signal.removeEventListener('abort', onAbort);
     };
-    injectApiScript();
+    const onError = () => {
+      tag.dataset.loadFailed = 'true';
+      cleanup();
+      reject(new Error('YouTube player API unavailable'));
+    };
+    const onAbort = () => {
+      cleanup();
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    const timeoutTimer = window.setTimeout(onError, PLAYER_TIMEOUT_MS);
+    const poll = () => {
+      if (typeof window.YT?.Player === 'function') {
+        cleanup();
+        resolve(window.YT);
+      } else {
+        pollTimer = window.setTimeout(poll, 50);
+      }
+    };
+    tag.addEventListener('error', onError, { once: true });
+    signal.addEventListener('abort', onAbort, { once: true });
+    if (!existing) document.head.appendChild(tag);
     poll();
   });
 }
 
 export function useYouTubePlayer(
   videoId: string,
-): [React.RefObject<HTMLDivElement | null>, VideoPlayerHandle] {
+  onPlaybackChange?: (seconds: number | null) => void,
+): [React.RefObject<HTMLDivElement | null>, VideoPlayerHandle, PlayerState] {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const playerRef = useRef<YTPlayer | null>(null);
+  const requestSeekRef = useRef<(seconds: number) => void>(() => {});
+  const playbackChangeRef = useRef(onPlaybackChange);
+  const [state, setState] = useState<PlayerState>({
+    status: 'loading',
+    requestedTimestamp: null,
+    playbackBlocked: false,
+  });
 
   useEffect(() => {
-    let cancelled = false;
-    whenYouTubeReady()
-      .then((YT) => {
-        if (cancelled || !containerRef.current) return;
-        playerRef.current = new YT.Player(containerRef.current, {
-          videoId,
-          playerVars: {
-            rel: 0,
-            playsinline: 1,
-            origin: window.location.origin,
+    playbackChangeRef.current = onPlaybackChange;
+  }, [onPlaybackChange]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const container = containerRef.current;
+    let player: YTPlayer | null = null;
+    let ready = false;
+    let failed = false;
+    let requestedTimestamp: number | null = null;
+    let readyTimer: number | undefined;
+
+    const destroy = () => {
+      try {
+        player?.destroy();
+      } catch {
+        // A partially initialized third-party player can also fail to destroy.
+      }
+      player = null;
+      container?.replaceChildren();
+    };
+    const fail = () => {
+      if (controller.signal.aborted || failed) return;
+      failed = true;
+      ready = false;
+      window.clearTimeout(readyTimer);
+      setState((current) => ({ ...current, status: 'unavailable', playbackBlocked: false }));
+      playbackChangeRef.current?.(null);
+      destroy();
+    };
+    const playRequestedMoment = () => {
+      if (!ready || !player || requestedTimestamp === null) return;
+      try {
+        player.seekTo(requestedTimestamp, true);
+        player.playVideo();
+      } catch {
+        fail();
+      }
+    };
+
+    requestSeekRef.current = (seconds) => {
+      if (controller.signal.aborted) return;
+      requestedTimestamp = seconds;
+      setState((current) => ({ ...current, requestedTimestamp: seconds, playbackBlocked: false }));
+      // Selection is not proof of playback. Only the player's PLAYING event
+      // activates the match; failures/blocked autoplay leave it unselected.
+      playbackChangeRef.current?.(null);
+      playRequestedMoment();
+    };
+
+    const initialize = async () => {
+      const YT = await whenYouTubeReady(controller.signal);
+      if (controller.signal.aborted || !container) return;
+      // YouTube replaces its target element. Keep the React-owned wrapper intact.
+      const mount = document.createElement('div');
+      container.replaceChildren(mount);
+      readyTimer = window.setTimeout(fail, PLAYER_TIMEOUT_MS);
+      player = new YT.Player(mount, {
+        videoId,
+        width: '100%',
+        height: '100%',
+        playerVars: { rel: 0, playsinline: 1, origin: window.location.origin },
+        events: {
+          onReady: ({ target }) => {
+            if (controller.signal.aborted || failed) return;
+            window.clearTimeout(readyTimer);
+            player = target;
+            ready = true;
+            setState((current) => ({ ...current, status: 'ready' }));
+            playRequestedMoment();
           },
-        });
-      })
-      .catch(() => undefined);
+          onError: fail,
+          onStateChange: ({ data }) => {
+            if (controller.signal.aborted || failed) return;
+            if (data === 1) {
+              setState((current) => ({ ...current, playbackBlocked: false }));
+              playbackChangeRef.current?.(requestedTimestamp);
+            } else {
+              playbackChangeRef.current?.(null);
+            }
+          },
+          onAutoplayBlocked: () => {
+            if (controller.signal.aborted || failed) return;
+            setState((current) => ({ ...current, playbackBlocked: true }));
+            playbackChangeRef.current?.(null);
+          },
+        },
+      });
+    };
+    void initialize().catch(fail);
+
     return () => {
-      cancelled = true;
-      playerRef.current?.destroy();
-      playerRef.current = null;
+      controller.abort();
+      requestSeekRef.current = () => {};
+      window.clearTimeout(readyTimer);
+      destroy();
     };
   }, [videoId]);
 
   const seekTo = useCallback((seconds: number) => {
-    playerRef.current?.seekTo(seconds, true);
-    playerRef.current?.playVideo();
+    if (!Number.isFinite(seconds) || seconds < 0) return;
+    requestSeekRef.current(seconds);
   }, []);
 
-  return [containerRef, { seekTo }];
+  return [containerRef, { seekTo }, state];
 }

@@ -59,6 +59,7 @@ export function LanguageToggle() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setOpen(false);
+        triggerRef.current?.focus();
       }
     };
     document.addEventListener('mousedown', onPointerDown);
@@ -109,7 +110,15 @@ export function LanguageToggle() {
   const optionId = (value: Language) => `lang-option-${value}`;
 
   return (
-    <div ref={rootRef} className="relative inline-block">
+    <div
+      ref={rootRef}
+      className="relative inline-block"
+      onBlur={(event) => {
+        if (event.relatedTarget === triggerRef.current || !event.currentTarget.contains(event.relatedTarget)) {
+          setOpen(false);
+        }
+      }}
+    >
       <button
         ref={triggerRef}
         type="button"
@@ -117,7 +126,7 @@ export function LanguageToggle() {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t('actions.languageSelector')}
-        aria-controls="language-listbox"
+        aria-controls={open ? 'language-listbox' : undefined}
         onClick={() => setOpen((value) => !value)}
         onKeyDown={handleTriggerKeyDown}
       >
@@ -163,23 +172,24 @@ export function LanguageToggle() {
           {OPTIONS.map((option, index) => {
             const selected = option.value === current;
             return (
-              <li key={option.value}>
+              <li key={option.value} role="presentation">
                 <button
                   ref={(node) => {
                     optionRefs.current[index] = node;
                   }}
                   type="button"
                   role="option"
+                  tabIndex={-1}
                   id={optionId(option.value)}
                   aria-selected={selected}
                   aria-current={selected}
-                  className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-sm font-semibold transition-colors duration-150 hover:bg-slate-100 ${
+                  className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-sm font-semibold transition-colors duration-150 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action ${
                     selected ? 'text-primary' : 'text-slate-700'
                   }`}
                   onClick={() => select(option.value)}
                   onKeyDown={(event) => handleOptionKeyDown(event, index)}
                 >
-                  <span className={option.value === 'ar' ? 'u-ar-font' : undefined}>
+                  <span lang={option.value} dir={option.value === 'ar' ? 'rtl' : 'ltr'} className={option.value === 'ar' ? 'u-ar-font' : undefined}>
                     {option.label}
                   </span>
                   {selected ? (

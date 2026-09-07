@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SearchMatch } from '../types';
-import { formatYouTubeTime } from '../utils/youtube';
-import { IconSearch } from './icons';
+import { buildWatchUrl, formatYouTubeTime } from '../utils/youtube';
+import { IconExternalLink, IconSearch } from './icons';
 
 const DEFAULT_MATCH_LIMIT = 50;
 
@@ -15,12 +15,6 @@ interface Props {
   youtubeId?: string | null;
   matchLimit?: number;
   currentPlayingTimestamp?: number | null;
-}
-
-const ARABIC_PATTERN = /[\u0600-\u06FF\u0750-\u077F]/;
-
-function isArabicText(value: string): boolean {
-  return ARABIC_PATTERN.test(value);
 }
 
 /** Wrap every case-insensitive occurrence of the keyword in a highlight mark. */
@@ -41,7 +35,7 @@ function highlightKeyword(text: string, keyword: string): ReactNode {
     parts.push(
       <mark
         key={index}
-        className="match-card__highlight rounded bg-primary px-1 text-white transition-colors duration-200 group-hover:bg-accent"
+        className="match-card__highlight rounded bg-primary px-1 text-white transition-colors duration-200 group-hover:bg-accent-strong"
       >
         {text.slice(index, index + key.length)}
       </mark>,
@@ -65,15 +59,53 @@ export function ResultsList({
   currentPlayingTimestamp,
 }: Props) {
   const { t } = useTranslation();
-  const [expandedKeyword, setExpandedKeyword] = useState<string | null>(null);
-  const expanded = expandedKeyword === keyword;
+  const listId = useId();
+  const listRef = useRef<HTMLOListElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const focusFrameRef = useRef<number | null>(null);
+  const [expandedFor, setExpandedFor] = useState<{
+    matches: SearchMatch[];
+    keyword: string;
+    youtubeId: Props['youtubeId'];
+    matchLimit: number;
+  } | null>(null);
+  const expanded = expandedFor?.matches === matches && expandedFor.keyword === keyword &&
+    expandedFor.youtubeId === youtubeId && expandedFor.matchLimit === matchLimit;
+  const capped = matchLimit > 0 && matches.length > matchLimit;
+  const maxVisible = capped && !expanded ? matchLimit : matches.length;
+  const hiddenCount = matches.length - maxVisible;
+
+  useEffect(() => () => {
+    if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
+  }, [matches, keyword, youtubeId, matchLimit]);
+
+  const toggleExpanded = () => {
+    setExpandedFor(expanded ? null : { matches, keyword, youtubeId, matchLimit });
+    if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
+    focusFrameRef.current = requestAnimationFrame(() => {
+      focusFrameRef.current = null;
+      // Start keyboard browsing at the newly revealed rows, not at the footer.
+      const target = expanded
+        ? toggleRef.current
+        : listRef.current?.children[matchLimit]?.querySelector('button');
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView?.({ block: 'nearest', behavior: 'instant' });
+    });
+  };
+
+  const countBadge = (
+    <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
+      {t('results.matchCount', { count: matches.length })}
+    </span>
+  );
 
   if (matches.length === 0) {
     return (
       <section
         className="flex flex-col items-center gap-3 py-8 text-center rtl:text-right"
-        aria-label={t('results.title', { keyword })}
+        aria-label={t('results.listLabel', { keyword })}
       >
+        {countBadge}
         <span
           aria-hidden="true"
           className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500"
@@ -82,12 +114,12 @@ export function ResultsList({
         </span>
         <div className="max-w-sm space-y-1">
           <p className="-mt-1 text-sm text-slate-500 rtl:text-right">{t('results.empty')}</p>
-          <p className="text-xs text-slate-400 rtl:text-right">{t('results.emptyHint')}</p>
+          <p className="text-xs text-muted rtl:text-right">{t('results.emptyHint')}</p>
         </div>
         {onClear ? (
           <button
             type="button"
-            className="text-sm font-semibold text-primary transition-colors duration-200 hover:underline"
+            className="min-h-11 rounded-lg px-3 text-sm font-semibold text-primary transition-colors duration-200 hover:underline focus-visible:outline-2 focus-visible:outline-action"
             onClick={onClear}
           >
             {t('results.clearKeyword')}
@@ -97,41 +129,36 @@ export function ResultsList({
     );
   }
 
-  const capped = matchLimit > 0 && matches.length > matchLimit;
-  const maxVisible = capped && !expanded ? matchLimit : matches.length;
-  const hiddenCount = matches.length - maxVisible;
-
   return (
-    <section aria-label={t('results.title', { keyword })}>
+    <section className="@container/matches" aria-label={t('results.listLabel', { keyword })}>
       <div className="mb-3 flex flex-col gap-1">
-        <div className="flex items-center gap-2 rtl:text-right">
-          <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
-            {t('results.matchCount', { count: matches.length })}
-          </span>
-          {capped && !expanded ? (
-            <span className="text-sm font-normal text-slate-400">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 rtl:text-right">
+          {countBadge}
+          {capped ? (
+            <span className="text-sm font-normal text-muted">
               {t('results.showing', { shown: maxVisible, total: matches.length })}
             </span>
           ) : null}
         </div>
         <p className="text-xs text-slate-500 rtl:text-right">{t('results.hint')}</p>
       </div>
-      <ol className="matches flex max-h-[60vh] flex-col gap-3 overflow-y-auto pe-1">
+      <ol
+        id={listId}
+        ref={listRef}
+        className="matches flex flex-col gap-3 lg:max-h-[60vh] lg:overflow-y-auto lg:pe-1"
+      >
         {matches.slice(0, maxVisible).map((match) => {
           const snippet = match.text_snippet ?? t('results.noSnippet');
+          const timestamp = formatYouTubeTime(match.progress_seconds);
           const highlighted = highlightKeyword(snippet, keyword);
-          const snippetRtl = isArabicText(snippet);
           return (
             <li key={`${match.timestamp}-${match.progress_seconds}`}>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+              <div className="flex flex-col gap-2 @min-[36rem]/matches:flex-row @min-[36rem]/matches:items-stretch">
                 <button
                   type="button"
-                  className="group flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-start transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 cursor-pointer"
+                  className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-start transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 cursor-pointer"
                   onClick={() => onSeek(match.progress_seconds)}
-                  aria-label={t('results.seek', {
-                    timestamp: formatYouTubeTime(match.progress_seconds),
-                    snippet,
-                  })}
+                  aria-label={t('results.seek', { timestamp, snippet })}
                 >
                   <span className="flex shrink-0 items-center gap-2">
                     <span
@@ -148,26 +175,27 @@ export function ResultsList({
                       }`}
                       dir="ltr"
                     >
-                      {formatYouTubeTime(match.progress_seconds)}
+                      {timestamp}
                     </span>
                   </span>
                   <p
-                    className="match-card__snippet flex-1 text-sm leading-relaxed text-slate-600"
-                    dir={snippetRtl ? 'rtl' : 'ltr'}
+                    className="match-card__snippet min-w-0 flex-1 text-start text-sm leading-relaxed text-slate-600 [overflow-wrap:anywhere]"
+                    dir="auto"
                   >
                     {highlighted}
                   </p>
                 </button>
                 {youtubeId ? (
-<a
-                      href={`https://www.youtube.com/watch?v=${youtubeId}&t=${match.progress_seconds}s`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={t('results.watchOnYouTube')}
-                      className="inline-flex items-center gap-1 self-start rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm sm:self-stretch"
-                    >
-                      {t('results.watchOnYouTube')}
-                    </a>
+                  <a
+                    href={buildWatchUrl(youtubeId, match.progress_seconds)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t('results.watchMoment', { timestamp })}
+                    className="inline-flex min-h-11 max-w-full items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-action @min-[36rem]/matches:self-stretch"
+                  >
+                    {t('results.watchOnYouTube')}
+                    <IconExternalLink />
+                  </a>
                 ) : null}
               </div>
             </li>
@@ -176,13 +204,14 @@ export function ResultsList({
       </ol>
       {capped ? (
         <button
+          ref={toggleRef}
           type="button"
-          className="mt-3 text-sm font-semibold text-primary transition-colors duration-200 hover:underline"
-          onClick={() => setExpandedKeyword(expanded ? null : keyword)}
+          aria-expanded={expanded}
+          aria-controls={listId}
+          className="mt-3 min-h-11 rounded-lg px-2 text-sm font-semibold text-primary transition-colors duration-200 hover:underline focus-visible:outline-2 focus-visible:outline-action"
+          onClick={toggleExpanded}
         >
-          {expanded
-            ? t('results.showLess', { count: matches.length })
-            : t('results.showMore', { count: hiddenCount })}
+          {expanded ? t('results.showLess') : t('results.showMore', { count: hiddenCount })}
         </button>
       ) : null}
     </section>

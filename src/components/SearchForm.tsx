@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import { useRef, useState, useEffect, useImperativeHandle } from 'react';
+import type { ChangeEvent, FormEvent, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLanguage } from '../i18n';
-import { parseYouTubeId } from '../utils/youtube';
+import { inspectYouTubeUrl } from '../utils/youtube';
+import type { YouTubeUrlIssue } from '../utils/youtube';
 import {
   IconAlert,
   IconClipboard,
@@ -13,7 +14,15 @@ import {
   IconX,
 } from './icons';
 
+export interface SearchFormHandle {
+  /** Preserve the video URL and return to editing the phrase after a search. */
+  focusKeyword(clear?: boolean): void;
+  /** Submit current field values through the same custom validation as the main CTA. */
+  submit(): void;
+}
+
 interface Props {
+  ref?: Ref<SearchFormHandle>;
   onSubmit: (url: string, keyword: string) => void;
   onCancel?: () => void;
   disabled?: boolean;
@@ -25,12 +34,15 @@ interface Props {
  * Field error codes. They are stored untranslated and resolved with `t()` at
  * render time, so a visible error follows the active language (EN/AR) live.
  */
-type UrlError = 'required' | 'invalid';
+type UrlError = 'required' | YouTubeUrlIssue;
+type PasteIssue = 'unavailable' | 'empty';
 type KeywordError = 'required';
 
 const URL_ERROR_KEY: Record<UrlError, string> = {
   required: 'error.urlRequired',
   invalid: 'error.invalidUrl',
+  unsupportedSource: 'error.unsupportedSource',
+  unsupportedFormat: 'error.unsupportedFormat',
 };
 
 const KEYWORD_ERROR_KEY: Record<KeywordError, string> = {
@@ -47,7 +59,7 @@ function isArabicText(value: string): boolean {
 function validateUrl(value: string): UrlError | null {
   const clean = value.trim();
   if (!clean) return 'required';
-  return parseYouTubeId(clean) ? null : 'invalid';
+  return inspectYouTubeUrl(clean).issue;
 }
 
 /** The single source of truth for keyword validity. */
@@ -61,7 +73,7 @@ function validateKeyword(value: string): KeywordError | null {
  *  - trailing Paste/clear buttons + error icon: pe-[value] set per field
  */
 const inputBase =
-  'w-full rounded-lg border px-4 py-2.5 ps-10 text-slate-900 placeholder:text-slate-500 transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2';
+  'min-h-14 w-full rounded-lg border px-4 py-2.5 ps-10 text-base text-slate-900 placeholder:text-slate-500 transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2';
 
 /**
  * Quiet "ghost" action shown inside a field's trailing rail (the clear × and
@@ -69,7 +81,7 @@ const inputBase =
  * never be mistaken for the primary submit CTA.
  */
 const RAIL_ICON_BUTTON =
-  'pointer-events-auto inline-flex h-8 w-8 items-center justify-center text-slate-500 transition-colors duration-200 hover:bg-slate-200/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40 disabled:hover:bg-transparent';
+  'pointer-events-auto inline-flex h-11 w-11 shrink-0 items-center justify-center text-slate-500 transition-colors duration-200 hover:bg-slate-200/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40 disabled:hover:bg-transparent';
 
 /**
  * Paste action inside the URL field. Deliberately more prominent than the quiet
@@ -79,7 +91,7 @@ const RAIL_ICON_BUTTON =
  * secondary in-field affordance, never a rival to the primary submit CTA.
  */
 const PASTE_ICON_BUTTON =
-  'pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-accent-strong transition-all duration-200 hover:bg-accent/20 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-40 disabled:hover:scale-100 disabled:hover:bg-accent/10';
+  'pointer-events-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent-strong transition-all duration-200 hover:bg-accent/20 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-40 disabled:hover:scale-100 disabled:hover:bg-accent/10';
 
 /** Short bullet keys shown under the CTA; the long form goes in the popover. */
 const HELPER_BULLETS = ['form.helperAccepted', 'form.helperSpeed', 'form.helperPrivacy'] as const;
@@ -100,9 +112,9 @@ function fieldStateClass(hasError: boolean): string {
  * `<strong>Ctrl/⌘+V</strong>` segment; we split on that marker so we can
  * render the keyboard shortcut semantically without using innerHTML.
  */
-function PasteFallbackNotice() {
+function PasteFallbackNotice({ issue }: { issue: PasteIssue }) {
   const { t } = useTranslation();
-  const raw = t('form.pasteBlocked');
+  const raw = `${t(issue === 'empty' ? 'form.pasteEmpty' : 'form.pasteBlocked')} ${t('form.pasteManual')}`;
   const marker = /<strong>([^<]+)<\/strong>/;
   const match = raw.match(marker);
   let before = raw;
@@ -124,7 +136,7 @@ function PasteFallbackNotice() {
       </span>
       <span>
         {before}
-        {shortcut ? <strong className="font-bold">{shortcut}</strong> : null}
+        {shortcut ? <strong className="font-bold"><bdi dir="ltr">{shortcut}</bdi></strong> : null}
         {after}
       </span>
     </div>
@@ -132,7 +144,7 @@ function PasteFallbackNotice() {
 }
 
 /**
- * قفزه search form. Renders centered card fields with auto-RTL support
+ * قفزة search form. Renders centered card fields with auto-RTL support
  * for the keyword input based on the detected language or typed text.
  *
  * Validation is fully custom (localized, YouTube-aware) and is the only
@@ -152,6 +164,7 @@ function PasteFallbackNotice() {
  * works" popover (Escape or an outside click dismisses it).
  */
 export function SearchForm({
+  ref,
   onSubmit,
   onCancel,
   disabled = false,
@@ -163,16 +176,83 @@ export function SearchForm({
   const [keyword, setKeyword] = useState(initialKeyword);
   const [urlError, setUrlError] = useState<UrlError | null>(null);
   const [keywordError, setKeywordError] = useState<KeywordError | null>(null);
-  // Persistent paste-failure flag: once set, stays until the user types,
-  // clicks a different action, or successfully pastes — no auto-dismiss.
-  const [pasteFailed, setPasteFailed] = useState(false);
+  // Keep recovery guidance visible until the user edits or retries the action.
+  const [pasteIssue, setPasteIssue] = useState<PasteIssue | null>(null);
+  const clipboardRequestRef = useRef(0);
+  const formRef = useRef<HTMLFormElement>(null);
+  const focusFrameRef = useRef<number | null>(null);
   const urlRef = useRef<HTMLInputElement>(null);
   const keywordRef = useRef<HTMLInputElement>(null);
   // Disclosure for the detailed privacy/how-it-works copy kept out of the
   // reading flow: a small popover anchored to a quiet text trigger.
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsLayout, setDetailsLayout] = useState({ above: true, maxHeight: 384 });
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const detailsTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  const cancelPendingFieldAction = () => {
+    clipboardRequestRef.current += 1;
+    if (focusFrameRef.current !== null) {
+      cancelAnimationFrame(focusFrameRef.current);
+      focusFrameRef.current = null;
+    }
+  };
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focusKeyword(clear = false) {
+        cancelPendingFieldAction();
+        setPasteIssue(null);
+        if (clear) {
+          setKeyword('');
+          setKeywordError(null);
+        }
+        setDetailsOpen(false);
+        if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
+        // Wait for the idle layout and any field reset before restoring focus.
+        focusFrameRef.current = requestAnimationFrame(() => {
+          focusFrameRef.current = null;
+          keywordRef.current?.focus({ preventScroll: true });
+          keywordRef.current?.select();
+          formRef.current?.scrollIntoView?.({ behavior: 'instant', block: 'start' });
+        });
+      },
+      submit() {
+        formRef.current?.requestSubmit();
+      },
+    }),
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      cancelPendingFieldAction();
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (disabled) cancelPendingFieldAction();
+  }, [disabled]);
+
+  const positionDetails = () => {
+    const anchor = detailsTriggerRef.current?.getBoundingClientRect();
+    if (!anchor) return;
+    const viewport = window.visualViewport;
+    const top = viewport?.offsetTop ?? 0;
+    const bottom = top + (viewport?.height ?? window.innerHeight);
+    if (anchor.bottom < top || anchor.top > bottom) {
+      setDetailsOpen(false);
+      return;
+    }
+    const aboveSpace = Math.max(0, anchor.top - top - 16);
+    const belowSpace = Math.max(0, bottom - anchor.bottom - 16);
+    const above = aboveSpace >= belowSpace;
+    const maxHeight = Math.min(384, above ? aboveSpace : belowSpace);
+    setDetailsLayout((current) => current.above === above && current.maxHeight === maxHeight
+      ? current : { above, maxHeight });
+  };
 
   useEffect(() => {
     if (!detailsOpen) return;
@@ -187,10 +267,18 @@ export function SearchForm({
         detailsTriggerRef.current?.focus();
       }
     };
+    window.addEventListener('resize', positionDetails);
+    window.addEventListener('scroll', positionDetails, true);
+    window.visualViewport?.addEventListener('resize', positionDetails);
+    window.visualViewport?.addEventListener('scroll', positionDetails);
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('touchstart', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
     return () => {
+      window.removeEventListener('resize', positionDetails);
+      window.removeEventListener('scroll', positionDetails, true);
+      window.visualViewport?.removeEventListener('resize', positionDetails);
+      window.visualViewport?.removeEventListener('scroll', positionDetails);
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('touchstart', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
@@ -205,49 +293,53 @@ export function SearchForm({
     typeof navigator.clipboard !== 'undefined' &&
     typeof navigator.clipboard.readText === 'function';
 
-  const showPasteFallback = () => {
-    setPasteFailed(true);
-    // Select the existing contents (if any) so a single Ctrl/Cmd+V replaces it.
-    requestAnimationFrame(() => {
+  const focusPastedUrl = (request: number, select: boolean) => {
+    if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
+    focusFrameRef.current = requestAnimationFrame(() => {
+      focusFrameRef.current = null;
+      if (request !== clipboardRequestRef.current) return;
       const el = urlRef.current;
-      if (el) {
-        el.focus();
-        el.select();
-      }
+      if (!el || el.readOnly) return;
+      el.focus();
+      if (select) el.select();
+      else el.setSelectionRange(el.value.length, el.value.length);
     });
   };
 
+  const showPasteFallback = (issue: PasteIssue, request: number) => {
+    setPasteIssue(issue);
+    focusPastedUrl(request, true);
+  };
+
   const handlePaste = async () => {
+    if (disabled) return;
+    cancelPendingFieldAction();
+    const request = clipboardRequestRef.current;
     if (!canPaste) {
-      showPasteFallback();
+      showPasteFallback('unavailable', request);
       return;
     }
     try {
       const text = await navigator.clipboard.readText();
+      // A delayed clipboard response must not overwrite edits or an active search.
+      if (request !== clipboardRequestRef.current) return;
       const trimmed = text.trim();
       if (!trimmed) {
-        showPasteFallback();
+        showPasteFallback('empty', request);
         return;
       }
       setUrl(trimmed);
-      setPasteFailed(false);
+      setPasteIssue(null);
       if (urlError !== null) setUrlError(validateUrl(trimmed));
-      // Focus and place caret at the end so the user can edit what was pasted.
-      requestAnimationFrame(() => {
-        const el = urlRef.current;
-        if (el) {
-          el.focus();
-          el.setSelectionRange(el.value.length, el.value.length);
-        }
-      });
+      focusPastedUrl(request, false);
     } catch {
-      // Permission denied or not a secure context — activate the persistent
-      // select/copy fallback state.
-      showPasteFallback();
+      if (request !== clipboardRequestRef.current) return;
+      showPasteFallback('unavailable', request);
     }
   };
 
   const isArabicLanguage = getLanguage() === 'ar';
+  const urlDir = isArabicLanguage ? 'rtl' : 'ltr';
   const keywordDir = isArabicText(keyword) || isArabicLanguage ? 'rtl' : 'ltr';
   const textAlignStyle = keywordDir === 'rtl' ? 'right' : 'left';
   const styleInjected = useRef(false);
@@ -271,29 +363,23 @@ export function SearchForm({
         text-align: left !important;
         direction: ltr;
       }
-      /* URL field stays LTR for typed URLs, but in Arabic mode its placeholder
-         is right-aligned so it reads from the right edge exactly like the
-         keyword field's Arabic placeholder. */
-      .search-input--ph-rtl::placeholder,
-      .search-input--ph-rtl::-webkit-input-placeholder,
-      .search-input--ph-rtl::-moz-placeholder,
-      .search-input--ph-rtl:-ms-input-placeholder {
-        text-align: right !important;
-        direction: rtl;
-      }
     `;
     document.head.appendChild(style);
   }, []);
 
   const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
+    cancelPendingFieldAction();
     const value = event.target.value;
     setUrl(value);
     // User started typing again — paste failure is resolved.
-    if (pasteFailed) setPasteFailed(false);
+    if (pasteIssue) setPasteIssue(null);
     if (urlError !== null) setUrlError(validateUrl(value));
   };
 
   const handleKeywordChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
+    cancelPendingFieldAction();
     const value = event.target.value;
     setKeyword(value);
     if (keywordError !== null) setKeywordError(validateKeyword(value));
@@ -301,6 +387,9 @@ export function SearchForm({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (disabled) return;
+    cancelPendingFieldAction();
+    setPasteIssue(null);
     const cleanUrl = url.trim();
     const cleanKeyword = keyword.trim();
 
@@ -319,14 +408,18 @@ export function SearchForm({
 
   /** Clear just the URL field — no automatic cascade. */
   const handleClearUrl = () => {
+    if (disabled) return;
+    cancelPendingFieldAction();
     setUrl('');
     setUrlError(null);
-    setPasteFailed(false);
+    setPasteIssue(null);
     urlRef.current?.focus();
   };
 
   /** Clear just the keyword field — no automatic cascade. */
   const handleClearKeyword = () => {
+    if (disabled) return;
+    cancelPendingFieldAction();
     setKeyword('');
     setKeywordError(null);
     keywordRef.current?.focus();
@@ -334,11 +427,13 @@ export function SearchForm({
 
   /** Clear all fields — requires an explicit click; nothing auto-clears. */
   const handleClearAll = () => {
+    if (disabled) return;
+    cancelPendingFieldAction();
     setUrl('');
     setKeyword('');
     setUrlError(null);
     setKeywordError(null);
-    setPasteFailed(false);
+    setPasteIssue(null);
     urlRef.current?.focus();
   };
 
@@ -346,23 +441,43 @@ export function SearchForm({
   const hasKeyword = keyword.trim().length > 0;
   const hasInput = hasUrl || hasKeyword;
 
-  const keywordTrailing =
-    keywordError && hasKeyword ? 'pe-18' : keywordError ? 'pe-8' : hasKeyword ? 'pe-10' : 'pe-4';
+  const showUrlClear = hasUrl && !disabled;
+  // Keep the 44px Paste target inside the URL field, but move URL clear to
+  // the label row so even a narrow field has room for the URL and error icon.
+  const urlTrailing = urlError ? 'pe-22' : 'pe-14';
+  const keywordTrailing = keywordError
+    ? hasKeyword && !disabled ? 'pe-22' : 'pe-10'
+    : hasKeyword && !disabled ? 'pe-14' : 'pe-4';
 
   return (
     <form
-      className="mx-auto grid w-full max-w-2xl gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl ring-1 ring-slate-900/5 hover:shadow-2xl transition-shadow sm:p-8 lg:p-9 animate-fade-in-up"
+      ref={formRef}
+      className="@container/search-form scroll-mt-6 mx-auto grid w-full max-w-2xl gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl ring-1 ring-slate-900/5 hover:shadow-2xl transition-shadow sm:p-8 lg:p-9 animate-fade-in-up"
       onSubmit={handleSubmit}
       aria-label={t('form.title')}
       noValidate
     >
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="url">
-          {t('form.urlLabel')}
-        </label>
-        {/* URLs are intrinsically LTR: the field never follows the phrase's
-            direction, so caret movement and editing stay predictable. */}
-        <div className="relative">
+        <div className="flex min-h-11 items-center justify-between gap-2">
+          <label className="text-sm font-semibold text-slate-700 rtl:text-right" htmlFor="url">
+            {t('form.urlLabel')}
+          </label>
+          {showUrlClear ? (
+            <button
+              type="button"
+              onClick={handleClearUrl}
+              aria-label={t('form.clearUrl')}
+              aria-controls="url"
+              title={t('form.clearUrl')}
+              className={`${RAIL_ICON_BUTTON} rounded-full`}
+            >
+              <IconX size={16} />
+            </button>
+          ) : null}
+        </div>
+        {/* URL alignment follows the UI language, not the phrase's script.
+            Logical padding and controls mirror together without changing the URL value. */}
+        <div className="relative" dir={urlDir}>
           <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400">  
             <IconVideo size={18} />
           </span>
@@ -370,37 +485,28 @@ export function SearchForm({
             id="url"
             ref={urlRef}
             type="url"
-            dir="ltr"
+            readOnly={disabled}
+            dir={urlDir}
             value={url}
             onChange={handleUrlChange}
             placeholder={t('form.urlPlaceholder')}
-            aria-describedby={urlError ? 'url-error' : pasteFailed ? 'url-paste-notice' : undefined}
+            aria-describedby={[
+              urlError ? 'url-error' : '',
+              pasteIssue ? 'url-paste-notice' : '',
+              disabled ? 'search-lock-hint' : '',
+            ].filter(Boolean).join(' ') || undefined}
             aria-invalid={urlError ? true : undefined}
-              className={`${withTrailingPad(
-              keywordTrailing,
-              keywordDir === 'rtl'
+            className={`${withTrailingPad(
+              urlTrailing,
+              urlDir === 'rtl'
                 ? 'search-input--rtl text-right placeholder:text-right'
                 : 'search-input--ltr text-left placeholder:text-left',
-            )} ${fieldStateClass(keywordError !== null)}`}
-            style={{ textAlign: textAlignStyle, direction: keywordDir }}
+            )} ${fieldStateClass(urlError !== null)}`}
+            style={{ textAlign: urlDir === 'rtl' ? 'right' : 'left', direction: urlDir }}
           />
 
-          {/* Trailing controls: × clear → error icon → Paste, in a fixed flex
-              rail at end-2 so they never overlap. Both actions share the same
-              flat ghost chrome so neither reads as a submit button. */}
+          {/* The field's logical end rail mirrors with the selected UI language. */}
           <span className="pointer-events-none absolute end-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
-            {/* Per-field clear (×) — only when URL has text. */}
-            {hasUrl && !disabled ? (
-              <button
-                type="button"
-                onClick={handleClearUrl}
-                aria-label={t('form.clearUrl')}
-                title={t('form.clearUrl')}
-                className={`${RAIL_ICON_BUTTON} rounded-full`}
-              >
-                <IconX size={14} />
-              </button>
-            ) : null}
             {urlError ? (
               <span
                 aria-hidden="true"
@@ -424,7 +530,7 @@ export function SearchForm({
         </div>
         {urlError ? (
           <p
-            className="flex items-center gap-1.5 text-sm font-semibold text-danger rtl:text-right"
+            className="flex items-start gap-1.5 text-sm font-semibold text-danger rtl:text-right [overflow-wrap:anywhere]"
             role="alert"
             id="url-error"
           >
@@ -432,7 +538,7 @@ export function SearchForm({
             {t(URL_ERROR_KEY[urlError])}
           </p>
         ) : null}
-        {pasteFailed && !urlError ? <PasteFallbackNotice /> : null}
+        {pasteIssue ? <PasteFallbackNotice issue={pasteIssue} /> : null}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -447,11 +553,12 @@ export function SearchForm({
             id="keyword"
             ref={keywordRef}
             type="text"
+            readOnly={disabled}
             dir={keywordDir}
             value={keyword}
             onChange={handleKeywordChange}
             placeholder={t('form.keywordPlaceholder')}
-            aria-describedby={keywordError ? 'keyword-error' : undefined}
+            aria-describedby={keywordError ? 'keyword-error' : disabled ? 'search-lock-hint' : undefined}
             aria-invalid={keywordError ? true : undefined}
             className={`${withTrailingPad(
               keywordTrailing,
@@ -486,7 +593,7 @@ export function SearchForm({
         </div>
         {keywordError ? (
           <p
-            className="flex items-center gap-1.5 text-sm font-semibold text-danger rtl:text-right"
+            className="flex items-start gap-1.5 text-sm font-semibold text-danger rtl:text-right [overflow-wrap:anywhere]"
             role="alert"
             id="keyword-error"
           >
@@ -497,6 +604,11 @@ export function SearchForm({
       </div>
 
       <div className="flex flex-col gap-3 pb-4">
+        {disabled ? (
+          <p id="search-lock-hint" className="text-sm text-muted-strong">
+            {t('form.processingHint')}
+          </p>
+        ) : null}
         <button
           type="submit"
           disabled={disabled}
@@ -543,8 +655,8 @@ export function SearchForm({
       {/* Helper block: three scannable bullets replace the long paragraph; the
           detailed privacy/how-it-works copy lives in a click-through popover
           so the form itself stays quiet. */}
-      <div className="flex items-start justify-between gap-x-3 rounded-lg border border-slate-200/80 bg-slate-50 px-3.5 py-3">
-        <ul className="flex flex-col gap-1.5 text-xs leading-relaxed text-muted-strong">
+      <div className="flex min-w-0 flex-col items-start gap-3 rounded-lg border border-slate-200/80 bg-slate-50 px-3.5 py-3 @min-[32rem]/search-form:flex-row @min-[32rem]/search-form:justify-between">
+        <ul className="flex min-w-0 flex-1 flex-col gap-1.5 text-xs leading-relaxed text-muted-strong [overflow-wrap:anywhere]">
           {HELPER_BULLETS.map((key) => (
             <li key={key} className="flex items-start gap-2">
               <span
@@ -555,14 +667,17 @@ export function SearchForm({
             </li>
           ))}
         </ul>
-        <div ref={detailsRef} className="relative shrink-0">
+        <div ref={detailsRef} className="relative w-full min-w-0 @min-[32rem]/search-form:w-auto @min-[32rem]/search-form:shrink-0">
           <button
             type="button"
             ref={detailsTriggerRef}
-            onClick={() => setDetailsOpen((value) => !value)}
+            onClick={() => {
+              positionDetails();
+              setDetailsOpen((value) => !value);
+            }}
             aria-expanded={detailsOpen}
             aria-controls="form-helper-details"
-            className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-semibold text-muted-strong transition-colors duration-200 hover:text-action-hover hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            className="inline-flex max-w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-semibold text-muted-strong transition-colors duration-200 hover:text-action-hover hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             <IconInfo size={14} />
             {t('form.helperDetailsTrigger')}
@@ -570,11 +685,13 @@ export function SearchForm({
           {detailsOpen ? (
             <div
               id="form-helper-details"
-              className="animate-fade-in absolute bottom-full end-0 z-20 mb-2 w-[min(20rem,calc(100vw-3rem))] rounded-xl border border-slate-200 bg-white p-3 text-start text-xs leading-relaxed text-muted-strong shadow-lg"
+              className={`animate-fade-in absolute end-0 z-20 w-full overflow-y-auto @min-[32rem]/search-form:w-80 rounded-xl border border-slate-200 bg-white p-3 text-start text-xs leading-relaxed text-muted-strong shadow-lg ${detailsLayout.above ? 'bottom-full mb-2' : 'top-full mt-2'}`}
+              style={{ maxHeight: detailsLayout.maxHeight }}
               role="group"
               aria-label={t('form.helperDetailsTitle')}
             >
               <p className="mb-1 text-xs font-bold text-brand">{t('form.helperDetailsTitle')}</p>
+              <p className="mb-2 rtl:text-right">{t('form.helperSources')}</p>
               <p className="m-0 rtl:text-right">{t('form.helperDetails')}</p>
             </div>
           ) : null}

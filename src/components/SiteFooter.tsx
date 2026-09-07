@@ -9,7 +9,7 @@ export function SiteFooter() {
       style={{ animationDelay: '0.4s' }}
     >
       <p className="font-medium text-slate-600 mb-2">{t('footer.note')}</p>
-      <p className="text-xs text-slate-400 hover:text-slate-500 transition-colors">
+      <p className="text-xs text-muted">
         {t('footer.rights', { year: new Date().getFullYear() })}
       </p>
     </footer>

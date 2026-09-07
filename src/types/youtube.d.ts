@@ -8,10 +8,14 @@ interface YTPlayer {
 
 interface YTPlayerOptions {
   videoId: string;
+  width?: string | number;
+  height?: string | number;
   playerVars?: Record<string, string | number | undefined>;
   events?: {
     onReady?: (event: { target: YTPlayer }) => void;
     onError?: (event: { data: number }) => void;
+    onStateChange?: (event: { target: YTPlayer; data: number }) => void;
+    onAutoplayBlocked?: (event: { target: YTPlayer }) => void;
   };
 }
 

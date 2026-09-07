@@ -1,15 +1,17 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { setLanguage } from '../i18n';
 import { SearchForm } from '../components/SearchForm';
+import type { SearchFormHandle } from '../components/SearchForm';
+import { createRef } from 'react';
 
 const onSubmit = vi.fn();
 
 describe('SearchForm', () => {
   it('renders url and keyword inputs', () => {
     render(<SearchForm onSubmit={onSubmit} />);
-    expect(screen.getByLabelText('Video URL')).toBeInTheDocument();
+    expect(screen.getByLabelText('YouTube URL')).toBeInTheDocument();
     expect(screen.getByLabelText('Word or phrase')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Jump to the moment' })).toBeInTheDocument();
   });
@@ -18,7 +20,7 @@ describe('SearchForm', () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByText('Please enter a video URL.')).toBeInTheDocument();
+    expect(screen.getByText('Please enter a YouTube URL.')).toBeInTheDocument();
     expect(screen.getByText('Please enter a word or phrase.')).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -28,7 +30,7 @@ describe('SearchForm', () => {
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(screen.getByLabelText('Word or phrase'), 'hello');
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByText('Please enter a video URL.')).toBeInTheDocument();
+    expect(screen.getByText('Please enter a YouTube URL.')).toBeInTheDocument();
     expect(screen.queryByText('Please enter a word or phrase.')).not.toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -37,22 +39,22 @@ describe('SearchForm', () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(
-      screen.getByLabelText('Video URL'),
+      screen.getByLabelText('YouTube URL'),
       'https://www.youtube.com/watch?v=abcdef12345',
     );
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
     expect(screen.getByText('Please enter a word or phrase.')).toBeInTheDocument();
-    expect(screen.queryByText('Please enter a video URL.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Please enter a YouTube URL.')).not.toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('shows an error for an invalid url', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Video URL'), 'https://example.com/video');
+    await user.type(screen.getByLabelText('YouTube URL'), 'https://example.com/video');
     await user.type(screen.getByLabelText('Word or phrase'), 'hello');
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByText('Please enter a valid video URL.')).toBeInTheDocument();
+    expect(screen.getByText('Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.')).toBeInTheDocument();
     expect(screen.queryByText('Please enter a word or phrase.')).not.toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -61,7 +63,7 @@ describe('SearchForm', () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(
-      screen.getByLabelText('Video URL'),
+      screen.getByLabelText('YouTube URL'),
       'https://www.youtube.com/watch?v=abcdef12345',
     );
     await user.type(screen.getByLabelText('Word or phrase'), '  hello world  ');
@@ -81,7 +83,7 @@ describe('SearchForm', () => {
   it('switches only the keyword input to RTL when Arabic text is typed', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
-    const url = screen.getByLabelText('Video URL');
+    const url = screen.getByLabelText('YouTube URL');
     const keyword = screen.getByLabelText('Word or phrase');
     await user.type(keyword, 'مرحبا');
     expect(keyword.getAttribute('dir')).toBe('rtl');
@@ -117,23 +119,23 @@ describe('SearchForm', () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByLabelText('Video URL')).toHaveFocus();
+    expect(screen.getByLabelText('YouTube URL')).toHaveFocus();
     expect(screen.getByLabelText('Word or phrase')).not.toHaveFocus();
   });
 
   it('focuses the url field first when it is invalid and the keyword is empty', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Video URL'), 'https://example.com/video');
+    await user.type(screen.getByLabelText('YouTube URL'), 'https://example.com/video');
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByLabelText('Video URL')).toHaveFocus();
+    expect(screen.getByLabelText('YouTube URL')).toHaveFocus();
   });
 
   it('focuses the keyword field when only the keyword is missing', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(
-      screen.getByLabelText('Video URL'),
+      screen.getByLabelText('YouTube URL'),
       'https://www.youtube.com/watch?v=abcdef12345',
     );
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
@@ -143,26 +145,97 @@ describe('SearchForm', () => {
   it('marks the invalid field with a red border and exposes the error to AT', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
-    const url = screen.getByLabelText('Video URL');
+    const url = screen.getByLabelText('YouTube URL');
     await user.type(screen.getByLabelText('Word or phrase'), 'hello');
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
     expect(url).toHaveAttribute('aria-invalid', 'true');
     expect(url.className).toContain('border-danger');
-    expect(url).toHaveAccessibleDescription('Please enter a video URL.');
+    expect(url).toHaveAccessibleDescription('Please enter a YouTube URL.');
+  });
+
+  it('does not paint a valid URL red when only the phrase is missing', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} initialUrl="https://youtu.be/abcdef12345" />);
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(screen.getByLabelText('YouTube URL')).not.toHaveClass('border-danger');
+    expect(screen.getByLabelText('YouTube URL')).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByLabelText('Word or phrase')).toHaveClass('border-danger');
+  });
+
+  it('reserves URL-specific space for Paste, clear and error controls', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} initialUrl="invalid" initialKeyword="hello" />);
+    const url = screen.getByLabelText('YouTube URL');
+    expect(url).toHaveClass('pe-14');
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(url).toHaveClass('pe-22', 'border-danger');
+    await user.clear(screen.getByLabelText('Word or phrase'));
+    expect(url).toHaveClass('pe-22');
+    await user.click(screen.getByRole('button', { name: 'Clear YouTube URL' }));
+    expect(url).toHaveClass('pe-14');
+  });
+
+  it('aligns URL text, placeholder and controls RTL in the Arabic interface', async () => {
+    await act(async () => setLanguage('ar'));
+    render(<SearchForm onSubmit={onSubmit} initialUrl="https://youtu.be/abcdef12345" />);
+    const url = screen.getByLabelText('رابط يوتيوب');
+    expect(url).toHaveAttribute('dir', 'rtl');
+    expect(url).toHaveStyle({ direction: 'rtl', textAlign: 'right' });
+    expect(url).toHaveClass('search-input--rtl', 'placeholder:text-right');
+    expect(url.parentElement).toHaveAttribute('dir', 'rtl');
+    expect(screen.getByRole('button', { name: 'لصق' }).parentElement?.parentElement).toBe(url.parentElement);
+  });
+
+  it('changes URL alignment with the UI language without changing its value or following the phrase', async () => {
+    const value = 'https://www.youtube.com/watch?v=abcdef12345&t=90&list=PL123#details';
+    render(<SearchForm onSubmit={onSubmit} initialUrl={value} initialKeyword="مرحبا" />);
+    const url = screen.getByLabelText('YouTube URL');
+    expect(url).toHaveStyle({ direction: 'ltr', textAlign: 'left' });
+    expect(screen.getByLabelText('Word or phrase')).toHaveAttribute('dir', 'rtl');
+
+    await act(async () => setLanguage('ar'));
+    expect(url).toHaveStyle({ direction: 'rtl', textAlign: 'right' });
+    expect(url).toHaveValue(value);
+    expect(url.parentElement).toHaveAttribute('dir', 'rtl');
+
+    await act(async () => setLanguage('en'));
+    expect(url).toHaveStyle({ direction: 'ltr', textAlign: 'left' });
+    expect(url).toHaveClass('search-input--ltr', 'placeholder:text-left');
+    expect(url.parentElement).toHaveAttribute('dir', 'ltr');
+    expect(url).toHaveValue(value);
+    expect(screen.getByLabelText('Word or phrase')).toHaveAttribute('dir', 'rtl');
+  });
+
+  it('preserves the existing RTL phrase-field contract in Arabic mode without changing Latin text', async () => {
+    await act(async () => setLanguage('ar'));
+    const value = 'hello (world) — 01:15';
+    render(<SearchForm onSubmit={onSubmit} initialKeyword={value} />);
+    const phrase = screen.getByLabelText('كلمة أو عبارة');
+    expect(phrase).toHaveStyle({ direction: 'rtl', textAlign: 'right' });
+    expect(phrase).toHaveValue(value);
+  });
+
+  it('submits the original URL including query parameters from the RTL field', async () => {
+    const user = userEvent.setup();
+    const value = 'https://www.youtube.com/watch?v=abcdef12345&t=90&list=PL123#details';
+    await act(async () => setLanguage('ar'));
+    render(<SearchForm onSubmit={onSubmit} initialUrl={value} initialKeyword="hello" />);
+    await user.click(screen.getByRole('button', { name: 'انتقل إلى اللحظة' }));
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith(value, 'hello');
   });
 
   it('clears the url error as soon as the url is corrected', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
-    const url = screen.getByLabelText('Video URL');
+    const url = screen.getByLabelText('YouTube URL');
     await user.type(url, 'https://example.com/video');
     await user.type(screen.getByLabelText('Word or phrase'), 'hello');
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByText('Please enter a valid video URL.')).toBeInTheDocument();
+    expect(screen.getByText('Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.')).toBeInTheDocument();
 
     await user.clear(url);
     await user.type(url, 'https://youtu.be/abcdef12345');
-    expect(screen.queryByText('Please enter a valid video URL.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.')).not.toBeInTheDocument();
     expect(url).not.toHaveAttribute('aria-invalid');
     expect(url.className).not.toContain('border-danger');
   });
@@ -171,7 +244,7 @@ describe('SearchForm', () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(
-      screen.getByLabelText('Video URL'),
+      screen.getByLabelText('YouTube URL'),
       'https://www.youtube.com/watch?v=abcdef12345',
     );
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
@@ -184,21 +257,21 @@ describe('SearchForm', () => {
   it('leaves a valid form untouched until submit', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Video URL'), 'not a url yet');
-    expect(screen.queryByText('Please enter a valid video URL.')).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText('YouTube URL'), 'not a url yet');
+    expect(screen.queryByText('Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.')).not.toBeInTheDocument();
   });
 
   it('keeps the error message in the language the user switches to', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByText('Please enter a video URL.')).toBeInTheDocument();
+    expect(screen.getByText('Please enter a YouTube URL.')).toBeInTheDocument();
 
     await act(async () => {
       setLanguage('ar');
     });
-    expect(screen.getByText('يرجى إدخال رابط فيديو.')).toBeInTheDocument();
-    expect(screen.queryByText('Please enter a video URL.')).not.toBeInTheDocument();
+    expect(screen.getByText('يرجى إدخال رابط يوتيوب.')).toBeInTheDocument();
+    expect(screen.queryByText('Please enter a YouTube URL.')).not.toBeInTheDocument();
   });
 
   it('renders Paste as a quiet in-field icon action, never a primary button', () => {
@@ -212,7 +285,7 @@ describe('SearchForm', () => {
     expect(paste.className).not.toContain('shadow');
     expect(paste.className).not.toContain('border-');
     // Kept discoverable for AT + mouse users.
-    expect(paste).toHaveAttribute('title', 'Paste video URL from clipboard');
+    expect(paste).toHaveAttribute('title', 'Paste YouTube URL from clipboard');
     expect(paste).toHaveAttribute('aria-keyshortcuts', 'Control+V Meta+V');
   });
 
@@ -222,8 +295,8 @@ describe('SearchForm', () => {
 
     const bullets = screen.getByRole('list');
     expect(within(bullets).getAllByRole('listitem')).toHaveLength(3);
-    expect(screen.getByText('Accepts video links (youtube.com / youtu.be).')).toBeInTheDocument();
-    expect(screen.getByText('Seconds if already transcribed — otherwise a few minutes.')).toBeInTheDocument();
+    expect(screen.getByText('Public YouTube videos (watch / youtu.be links).')).toBeInTheDocument();
+    expect(screen.getByText('First search: a few minutes. Cached searches are usually faster.')).toBeInTheDocument();
     expect(screen.getByText('Nothing is stored beyond the session cache.')).toBeInTheDocument();
     // The long paragraph no longer sits in the reading flow.
     expect(screen.queryByText(/Transcripts are kept only in the session cache/)).not.toBeInTheDocument();
@@ -235,6 +308,23 @@ describe('SearchForm', () => {
     expect(
       screen.getByText(/Transcripts are kept only in the session cache/),
     ).toBeInTheDocument();
+  });
+
+  it('flips and bounds the help popover when its trigger is near a viewport edge', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} />);
+    const trigger = screen.getByRole('button', { name: 'Privacy & how it works' });
+    const bounds = vi.spyOn(trigger, 'getBoundingClientRect');
+    bounds.mockReturnValue(new DOMRect(10, 10, 240, 28));
+    await user.click(trigger);
+    expect(screen.getByRole('group', { name: 'Data & timing' })).toHaveClass('top-full');
+    bounds.mockReturnValue(new DOMRect(10, window.innerHeight - 40, 240, 28));
+    fireEvent(window, new Event('resize'));
+    expect(screen.getByRole('group', { name: 'Data & timing' })).toHaveClass('bottom-full');
+    expect(screen.getByRole('group', { name: 'Data & timing' })).toHaveStyle({ maxHeight: '384px' });
+    bounds.mockReturnValue(new DOMRect(10, -100, 240, 28));
+    fireEvent(window, new Event('scroll'));
+    expect(screen.queryByRole('group', { name: 'Data & timing' })).not.toBeInTheDocument();
   });
 
   it('closes the helper popover on Escape and on an outside click', async () => {
@@ -257,7 +347,7 @@ describe('SearchForm', () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.click(screen.getByRole('button', { name: 'Privacy & how it works' }));
-    expect(screen.getByText('Accepts video links (youtube.com / youtu.be).')).toBeInTheDocument();
+    expect(screen.getByText('Public YouTube videos (watch / youtu.be links).')).toBeInTheDocument();
 
     await act(async () => {
       setLanguage('ar');
@@ -267,6 +357,137 @@ describe('SearchForm', () => {
       'true',
     );
     expect(screen.getByText('لا يُخزَّن شيء بعد انتهاء جلسة المتصفح.')).toBeInTheDocument();
-    expect(screen.queryByText('Accepts video links (youtube.com / youtu.be).')).not.toBeInTheDocument();
+    expect(screen.queryByText('Public YouTube videos (watch / youtu.be links).')).not.toBeInTheDocument();
+  });
+});
+
+describe('source guidance, locked searches and clipboard recovery', () => {
+  const urlValue = 'https://youtu.be/abcdef12345';
+
+  it.each(['shorts', 'live', 'embed'])('gives correction instructions for a %s URL', async (format) => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} initialUrl={`https://youtube.com/${format}/abcdef12345`} initialKeyword="hello" />);
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Open the video’s watch page');
+    expect(screen.getByLabelText('YouTube URL')).toHaveFocus();
+    expect(screen.getByLabelText('YouTube URL')).toHaveClass('border-danger');
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('keeps invalid-link guidance distinct from unsupported-source guidance', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} initialUrl="not a link" initialKeyword="hello" />);
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('This link does not identify a YouTube video.');
+  });
+
+  it('locks both fields and their actions while a search is in progress', async () => {
+    const user = userEvent.setup();
+    render(<SearchForm onSubmit={onSubmit} disabled initialUrl={urlValue} initialKeyword="hello" onCancel={vi.fn()} />);
+    const url = screen.getByLabelText('YouTube URL');
+    const keyword = screen.getByLabelText('Word or phrase');
+    expect(url).toHaveAttribute('readonly');
+    expect(keyword).toHaveAttribute('readonly');
+    expect(url).toHaveAccessibleDescription('Search in progress. Cancel to edit the URL or phrase.');
+    await user.type(url, 'changed');
+    await user.type(keyword, 'changed');
+    expect(url).toHaveValue(urlValue);
+    expect(keyword).toHaveValue('hello');
+    expect(screen.getByRole('button', { name: 'Paste' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Clear YouTube URL' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Clear word or phrase' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel search' })).toBeEnabled();
+  });
+
+  it('submits current edits through the imperative retry entry point', () => {
+    const ref = createRef<SearchFormHandle>();
+    render(<SearchForm ref={ref} onSubmit={onSubmit} initialUrl={urlValue} initialKeyword="old" />);
+    fireEvent.change(screen.getByLabelText('Word or phrase'), { target: { value: 'new phrase' } });
+    act(() => ref.current?.submit());
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith(urlValue, 'new phrase');
+  });
+
+  it('gives the field buttons 44px targets without squeezing two buttons inside the URL field', () => {
+    render(<SearchForm onSubmit={onSubmit} initialUrl={urlValue} initialKeyword="hello" />);
+    for (const name of ['Paste', 'Clear YouTube URL', 'Clear word or phrase']) {
+      expect(screen.getByRole('button', { name })).toHaveClass('h-11', 'w-11');
+    }
+    const url = screen.getByLabelText('YouTube URL');
+    expect(url.parentElement).toContainElement(screen.getByRole('button', { name: 'Paste' }));
+    expect(url.parentElement).not.toContainElement(screen.getByRole('button', { name: 'Clear YouTube URL' }));
+  });
+
+  it('offers manual recovery when the Clipboard API is unavailable', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(navigator, 'clipboard', 'get').mockReturnValue(undefined as unknown as Clipboard);
+    render(<SearchForm onSubmit={onSubmit} initialUrl={urlValue} />);
+    await user.click(screen.getByRole('button', { name: 'Paste' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Clipboard access isn’t available here.');
+    expect(screen.getByLabelText('YouTube URL')).toHaveValue(urlValue);
+  });
+
+  it('pastes successfully and focuses the URL field', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, 'readText').mockResolvedValue(`  ${urlValue}  `);
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.click(screen.getByRole('button', { name: 'Paste' }));
+    const input = screen.getByLabelText<HTMLInputElement>('YouTube URL');
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveValue(urlValue);
+    expect(input.selectionStart).toBe(urlValue.length);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it.each(['denied', 'empty'] as const)('preserves the URL and offers mobile/keyboard recovery for a %s clipboard', async (reason) => {
+    const user = userEvent.setup();
+    const read = vi.spyOn(navigator.clipboard, 'readText');
+    if (reason === 'denied') read.mockRejectedValue(new Error('denied'));
+    else read.mockResolvedValue('   ');
+    render(<SearchForm onSubmit={onSubmit} initialUrl={urlValue} />);
+    await user.click(screen.getByRole('button', { name: 'Paste' }));
+    const notice = screen.getByRole('alert');
+    expect(notice).toHaveTextContent(reason === 'denied' ? 'Clipboard access isn’t available here.' : 'Your clipboard is empty.');
+    expect(notice).toHaveTextContent('On a phone, touch and hold the URL field and choose Paste.');
+    expect(notice).toHaveTextContent('Ctrl/⌘+V');
+    const input = screen.getByLabelText<HTMLInputElement>('YouTube URL');
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveValue(urlValue);
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, urlValue.length]);
+    await user.type(input, 'https://youtu.be/zyxwvut9876');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('does not hide clipboard recovery behind an existing URL validation error', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, 'readText').mockRejectedValue(new Error('denied'));
+    render(<SearchForm onSubmit={onSubmit} initialUrl="invalid" initialKeyword="hello" />);
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    await user.click(screen.getByRole('button', { name: 'Paste' }));
+    const input = screen.getByLabelText('YouTube URL');
+    expect(input).toHaveAccessibleDescription(/This link does not identify a YouTube video/);
+    expect(input).toHaveAccessibleDescription(/Clipboard access isn’t available here/);
+    expect(document.getElementById('url-paste-notice')).toBeInTheDocument();
+  });
+
+  it('localizes manual paste instructions while isolating the keyboard shortcut', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, 'readText').mockRejectedValue(new Error('denied'));
+    await act(async () => setLanguage('ar'));
+    render(<SearchForm onSubmit={onSubmit} />);
+    await user.click(screen.getByRole('button', { name: 'لصق' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('اضغط مطولًا داخل حقل الرابط');
+    expect(screen.getByText('Ctrl/⌘+V')).toHaveAttribute('dir', 'ltr');
+  });
+
+  it('ignores clipboard responses that arrive after the fields become locked', async () => {
+    const user = userEvent.setup();
+    let resolve!: (value: string) => void;
+    vi.spyOn(navigator.clipboard, 'readText').mockReturnValue(new Promise((res) => { resolve = res; }));
+    const { rerender } = render(<SearchForm onSubmit={onSubmit} initialUrl={urlValue} />);
+    await user.click(screen.getByRole('button', { name: 'Paste' }));
+    rerender(<SearchForm onSubmit={onSubmit} disabled initialUrl={urlValue} />);
+    await act(async () => resolve('https://youtu.be/zyxwvut9876'));
+    expect(screen.getByLabelText('YouTube URL')).toHaveValue(urlValue);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

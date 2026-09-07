@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, fetchJobStatus, fetchVideoSearch } from '../api/client';
 import type { SearchMatch, StatusResponse } from '../types';
@@ -20,56 +20,64 @@ interface PollInput extends PollCallbacks {
   jobId: string;
   videoId: string;
   keyword: string;
+  signal?: AbortSignal;
 }
 
-/** Poll a job until it reaches a terminal state, then fetch its results. */
+/** Poll a job until it reaches a terminal state, ignoring obsolete requests. */
 export function useJobPolling({
   jobId,
   videoId,
   keyword,
+  signal,
   onProgress,
   onSuccess,
   onError,
 }: PollInput): void {
   const { t } = useTranslation();
-  const handle = useCallback(async (): Promise<boolean> => {
-    const status = await fetchJobStatus(jobId);
-    onProgress(status);
-    if (status.status === 'pending' || status.status === 'processing') {
-      return true;
-    }
-    if (status.status === 'failed') {
-      onError(status.error ?? t('error.server'));
-      return false;
-    }
-    const video = await fetchVideoSearch(videoId, keyword);
-    onSuccess(video.results);
-    return false;
-  }, [jobId, videoId, keyword, onProgress, onError, onSuccess, t]);
 
   useEffect(() => {
-    if (!jobId) return;
-    let cancelled = false;
+    if (!jobId || signal?.aborted) return;
+    const controller = new AbortController();
     let timerId: number | undefined;
     let failures = 0;
     let pollSteps = 0;
     const startedAt = Date.now();
+    const cancelled = () => controller.signal.aborted || signal?.aborted;
+    const cancel = () => {
+      controller.abort();
+      if (timerId !== undefined) window.clearTimeout(timerId);
+    };
+    // Cancel synchronously with the user's action, not only at effect cleanup.
+    signal?.addEventListener('abort', cancel, { once: true });
 
     const tick = async (): Promise<void> => {
+      if (cancelled()) return;
       try {
         if (Date.now() - startedAt >= POLL_MAX_DURATION_MS) {
           onError(t('error.timeout'));
           return;
         }
-        const keepPolling = await handle();
+        const status = await fetchJobStatus(jobId, controller.signal);
+        if (cancelled()) return;
+        onProgress(status);
+        if (status.status === 'failed') {
+          onError(status.error ?? t('error.server'));
+          return;
+        }
+        if (status.status === 'completed') {
+          const video = await fetchVideoSearch(videoId, keyword, controller.signal);
+          if (cancelled()) return;
+          onSuccess(video.results);
+          return;
+        }
         failures = 0;
-        if (keepPolling && !cancelled) {
+        if (!cancelled()) {
           pollSteps += 1;
           const interval = POLL_INTERVALS_MS[Math.min(pollSteps - 1, POLL_INTERVALS_MS.length - 1)];
           timerId = window.setTimeout(() => void tick(), interval);
         }
       } catch (error) {
-        if (cancelled) return;
+        if (cancelled()) return;
         failures += 1;
         if (failures > MAX_CONSECUTIVE_FAILURES) {
           onError(error instanceof ApiError ? error.messageKey : t('error.server'));
@@ -80,12 +88,9 @@ export function useJobPolling({
     };
 
     void tick();
-
     return () => {
-      cancelled = true;
-      if (timerId !== undefined) window.clearTimeout(timerId);
+      signal?.removeEventListener('abort', cancel);
+      cancel();
     };
-  }, [handle, jobId, onError, t]);
-
-  return undefined;
+  }, [jobId, videoId, keyword, signal, onProgress, onSuccess, onError, t]);
 }
