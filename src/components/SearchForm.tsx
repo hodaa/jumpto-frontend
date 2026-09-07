@@ -370,8 +370,8 @@ export function SearchForm({
         </label>
         {/* URLs are intrinsically LTR: the field never follows the phrase's
             direction, so caret movement and editing stay predictable. */}
-        <div className="relative" dir="ltr">
-          <span className="pointer-events-none absolute start-3 top-1/2 flex w-8 -translate-y-1/2 items-center justify-center text-slate-400">
+        <div className="relative">
+          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400">  
             <IconVideo size={18} />
           </span>
           <input
@@ -384,13 +384,13 @@ export function SearchForm({
             placeholder={t('form.urlPlaceholder')}
             aria-describedby={urlError ? 'url-error' : pasteFailed ? 'url-paste-notice' : undefined}
             aria-invalid={urlError ? true : undefined}
-            className={`${withTrailingPad(
-              urlTrailing,
-              `search-input--ltr text-left ${
-                isArabicLanguage ? 'search-input--ph-rtl' : 'placeholder:text-left'
-              }`,
-            )} ${fieldStateClass(urlError !== null)}`}
-            style={{ textAlign: 'left', direction: 'ltr' }}
+              className={`${withTrailingPad(
+              keywordTrailing,
+              keywordDir === 'rtl'
+                ? 'search-input--rtl text-right placeholder:text-right'
+                : 'search-input--ltr text-left placeholder:text-left',
+            )} ${fieldStateClass(keywordError !== null)}`}
+            style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
 
           {/* Trailing controls: × clear → error icon → Paste, in a fixed flex
