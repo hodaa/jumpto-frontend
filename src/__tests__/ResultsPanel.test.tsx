@@ -51,7 +51,7 @@ describe('ResultsPanel', () => {
   it('renders matches when done', () => {
     render(<ResultsPanel {...baseProps} phase="done" />);
     expect(screen.getByText('00:05')).toBeInTheDocument();
-    const watch = screen.getByRole('link', { name: 'Watch on YouTube' });
+    const watch = screen.getByRole('link', { name: 'Watch video' });
     expect(watch).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abcdef12345&t=5s');
   });
 

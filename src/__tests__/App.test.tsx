@@ -26,7 +26,7 @@ const RESULTS: SearchMatch[] = [{ timestamp: '00:05', progress_seconds: 5, text_
 async function fillAndSubmit(): Promise<void> {
   const user = userEvent.setup();
   render(<App />);
-  await user.type(screen.getByLabelText('YouTube URL'), URL);
+  await user.type(screen.getByLabelText('Video URL'), URL);
   await user.type(screen.getByLabelText('Word or phrase'), 'hello world');
   await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
 }
@@ -110,7 +110,7 @@ describe('App', () => {
   it('shows a validation error with retry', async () => {
     mockSubmit.mockRejectedValue(new ApiError('error.validation'));
     await fillAndSubmit();
-    expect(await screen.findByText('Please enter a YouTube URL and a word or phrase.')).toBeInTheDocument();
+    expect(await screen.findByText('Please enter a video URL and a word or phrase.')).toBeInTheDocument();
     const user = userEvent.setup();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
