@@ -346,14 +346,6 @@ export function SearchForm({
   const hasKeyword = keyword.trim().length > 0;
   const hasInput = hasUrl || hasKeyword;
 
-  // Trailing-area sizing is computed from which controls are visible:
-  //   URL: Paste (32px) + optional × (24px) + optional error (24px), 6px gaps,
-  //   plus the 8px end offset:
-  //     → 3 items (Paste + × + error): 8 + 32 + 6 + 24 + 6 + 24 = 100 → pe-26
-  //     → 2 items (Paste + × / Paste + error): 8 + 32 + 6 + 24 = 70 → pe-18
-  //     → 1 item (Paste only): 8 + 32 = 40 → pe-10
-  //   Keyword: optional × (32px) + optional error (24px), gap 6px, end 8px
-  const urlTrailing = urlError && hasUrl ? 'pe-26' : urlError || hasUrl ? 'pe-18' : 'pe-10';
   const keywordTrailing =
     keywordError && hasKeyword ? 'pe-18' : keywordError ? 'pe-8' : hasKeyword ? 'pe-10' : 'pe-4';
 
