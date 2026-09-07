@@ -60,6 +60,15 @@ export function SearchForm({
         text-align: left !important;
         direction: ltr;
       }
+<<<<<<< HEAD
+=======
+      [dir='rtl'] input:not([dir='ltr'])::placeholder,
+      [dir='rtl'] input:not([dir='ltr'])::-webkit-input-placeholder,
+      [dir='rtl'] input:not([dir='ltr'])::-moz-placeholder,
+      [dir='rtl'] input:not([dir='ltr']):-ms-input-placeholder {
+        text-align: right !important;
+      }
+>>>>>>> d0779353b5f799cb0e8ce74beb586cddf487f640
     `;
     document.head.appendChild(style);
   }, []);
@@ -95,7 +104,12 @@ export function SearchForm({
 
   const hasInput = url.trim().length > 0 || keyword.trim().length > 0;
 
+<<<<<<< HEAD
   const inputClass = `w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`;
+=======
+  const inputClass =
+    'w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 ps-10 pe-10 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30';
+>>>>>>> d0779353b5f799cb0e8ce74beb586cddf487f640
 
   return (
     <form
@@ -123,6 +137,10 @@ export function SearchForm({
             aria-describedby={urlError ? 'url-error' : undefined}
             aria-invalid={urlError ? true : undefined}
             className={`${inputClass} search-input--ltr text-left placeholder:text-left`}
+<<<<<<< HEAD
+=======
+            style={{ textAlign: 'left', direction: 'ltr' }}
+>>>>>>> d0779353b5f799cb0e8ce74beb586cddf487f640
           />
         </div>
         {urlError ? (
@@ -153,7 +171,11 @@ export function SearchForm({
             placeholder={t('form.keywordPlaceholder')}
             aria-describedby={keywordError ? 'keyword-error' : undefined}
             aria-invalid={keywordError ? true : undefined}
+<<<<<<< HEAD
             className={`${inputClass} ${keywordDir === 'rtl' ? 'search-input--rtl text-right placeholder:text-right' : 'search-input--ltr text-left placeholder:text-left'}`}
+=======
+            className={`${inputClass} ${inputAlign} ${placeholderAlignClass} ${keywordDir === 'rtl' ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}`}
+>>>>>>> d0779353b5f799cb0e8ce74beb586cddf487f640
             style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
         </div>

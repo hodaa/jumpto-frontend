@@ -77,12 +77,16 @@ describe('SearchForm', () => {
     expect(screen.getByRole('button', { name: 'Searching...' })).toBeDisabled();
   });
 
-  it('switches the keyword input to RTL when Arabic text is typed', async () => {
+  it('switches only the keyword input to RTL when Arabic text is typed', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
+    const url = screen.getByLabelText('Video URL');
     const keyword = screen.getByLabelText('Keyword or phrase');
     await user.type(keyword, 'مرحبا');
     expect(keyword.getAttribute('dir')).toBe('rtl');
+    expect(url.getAttribute('dir')).toBe('ltr');
+    expect(url).toHaveStyle({ textAlign: 'left', direction: 'ltr' });
+    expect(url.className).toContain('search-input--ltr');
   });
 
   it('keeps the keyword input LTR for English text', async () => {
