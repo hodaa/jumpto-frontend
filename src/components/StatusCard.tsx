@@ -61,7 +61,7 @@ export function StatusCard({
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="text-lg font-bold text-[#01124e] focus:outline-none"
+          className="text-lg font-bold text-brand focus:outline-none"
         >
           {t('status.title')}
         </h2>
@@ -101,7 +101,7 @@ export function StatusCard({
       <ol className="mx-auto flex max-w-sm list-none flex-col gap-2 text-start">
         <li
           className={`flex items-center gap-2 text-sm font-medium transition-colors duration-300 ${
-            fetchingDone ? 'text-emerald-600' : 'text-slate-700'
+            fetchingDone ? 'text-success' : 'text-slate-700'
           }`}
           aria-current={fetchingDone ? undefined : 'step'}
         >
@@ -110,7 +110,7 @@ export function StatusCard({
         </li>
         <li
           className={`flex items-center gap-2 text-sm transition-colors duration-300 ${
-            fetchingDone ? 'text-slate-700 font-medium' : 'text-slate-500'
+            fetchingDone ? 'text-slate-700 font-medium' : 'text-muted'
           }`}
           aria-current={fetchingDone ? 'step' : undefined}
         >
@@ -128,7 +128,7 @@ function CheckIcon() {
       aria-hidden="true"
       viewBox="0 0 20 20"
       fill="currentColor"
-      className="h-5 w-5 shrink-0 text-emerald-500"
+      className="h-5 w-5 shrink-0 text-success"
     >
       <path
         fillRule="evenodd"

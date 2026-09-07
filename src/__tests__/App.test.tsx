@@ -26,8 +26,8 @@ const RESULTS: SearchMatch[] = [{ timestamp: '00:05', progress_seconds: 5, text_
 async function fillAndSubmit(): Promise<void> {
   const user = userEvent.setup();
   render(<App />);
-  await user.type(screen.getByLabelText('Video URL'), URL);
-  await user.type(screen.getByLabelText('Keyword or phrase'), 'hello world');
+  await user.type(screen.getByLabelText('YouTube URL'), URL);
+  await user.type(screen.getByLabelText('Word or phrase'), 'hello world');
   await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
 }
 
@@ -53,7 +53,7 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Copy all' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Export CSV' })).toBeDisabled();
 
-    await user.click(screen.getByRole('button', { name: 'Clear keyword' }));
+    await user.click(screen.getByRole('button', { name: 'Clear search' }));
     expect(await screen.findByText('Ready to find your moment')).toBeInTheDocument();
   });
 
@@ -110,7 +110,7 @@ describe('App', () => {
   it('shows a validation error with retry', async () => {
     mockSubmit.mockRejectedValue(new ApiError('error.validation'));
     await fillAndSubmit();
-    expect(await screen.findByText('Please enter a Video URL and a keyword.')).toBeInTheDocument();
+    expect(await screen.findByText('Please enter a YouTube URL and a word or phrase.')).toBeInTheDocument();
     const user = userEvent.setup();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));

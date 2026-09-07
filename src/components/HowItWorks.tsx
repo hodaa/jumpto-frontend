@@ -22,7 +22,7 @@ export function HowItWorks() {
             <span className="step-badge" aria-label={t('steps.stepLabel', { n: index + 1 })}>
               <span className="step-badge__number">{index + 1}</span>
             </span>
-            <h3 className="text-center text-lg font-bold text-[#01124e]">{step.title}</h3>
+            <h3 className="text-center text-lg font-bold text-brand">{step.title}</h3>
             <p className="mx-auto mt-2 max-w-[26ch] text-center text-sm leading-relaxed text-slate-600">
               {step.desc}
             </p>

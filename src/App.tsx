@@ -309,6 +309,12 @@ export default function App() {
 
   const searching = phase === 'processing';
   const showMarketing = phase === 'idle';
+  // Layout is state-dependent: equal columns (slight form bias) while idle;
+  // once processing/done we widen the results column to give it emphasis.
+  const resultsActive = phase === 'processing' || phase === 'done' || phase === 'error';
+  const gridCols = resultsActive
+    ? 'lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]'
+    : 'lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]';
 
   return (
     <div className="app">
@@ -320,7 +326,7 @@ export default function App() {
         <div className="mb-8 lg:mb-10">
           <Hero compact />
         </div>
-        <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-10">
+        <div className={`grid grid-cols-1 items-stretch gap-8 ${gridCols} lg:gap-10`}>
           <section aria-labelledby="search-heading" className="min-w-0">
             <SearchForm
               key={formKey}

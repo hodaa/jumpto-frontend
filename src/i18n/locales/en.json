@@ -8,7 +8,7 @@
   },
   "hero": {
     "title": "Jump to the exact moment a phrase is spoken",
-    "subtitle": "Paste a YouTube link, enter a phrase, find the exact moment. Jump there instantly."
+    "subtitle": "Paste a video link, enter a word or phrase, and jump straight to every matching moment."
   },
   "features": {
     "title": "Why JumpTo",
@@ -21,9 +21,9 @@
   },
   "steps": {
     "title": "How it works",
-    "step1Title": "Paste a link",
-    "step1Desc": "Any Video URL.",
-    "step2Title": "Search a phrase",
+    "step1Title": "Paste a YouTube URL",
+    "step1Desc": "Any public YouTube link.",
+    "step2Title": "Enter a word or phrase",
     "step2Desc": "A single word or a full sentence.",
     "step3Title": "Jump to the moment",
     "step3Desc": "Get exact timestamps instantly.",
@@ -34,32 +34,38 @@
     "rights": "© {{year}} JumpTo. All rights reserved."
   },
   "form": {
-    "title": "Search a YouTube video for a phrase",
-    "urlLabel": "Video URL",
-    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
-    "keywordLabel": "Keyword or phrase",
+    "title": "Search a YouTube video for a word or phrase",
+    "urlLabel": "YouTube URL",
+    "urlPlaceholder": "https://www.youtube.com/watch?v=…",
+    "keywordLabel": "Word or phrase",
     "keywordPlaceholder": "e.g. never gonna give you up",
+    "paste": "Paste",
+    "pasteTooltip": "Paste YouTube URL from clipboard",
+    "pasteBlocked": "Clipboard access isn’t available here. Click in the URL field and press <strong>Ctrl/⌘+V</strong> to paste — the text is already selected for you.",
+    "clearUrl": "Clear YouTube URL",
+    "clearKeywordField": "Clear word or phrase",
+    "helperLine": "Accepts YouTube URLs (youtube.com / youtu.be). Results arrive in seconds for previously transcribed videos; otherwise allow up to a few minutes. The URL and phrase are sent to our server to fetch the transcript; nothing is stored beyond the session cache.",
     "submit": "Jump to the moment",
-    "searching": "Searching...",
-    "clear": "Clear and start over"
+    "searching": "Searching…",
+    "clear": "Clear fields"
   },
   "status": {
     "title": "Transcribing video",
     "message": "This can take a few minutes. We will show your results as soon as the transcript is ready.",
-    "searchingFor": "Searching for \"{{keyword}}\"",
+    "searchingFor": "Searching for “{{keyword}}”",
     "progress": "Progress: {{progress}}%",
     "estimatedTime": "Estimated time remaining: ~{{seconds}}s",
-    "fetching": "Fetching transcript...",
-    "finding": "Finding timestamps..."
+    "fetching": "Fetching transcript…",
+    "finding": "Finding timestamps…"
   },
   "results": {
-    "title": "Matches for \"<keyword>{{keyword}}</keyword>\"",
+    "title": "Matches for “<keyword>{{keyword}}</keyword>”",
     "matchCount_one": "{{count}} match",
     "matchCount_other": "{{count}} matches",
     "hint": "Click a match to jump to that moment",
-    "empty": "No exact matches found. Try a different phrase.",
+    "empty": "No exact matches found. Try a different word or phrase.",
     "emptyHint": "Try a shorter phrase or a distinctive word from the sentence.",
-    "clearKeyword": "Clear keyword",
+    "clearKeyword": "Clear search",
     "idle": "Your timestamp matches will appear here. Run a search to get started.",
     "idleTitle": "Ready to find your moment",
     "seek": "Play at {{timestamp}} — {{snippet}}",
@@ -75,10 +81,10 @@
     "showing": "Showing {{shown}} of {{total}} matches"
   },
   "error": {
-    "validation": "Please enter a Video URL and a keyword.",
-    "urlRequired": "Please enter a Video URL.",
-    "keywordRequired": "Please enter a keyword.",
-    "invalidUrl": "Please enter a valid Video URL.",
+    "validation": "Please enter a YouTube URL and a word or phrase.",
+    "urlRequired": "Please enter a YouTube URL.",
+    "keywordRequired": "Please enter a word or phrase.",
+    "invalidUrl": "Please enter a valid YouTube URL.",
     "server": "Something went wrong. Please try again.",
     "jobGone": "This transcription job no longer exists. Please search again.",
     "boundary": "Something unexpected went wrong. Please reload the page and try again.",
