@@ -313,9 +313,11 @@ export function SearchForm({
             aria-invalid={urlError ? true : undefined}
             className={`${withTrailingPad(
               urlTrailing,
-              'search-input--ltr text-left placeholder:text-left',
+              keywordDir === 'rtl'
+                ? 'search-input--rtl text-right placeholder:text-right'
+                : 'search-input--ltr text-left placeholder:text-left',
             )} ${fieldStateClass(urlError !== null)}`}
-            style={{ textAlign: 'left', direction: 'ltr' }}
+          style={{ textAlign: textAlignStyle, direction: keywordDir }}
           />
 
           {/* Inline Paste button — clipped to the input's trailing end. */}
