@@ -62,7 +62,7 @@ describe('Landing sections', () => {
   it('renders the three-step how it works strip', () => {
     render(<HowItWorks />);
     expect(screen.getByText('How it works')).toBeInTheDocument();
-    expect(screen.getByText('Paste a YouTube URL')).toBeInTheDocument();
+    expect(screen.getByText('Paste a video URL')).toBeInTheDocument();
     expect(screen.getByText('Enter a word or phrase')).toBeInTheDocument();
     expect(screen.getByText('Jump to the moment')).toBeInTheDocument();
   });
@@ -80,7 +80,7 @@ describe('Landing sections', () => {
     expect(screen.getByRole('heading', { name: 'Why قفزه' })).toBeInTheDocument();
     expect(screen.getByText('Exact phrase matching')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'How it works' })).toBeInTheDocument();
-    expect(screen.getByText('Paste a YouTube URL')).toBeInTheDocument();
+    expect(screen.getByText('Paste a video URL')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Jump to the moment' })).toBeInTheDocument();
   });
 });
