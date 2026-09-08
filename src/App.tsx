@@ -362,7 +362,7 @@ export default function App() {
     formRef.current?.submit();
   }, []);
 
-  const handleSearchInput = useCallback((_url: string, _keyword: string) => {
+  const handleSearchInput = useCallback(() => {
     setEditedSinceSubmit(true);
   }, []);
 
