@@ -35,7 +35,7 @@ function highlightKeyword(text: string, keyword: string): ReactNode {
     parts.push(
       <mark
         key={index}
-        className="match-card__highlight rounded bg-accent px-1 text-white transition-colors duration-200 group-hover:bg-accent-strong"
+        className="match-card__highlight rounded bg-accent-strong px-1 text-white transition-colors duration-200 group-hover:bg-action"
       >
         {text.slice(index, index + key.length)}
       </mark>,
@@ -156,7 +156,7 @@ export function ResultsList({
               <div className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm @min-[36rem]/matches:flex-row @min-[36rem]/matches:items-stretch">
                 <button
                   type="button"
-                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-3 ps-4 pe-2 text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-3 ps-4 pe-2 text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
                   onClick={() => onSeek(match.progress_seconds)}
                   aria-label={t('results.seek', { timestamp, snippet })}
                 >

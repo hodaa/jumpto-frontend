@@ -383,12 +383,14 @@ describe('source guidance, locked searches and clipboard recovery', () => {
 
   it('locks both fields and their actions while a search is in progress', async () => {
     const user = userEvent.setup();
-    render(<SearchForm onSubmit={onSubmit} disabled initialUrl={urlValue} initialKeyword="hello" onCancel={vi.fn()} />);
+    render(<SearchForm onSubmit={onSubmit} disabled initialUrl={urlValue} initialKeyword="hello" />);
     const url = screen.getByLabelText('YouTube URL');
     const keyword = screen.getByLabelText('Word or phrase');
     expect(url).toHaveAttribute('readonly');
     expect(keyword).toHaveAttribute('readonly');
-    expect(url).toHaveAccessibleDescription('Search in progress. Cancel to edit the URL or phrase.');
+    expect(url).toHaveAccessibleDescription(
+      'Search in progress. The URL and phrase are locked until the transcript is ready.',
+    );
     await user.type(url, 'changed');
     await user.type(keyword, 'changed');
     expect(url).toHaveValue(urlValue);
@@ -396,7 +398,7 @@ describe('source guidance, locked searches and clipboard recovery', () => {
     expect(screen.getByRole('button', { name: 'Paste' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Clear YouTube URL' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Clear word or phrase' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Cancel search' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Cancel search' })).not.toBeInTheDocument();
   });
 
   it('submits current edits through the imperative retry entry point', () => {

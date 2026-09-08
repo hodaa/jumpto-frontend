@@ -61,7 +61,11 @@ export function useJobPolling({
         if (cancelled()) return;
         onProgress(status);
         if (status.status === 'failed') {
-          onError(status.error ?? t('error.server'));
+          // The backend reports a raw (server-authored) failure string. Give it
+          // a localized frame — error.failed renders "Transcription failed: …"
+          // in EN and "فشل التفريغ: …" in AR — so an Arabic user is never shown
+          // a bare English sentence straight from the server.
+          onError(status.error ? t('error.failed', { message: status.error }) : t('error.server'));
           return;
         }
         if (status.status === 'completed') {

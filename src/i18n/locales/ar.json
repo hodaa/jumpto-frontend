@@ -2,8 +2,8 @@
   "app": {
     "title": "قفزة",
     "logoAlt": "قفزة",
-    "pageTitle": "قفزة — Find the moments that matter",
-    "metaDescription": "قفزة — Jump to the moments that matter"
+    "pageTitle": "قفزة — اقفز إلى اللحظة التي تهمك",
+    "metaDescription": "قفزة — انتقل إلى اللحظات المهمة"
   },
   "nav": {
     "howItWorks": "كيف يعمل؟",
@@ -60,7 +60,7 @@
     "clear": "مسح الحقول",
     "pasteEmpty": "الحافظة فارغة. انسخ رابط يوتيوب أولًا، ثم جرّب اللصق مرة أخرى.",
     "pasteManual": "على الهاتف، اضغط مطولًا داخل حقل الرابط واختر «لصق». على الكمبيوتر، اضغط <strong>Ctrl/⌘+V</strong>.",
-    "processingHint": "البحث جارٍ. ألغِ البحث لتعديل الرابط أو العبارة.",
+    "processingHint": "البحث جارٍ. الرابط والعبارة مقفلان حتى يجهز النص التفريغي.",
     "searchAgainHint": "عدّل الرابط أو العبارة للبحث مجددًا.",
     "helperSources": "استخدم فيديو عامًا على يوتيوب، وليس قناة أو قائمة تشغيل. لروابط Shorts أو live أو embed، افتح صفحة مشاهدة الفيديو وانسخ رابطها. قد لا تتاح الفيديوهات الخاصة أو المقيّدة."
   },
@@ -70,6 +70,11 @@
     "searchingFor": "جارٍ البحث عن “{{keyword}}”",
     "progress": "التقدم: {{progress}}٪",
     "estimatedTime": "الوقت المتبقي المقدَّر: حوالي {{seconds}} ثانية",
+    "estimatedTimeMinutes_one": "الوقت المتبقي المقدَّر: حوالي {{count}} دقيقة",
+    "estimatedTimeMinutes_two": "الوقت المتبقي المقدَّر: حوالي {{count}} دقيقتين",
+    "estimatedTimeMinutes_few": "الوقت المتبقي المقدَّر: حوالي {{count}} دقائق",
+    "estimatedTimeMinutes_many": "الوقت المتبقي المقدَّر: حوالي {{count}} دقيقة",
+    "estimatedTimeMinutes_other": "الوقت المتبقي المقدَّر: حوالي {{count}} دقيقة",
     "stillWorking": "لا يزال العمل جاريًا… قد يستغرق وقتًا أطول من المعتاد.",
     "fetching": "جارٍ جلب النص التفريغي…",
     "finding": "جارٍ إيجاد التوقيتات…"

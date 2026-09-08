@@ -7,6 +7,9 @@ interface Props {
   keyword?: string;
   estimatedSeconds?: number | null;
   skeleton?: boolean;
+  /** Optional abort affordance shown while the job is running — lets mobile
+   *  users cancel without scrolling back up to the (read-only) form. */
+  onCancel?: () => void;
 }
 
 /**
@@ -18,6 +21,7 @@ export function StatusCard({
   keyword = '',
   estimatedSeconds = null,
   skeleton = false,
+  onCancel,
 }: Props) {
   const { t } = useTranslation();
   const isRtl = getLanguage() === 'ar';
@@ -42,20 +46,28 @@ export function StatusCard({
   // Mirrors App.tsx PROGRESS_MAX — the cap the counter parks on while it waits,
   // so a job stuck at 90% gets an explicit "still working" signal instead of
   // looking like a hang.
-  const atStallCap = !indeterminate && value >= 90;
+  // Parked at the cap only while it's still waiting: once the job completes
+  // App sets progress=100 before the phase flips, and 100 must not read as a stall.
+  const atStallCap = !indeterminate && value >= 90 && value < 100;
   const fetchingDone = progress !== null && progress >= 50;
   const progressLabel = indeterminate
     ? t('status.message')
     : t('status.progress', { progress: value });
   const etaLabel =
     estimatedSeconds !== null && estimatedSeconds !== undefined
-      ? t('status.estimatedTime', { seconds: estimatedSeconds })
+      ? estimatedSeconds >= 60
+        ? t('status.estimatedTimeMinutes', {
+            count: Math.max(1, Math.round(estimatedSeconds / 60)),
+          })
+        : t('status.estimatedTime', { seconds: estimatedSeconds })
       : null;
-  // Clip the filled bar (and its in-bar label) to the logged progress so the
-  // percentage is always centered inside the track no matter the fill width.
+  // Clip the filled bar to the logged progress so its leading edge always lands
+  // exactly on the current %, with the floating % readout pinned just above it.
   const fillClipPath = isRtl
     ? `inset(0 0 0 ${100 - value}% round 9999px)`
     : `inset(0 ${100 - value}% 0 0 round 9999px)`;
+  // Keep the readout inside the track's flanks so it never hangs off the edge.
+  const chipPct = Math.min(92, Math.max(6, value));
 
   return (
     <section
@@ -81,39 +93,49 @@ export function StatusCard({
         ) : null}
       </div>
 
-      <div
-        className="relative h-8 w-full max-w-md overflow-hidden rounded-full bg-slate-100"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={indeterminate ? undefined : value}
-        aria-valuetext={progressLabel}
-        aria-label={t('status.title')}
-      >
-        {indeterminate ? (
-          <div className="progress-indeterminate absolute inset-y-0 w-1/3 rounded-full bg-accent" />
-        ) : (
-          <>
-            {/* Dark label stays readable across the unfilled track. */}
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full text-sm font-bold tabular-nums text-slate-700"
-            >
-              {progressLabel}
-            </span>
-            {/* White label clipped to the filled segment — flips colour exactly
-                at the progress edge, so it is legible at any fill width. */}
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 transition-[clip-path] duration-500 ease-out"
-              style={{ clipPath: fillClipPath }}
-            >
-              <span className="flex h-full w-full items-center justify-center rounded-full bg-accent text-sm font-bold tabular-nums text-white">
-                {progressLabel}
-              </span>
-            </span>
-          </>
-        )}
+      {/* Slim track with the % riding on the fill's leading edge. */}
+      <div className="relative w-full max-w-md">
+        <div
+          className="relative h-3 w-full overflow-hidden rounded-full bg-slate-100 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] ring-1 ring-inset ring-slate-200/80"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={indeterminate ? undefined : value}
+          aria-valuetext={progressLabel}
+          aria-label={t('status.title')}
+        >
+          {indeterminate ? (
+            <div className="progress-indeterminate absolute inset-y-0 w-1/3 bg-gradient-to-r from-accent-strong via-accent to-accent rtl:bg-gradient-to-l">
+              <span className="absolute inset-x-0 top-0 h-1/2 rounded-t-full bg-white/25" />
+            </div>
+          ) : (
+            <>
+              {/* Gradient fill clipped to the logged progress. */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 transition-[clip-path] duration-500 ease-out"
+                style={{ clipPath: fillClipPath }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-accent-strong via-accent to-accent rtl:bg-gradient-to-l">
+                  {/* Glossy top sheen, like light catching the pill's crown. */}
+                  <span className="absolute inset-x-0 top-0 h-1/2 rounded-t-full bg-white/25" />
+                  {/* Slow light sweep that keeps the fill feeling alive. */}
+                  <span className="progress-sheen absolute inset-y-0 w-2/5 bg-white/40 blur-[2px]" />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Floating readout chip pinned to the fill's leading edge. */}
+        {!indeterminate ? (
+          <span
+            className="pointer-events-none absolute -top-4 -translate-x-1/2 rounded-full bg-white px-2 py-0.5 text-xs font-bold tabular-nums text-brand shadow-[0_2px_8px_rgba(15,23,42,0.15)] ring-1 ring-slate-200/70 transition-[left,right] duration-500 ease-out"
+            style={isRtl ? { right: `${chipPct}%` } : { left: `${chipPct}%` }}
+          >
+            {progressLabel}
+          </span>
+        ) : null}
       </div>
 
       {indeterminate ? (
@@ -154,6 +176,16 @@ export function StatusCard({
           {t('status.finding')}
         </li>
       </ol>
+
+      {onCancel ? (
+        <button
+          type="button"
+          onClick={onCancel}
+          className="mt-1 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
+        >
+          {t('actions.cancelSearch')}
+        </button>
+      ) : null}
     </section>
   );
 }

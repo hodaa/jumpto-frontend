@@ -31,6 +31,7 @@ interface Props {
   onClear: () => void;
   onNewSearch?: () => void;
   onRetry: () => void;
+  onCancel?: () => void;
   currentPlayingTimestamp?: number | null;
 }
 
@@ -122,6 +123,7 @@ function ResultsPanelContent({
   onClear,
   onNewSearch,
   onRetry,
+  onCancel,
   currentPlayingTimestamp,
 }: Props) {
   const { t } = useTranslation();
@@ -169,6 +171,7 @@ function ResultsPanelContent({
           progress={progress}
           keyword={keyword}
           estimatedSeconds={estimatedSeconds ?? null}
+          onCancel={onCancel}
         />
       </section>
     );

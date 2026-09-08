@@ -38,6 +38,7 @@ function start() {
 }
 
 function cancel() {
+  // Cancellation now lives solely on the processing status card.
   fireEvent.click(screen.getByRole('button', { name: 'Cancel search' }));
 }
 

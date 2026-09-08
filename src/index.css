@@ -429,6 +429,28 @@ body {
   animation: progress-indeterminate 1.5s ease-in-out infinite;
 }
 
+/* ── Progress bar light sweep ──
+   A soft diagonal highlight that drifts across the filled segment on a slow
+   loop, so the bar reads as "in motion" rather than statically painted.
+   Direction flips for RTL so the light always flows toward the fill's edge. */
+@keyframes progress-sheen {
+  0% {
+    transform: translateX(-200%);
+  }
+  55%,
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.progress-sheen {
+  animation: progress-sheen 4.5s ease-in-out infinite;
+}
+
+[dir='rtl'] .progress-sheen {
+  animation-direction: reverse;
+}
+
 /* ── Entrance & Transition Animations ── */
 @keyframes fade-in {
   from {

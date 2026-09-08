@@ -360,7 +360,7 @@ export default function App() {
         {t('actions.skipToContent')}
       </a>
       <SiteHeader />
-      <main className="app-main" id="main-content">
+      <main className="app-main" id="main-content" tabIndex={-1}>
         <div className="mb-8 lg:mb-10">
           <Hero compact />
         </div>
@@ -369,7 +369,6 @@ export default function App() {
             <SearchForm
               ref={formRef}
               onSubmit={handleSubmit}
-              onCancel={searching ? handleCancelSearch : undefined}
               disabled={searching}
               submitLocked={submitLocked}
               onChange={handleSearchInput}
@@ -397,6 +396,7 @@ export default function App() {
               onClear={handleClearKeyword}
               onNewSearch={handleNewSearch}
               onRetry={handleRetry}
+              onCancel={searching ? handleCancelSearch : undefined}
               currentPlayingTimestamp={currentPlayingTimestamp}
             />
           </section>

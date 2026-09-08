@@ -3,13 +3,13 @@ import { LanguageToggle } from './LanguageToggle';
 import { getLanguage } from '../i18n';
 
 const NAV_LINK =
-  'rounded-md px-2.5 py-1.5 text-sm font-semibold whitespace-nowrap text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/20';
+  'rounded-md px-2.5 py-1.5 text-sm font-semibold whitespace-nowrap text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action';
 
 function Logo() {
   const { t } = useTranslation();
   return (
     <a
-      className="order-1 flex shrink-0 items-center rounded-lg transition-opacity duration-200 hover:opacity-80 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 sm:justify-self-start"
+      className="order-1 flex shrink-0 items-center rounded-lg transition-transform duration-200 hover:scale-[1.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-action sm:justify-self-start"
       href="/"
       aria-label={t('nav.home')}
     >

@@ -122,7 +122,7 @@ export function LanguageToggle() {
       <button
         ref={triggerRef}
         type="button"
-        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-300"
+        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t('actions.languageSelector')}

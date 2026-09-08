@@ -63,7 +63,7 @@ export function ErrorView({ message, onRetry, secondaryAction, retryHint }: Prop
         {secondaryAction ? (
           <button
             type="button"
-            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-primary/90 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/30"
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
             onClick={secondaryAction.onClick}
           >
             {secondaryAction.label}
@@ -71,7 +71,7 @@ export function ErrorView({ message, onRetry, secondaryAction, retryHint }: Prop
         ) : null}
         <button
           type="button"
-          className="rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-300"
+          className="rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
           onClick={onRetry}
           aria-describedby={retryHint ? hintId : undefined}
         >

@@ -45,8 +45,8 @@ describe('Landing sections', () => {
       expect(description.content).toBe('Qfza — Jump to the moments that matter');
 
       await act(async () => setLanguage('ar'));
-      expect(document.title).toBe('قفزة — Find the moments that matter');
-      expect(description.content).toBe('قفزة — Jump to the moments that matter');
+      expect(document.title).toBe('قفزة — اقفز إلى اللحظة التي تهمك');
+      expect(description.content).toBe('قفزة — انتقل إلى اللحظات المهمة');
 
       await act(async () => setLanguage('en'));
       expect(document.title).toBe('Qfza — Find the moments that matter');

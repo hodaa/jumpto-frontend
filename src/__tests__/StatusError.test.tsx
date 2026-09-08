@@ -43,14 +43,42 @@ describe('StatusCard', () => {
     ).toBeInTheDocument();
   });
 
+  it('does not show the stall cue once progress reaches 100%', () => {
+    render(<StatusCard progress={100} />);
+    expect(
+      screen.queryByText('Still working… this is taking longer than usual.'),
+    ).not.toBeInTheDocument();
+  });
+
   it('renders an indeterminate progress bar when progress is unknown', () => {
     render(<StatusCard progress={null} />);
     expect(screen.getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
+  });
+
+  it('humanizes long ETAs as whole minutes', () => {
+    render(<StatusCard progress={40} estimatedSeconds={150} />);
+    expect(screen.getByText('Estimated time remaining: ~3 minutes')).toBeInTheDocument();
+  });
+
+  it('keeps sub-minute ETAs in seconds', () => {
+    render(<StatusCard progress={40} estimatedSeconds={42} />);
+    expect(screen.getByText('Estimated time remaining: ~42s')).toBeInTheDocument();
   });
 
   it('renders the status stepper steps', () => {
     render(<StatusCard progress={null} />);
     expect(screen.getByText('Fetching transcript…')).toBeInTheDocument();
     expect(screen.getByText('Finding timestamps…')).toBeInTheDocument();
+  });
+
+  it('shows a Cancel affordance when onCancel is provided', () => {
+    const onCancel = vi.fn();
+    render(<StatusCard progress={40} onCancel={onCancel} />);
+    expect(screen.getByRole('button', { name: 'Cancel search' })).toBeEnabled();
+  });
+
+  it('omits the Cancel affordance without onCancel', () => {
+    render(<StatusCard progress={40} />);
+    expect(screen.queryByRole('button', { name: 'Cancel search' })).not.toBeInTheDocument();
   });
 });

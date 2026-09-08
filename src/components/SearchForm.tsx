@@ -24,7 +24,6 @@ export interface SearchFormHandle {
 interface Props {
   ref?: Ref<SearchFormHandle>;
   onSubmit: (url: string, keyword: string) => void;
-  onCancel?: () => void;
   disabled?: boolean;
   /** Latches the submit button off after a finished search until the fields change. */
   submitLocked?: boolean;
@@ -84,7 +83,7 @@ const inputBase =
  * never be mistaken for the primary submit CTA.
  */
 const RAIL_ICON_BUTTON =
-  'pointer-events-auto inline-flex h-11 w-11 shrink-0 items-center justify-center text-slate-500 transition-colors duration-200 hover:bg-slate-200/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40 disabled:hover:bg-transparent';
+  'pointer-events-auto inline-flex h-11 w-11 shrink-0 items-center justify-center text-slate-500 transition-colors duration-200 hover:bg-slate-200/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-action disabled:opacity-40 disabled:hover:bg-transparent';
 
 /**
  * Paste action inside the URL field. Deliberately more prominent than the quiet
@@ -94,7 +93,7 @@ const RAIL_ICON_BUTTON =
  * secondary in-field affordance, never a rival to the primary submit CTA.
  */
 const PASTE_ICON_BUTTON =
-  'pointer-events-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent-strong transition-all duration-200 hover:bg-accent/20 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-40 disabled:hover:scale-100 disabled:hover:bg-accent/10';
+  'pointer-events-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent-strong transition-all duration-200 hover:bg-accent/20 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-action disabled:opacity-40 disabled:hover:scale-100 disabled:hover:bg-accent/10';
 
 /** Short bullet keys shown under the CTA; the long form goes in the popover. */
 const HELPER_BULLETS = ['form.helperAccepted', 'form.helperSpeed', 'form.helperPrivacy'] as const;
@@ -106,8 +105,8 @@ function withTrailingPad(pe: string, extra = ''): string {
 /** Danger border + tint for invalid fields, neutral border for valid ones. */
 function fieldStateClass(hasError: boolean): string {
   return hasError
-    ? 'border-danger bg-danger-soft focus:border-danger focus:ring-danger/30'
-    : 'border-slate-200 bg-slate-50 focus:border-action focus:ring-action/30';
+    ? 'border-danger bg-danger-soft focus:border-danger focus:ring-danger'
+    : 'border-slate-200 bg-slate-50 focus:border-action focus:ring-action';
 }
 
 /**
@@ -169,7 +168,6 @@ function PasteFallbackNotice({ issue }: { issue: PasteIssue }) {
 export function SearchForm({
   ref,
   onSubmit,
-  onCancel,
   disabled = false,
   submitLocked = false,
   onChange,
@@ -623,7 +621,7 @@ export function SearchForm({
         <button
           type="submit"
           disabled={disabled || submitLocked}
-          className={`group relative inline-flex w-full items-center justify-center gap-2.5 rounded-lg bg-action px-6 py-3.5 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-action-hover focus:outline-none focus-visible:ring-4 focus-visible:ring-focus focus-visible:ring-offset-2 overflow-hidden active:scale-[0.98] ${
+          className={`group relative inline-flex w-full items-center justify-center gap-2.5 rounded-lg bg-action px-6 py-3.5 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-action-hover focus:outline-none focus-visible:ring-4 focus-visible:ring-action focus-visible:ring-offset-2 overflow-hidden active:scale-[0.98] ${
             disabled ? 'disabled:cursor-wait' : 'disabled:cursor-not-allowed'
           }`}
         >
@@ -653,18 +651,9 @@ export function SearchForm({
           <button
             type="button"
             onClick={handleClearAll}
-            className="text-sm font-semibold text-action transition-colors duration-200 hover:text-action-hover hover:underline focus:outline-none focus-visible:ring-4 focus-visible:ring-focus rounded"
+            className="text-sm font-semibold text-action transition-colors duration-200 hover:text-action-hover hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-action rounded"
           >
             {t('form.clear')}
-          </button>
-        ) : null}
-        {disabled && onCancel ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-300"
-          >
-            {t('actions.cancelSearch')}
           </button>
         ) : null}
       </div>
@@ -687,6 +676,11 @@ export function SearchForm({
         <div
           ref={detailsRef}
           className="relative flex w-full min-w-0 justify-center"
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+              setDetailsOpen(false);
+            }
+          }}
         >
           <button
             type="button"
@@ -697,7 +691,7 @@ export function SearchForm({
             }}
             aria-expanded={detailsOpen}
             aria-controls="form-helper-details"
-            className="inline-flex max-w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-sm font-semibold text-muted-strong transition-colors duration-200 hover:text-action-hover hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            className="inline-flex max-w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-sm font-semibold text-muted-strong transition-colors duration-200 hover:text-action-hover hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
           >
             <IconInfo size={14} />
             {t('form.helperDetailsTrigger')}

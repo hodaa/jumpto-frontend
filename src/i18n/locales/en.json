@@ -60,7 +60,7 @@
     "clear": "Clear fields",
     "pasteEmpty": "Your clipboard is empty. Copy a YouTube URL first, then try Paste again.",
     "pasteManual": "On a phone, touch and hold the URL field and choose Paste. On a computer, press <strong>Ctrl/⌘+V</strong>.",
-    "processingHint": "Search in progress. Cancel to edit the URL or phrase.",
+    "processingHint": "Search in progress. The URL and phrase are locked until the transcript is ready.",
     "searchAgainHint": "Edit the URL or phrase to search again.",
     "helperSources": "Use a public YouTube video, not a channel or playlist. Shorts, live and embed links need a watch/share link instead. Private or restricted videos may be unavailable."
   },
@@ -70,6 +70,8 @@
     "searchingFor": "Searching for “{{keyword}}”",
     "progress": "Progress: {{progress}}%",
     "estimatedTime": "Estimated time remaining: ~{{seconds}}s",
+    "estimatedTimeMinutes_one": "Estimated time remaining: ~{{count}} minute",
+    "estimatedTimeMinutes_other": "Estimated time remaining: ~{{count}} minutes",
     "stillWorking": "Still working… this is taking longer than usual.",
     "fetching": "Fetching transcript…",
     "finding": "Finding timestamps…"

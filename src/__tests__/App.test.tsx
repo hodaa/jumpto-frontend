@@ -93,7 +93,7 @@ describe('App', () => {
     });
 
     await fillAndSubmit();
-    expect(await screen.findByText('Assembly API quota exceeded')).toBeInTheDocument();
+    expect(await screen.findByText('Transcription failed: Assembly API quota exceeded')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
