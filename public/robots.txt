@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://qfza.vercel.app/sitemap.xml
