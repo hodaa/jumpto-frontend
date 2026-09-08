@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /** Site-wide footer with a short product note and copyright line. */
-export function SiteFooter() {
+export const SiteFooter = memo(function SiteFooter() {
   const { t } = useTranslation();
   return (
     <footer
@@ -14,4 +15,4 @@ export function SiteFooter() {
       </p>
     </footer>
   );
-}
+});

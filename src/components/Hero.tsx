@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -7,7 +8,7 @@ interface Props {
 }
 
 /** Full-width landing hero headline with a centered search slot. */
-export function Hero({ children, compact = false }: Props) {
+export const Hero = memo(function Hero({ children, compact = false }: Props) {
   const { t } = useTranslation();
   return (
     <section
@@ -35,4 +36,4 @@ export function Hero({ children, compact = false }: Props) {
       ) : null}
     </section>
   );
-}
+});

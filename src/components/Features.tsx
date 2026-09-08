@@ -1,8 +1,9 @@
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconBolt, IconPlay, IconTarget } from './icons';
 
 /** Value-proposition cards shown on the landing page. */
-export function Features() {
+export const Features = memo(function Features() {
   const { t } = useTranslation();
   const items = [
     { icon: <IconTarget />, title: t('features.exactTitle'), desc: t('features.exactDesc') },
@@ -32,4 +33,4 @@ export function Features() {
       </div>
     </section>
   );
-}
+});

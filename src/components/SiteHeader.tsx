@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguageToggle } from './LanguageToggle';
 import { getLanguage } from '../i18n';
@@ -36,7 +37,7 @@ function Logo() {
  * void between the logo and the links. `1fr` also keeps a min-content floor, so
  * the long Arabic labels can never squeeze the logo or the switcher.
  */
-export function SiteHeader() {
+export const SiteHeader = memo(function SiteHeader() {
   const { t } = useTranslation();
 
   return (
@@ -58,4 +59,4 @@ export function SiteHeader() {
       </div>
     </header>
   );
-}
+});

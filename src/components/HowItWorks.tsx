@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /** Three-step "how it works" strip for the landing page. */
-export function HowItWorks() {
+export const HowItWorks = memo(function HowItWorks() {
   const { t } = useTranslation();
   const steps = [
     { title: t('steps.step1Title'), desc: t('steps.step1Desc') },
@@ -31,4 +32,4 @@ export function HowItWorks() {
       </ol>
     </section>
   );
-}
+});

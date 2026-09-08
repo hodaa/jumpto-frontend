@@ -62,9 +62,11 @@ export default function App() {
   const [errorText, setErrorText] = useState('');
   const [job, setJob] = useState<ActiveJob | null>(null);
   const [query, setQuery] = useState<Query>({ url: '', keyword: '' });
-  // Live field values coming in from the form, so the submit CTA can tell
-  // whether the user has edited anything since the last completed search.
-  const [liveQuery, setLiveQuery] = useState<Query>({ url: '', keyword: '' });
+  // Latches true once the user edits either field after a completed search, so
+  // the submit CTA can warn that the shown results are stale. Stored as a
+  // boolean (not the live values) so typing doesn't re-render the whole tree
+  // on every keystroke.
+  const [editedSinceSubmit, setEditedSinceSubmit] = useState(false);
   const playerRef = useRef<VideoPlayerHandle | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const startedAtRef = useRef<number | null>(null);
@@ -150,6 +152,7 @@ export default function App() {
         trackEvent('search_submit', { source: 'cache' });
         startedAtRef.current = Date.now();
         setQuery({ url, keyword });
+        setEditedSinceSubmit(false);
         setErrorText('');
         setJob(null);
         setMatches(cached);
@@ -162,6 +165,7 @@ export default function App() {
       }
       startedAtRef.current = Date.now();
       setQuery({ url, keyword });
+      setEditedSinceSubmit(false);
       setErrorText('');
       setJob(null);
       setMatches([]);
@@ -325,6 +329,7 @@ export default function App() {
     searchControllerRef.current?.abort();
     clearPendingTransition();
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+    setEditedSinceSubmit(false);
     setPhase('idle');
     setMatches([]);
     setProgress(null);
@@ -357,8 +362,8 @@ export default function App() {
     formRef.current?.submit();
   }, []);
 
-  const handleSearchInput = useCallback((url: string, keyword: string) => {
-    setLiveQuery({ url, keyword });
+  const handleSearchInput = useCallback((_url: string, _keyword: string) => {
+    setEditedSinceSubmit(true);
   }, []);
 
   const searching = phase === 'processing';
@@ -366,8 +371,6 @@ export default function App() {
   // actually changes the URL or phrase — clicking it again would only replay
   // the exact same query. Retry (from an error panel) stays imperative, so it
   // is unaffected by the latch.
-  const editedSinceSubmit =
-    liveQuery.url !== query.url || liveQuery.keyword !== query.keyword;
   const submitLocked =
     (phase === 'done' || phase === 'error') && !editedSinceSubmit;
   // Layout is state-dependent. While idle the form is the hero: it takes the
