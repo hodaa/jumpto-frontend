@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { memo, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SearchMatch } from '../types';
@@ -49,7 +49,81 @@ function highlightKeyword(text: string, keyword: string): ReactNode {
   return parts.length ? parts : text;
 }
 
-export function ResultsList({
+interface MatchRowProps {
+  match: SearchMatch;
+  keyword: string;
+  onSeek: (seconds: number) => void;
+  youtubeId?: string | null;
+  isPlaying: boolean;
+}
+
+/**
+ * One timestamped result. Memoized so a playback-status change re-renders only
+ * the single row whose timestamp flips (rather than all 50), and so rows never
+ * re-render (and never re-run `highlightKeyword`) on an unrelated progress/ETA
+ * poll.
+ */
+const MatchRow = memo(function MatchRow({
+  match,
+  keyword,
+  onSeek,
+  youtubeId,
+  isPlaying,
+}: MatchRowProps) {
+  const { t } = useTranslation();
+  const snippet = match.text_snippet ?? t('results.noSnippet');
+  const timestamp = formatYouTubeTime(match.progress_seconds);
+  const highlighted = highlightKeyword(snippet, keyword);
+  return (
+    <li key={`${match.timestamp}-${match.progress_seconds}`}>
+      <div className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm @min-[36rem]/matches:flex-row @min-[36rem]/matches:items-stretch">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-3 ps-4 pe-2 text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
+          onClick={() => onSeek(match.progress_seconds)}
+          aria-label={t('results.seek', { timestamp, snippet })}
+        >
+          <span className="flex shrink-0 items-center gap-2.5">
+            <span
+              aria-hidden="true"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm text-white shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-primary/90"
+            >
+              ▶
+            </span>
+            <span
+              className={`shrink-0 rounded-md px-2 py-1 text-sm font-bold tabular-nums ${
+                isPlaying ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
+              }`}
+              dir="ltr"
+            >
+              {timestamp}
+            </span>
+          </span>
+          <p
+            className="match-card__snippet min-w-0 flex-1 text-start text-sm leading-relaxed text-slate-600 [overflow-wrap:anywhere]"
+            dir="auto"
+          >
+            {highlighted}
+          </p>
+        </button>
+        {youtubeId ? (
+          <a
+            href={buildWatchUrl(youtubeId, match.progress_seconds)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t('results.watchMoment', { timestamp })}
+            className="inline-flex max-w-full items-center gap-1.5 self-start rounded-lg border-t border-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-500 transition-colors duration-200 hover:text-primary focus-visible:outline-2 focus-visible:outline-action @min-[36rem]/matches:self-stretch @min-[36rem]/matches:border-t-0 @min-[36rem]/matches:px-2.5 @min-[36rem]/matches:pe-3"
+          >
+            <IconExternalLink />
+            {t('results.watchOnYouTube')}
+          </a>
+        ) : null}
+      </div>
+    </li>
+  );
+});
+
+export const ResultsList = memo(function ResultsList({
   matches,
   keyword,
   onSeek,
@@ -147,60 +221,16 @@ export function ResultsList({
         ref={listRef}
         className="matches flex flex-col gap-4 lg:max-h-[60vh] lg:overflow-y-auto lg:pe-2"
       >
-        {matches.slice(0, maxVisible).map((match) => {
-          const snippet = match.text_snippet ?? t('results.noSnippet');
-          const timestamp = formatYouTubeTime(match.progress_seconds);
-          const highlighted = highlightKeyword(snippet, keyword);
-          return (
-            <li key={`${match.timestamp}-${match.progress_seconds}`}>
-              <div className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm @min-[36rem]/matches:flex-row @min-[36rem]/matches:items-stretch">
-                <button
-                  type="button"
-                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-3 ps-4 pe-2 text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
-                  onClick={() => onSeek(match.progress_seconds)}
-                  aria-label={t('results.seek', { timestamp, snippet })}
-                >
-                  <span className="flex shrink-0 items-center gap-2.5">
-                    <span
-                      aria-hidden="true"
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm text-white shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-primary/90"
-                    >
-                      ▶
-                    </span>
-                    <span
-                      className={`shrink-0 rounded-md px-2 py-1 text-sm font-bold tabular-nums ${
-                        currentPlayingTimestamp === match.progress_seconds
-                          ? 'bg-primary text-white'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
-                      dir="ltr"
-                    >
-                      {timestamp}
-                    </span>
-                  </span>
-                  <p
-                    className="match-card__snippet min-w-0 flex-1 text-start text-sm leading-relaxed text-slate-600 [overflow-wrap:anywhere]"
-                    dir="auto"
-                  >
-                    {highlighted}
-                  </p>
-                </button>
-                {youtubeId ? (
-                  <a
-                    href={buildWatchUrl(youtubeId, match.progress_seconds)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={t('results.watchMoment', { timestamp })}
-                    className="inline-flex max-w-full items-center gap-1.5 self-start rounded-lg border-t border-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-500 transition-colors duration-200 hover:text-primary focus-visible:outline-2 focus-visible:outline-action @min-[36rem]/matches:self-stretch @min-[36rem]/matches:border-t-0 @min-[36rem]/matches:px-2.5 @min-[36rem]/matches:pe-3"
-                  >
-                    <IconExternalLink />
-                    {t('results.watchOnYouTube')}
-                  </a>
-                ) : null}
-              </div>
-            </li>
-          );
-        })}
+        {matches.slice(0, maxVisible).map((match) => (
+          <MatchRow
+            key={`${match.timestamp}-${match.progress_seconds}`}
+            match={match}
+            keyword={keyword}
+            onSeek={onSeek}
+            youtubeId={youtubeId}
+            isPlaying={currentPlayingTimestamp === match.progress_seconds}
+          />
+        ))}
       </ol>
       {capped ? (
         <button
@@ -216,4 +246,4 @@ export function ResultsList({
       ) : null}
     </section>
   );
-}
+});

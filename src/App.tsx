@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, submitSearch } from './api/client';
 import { Features } from './components/Features';
 import { Hero } from './components/Hero';
 import { HowItWorks } from './components/HowItWorks';
-import { ResultsPanel } from './components/ResultsPanel';
 import type { Phase } from './components/ResultsPanel';
 import { SearchForm } from './components/SearchForm';
 import type { SearchFormHandle } from './components/SearchForm';
@@ -17,6 +16,14 @@ import { csvCell } from './utils/csv';
 import { isReadingHelp } from './utils/focus';
 import { parseYouTubeId } from './utils/youtube';
 import { getCachedResults, setCachedResults } from './utils/resultsCache';
+import { trackEvent } from './utils/analytics';
+
+// Lazy-load the results/status surface (ResultsPanel pulls in ResultsList,
+// VideoPlayer, ResultsToolbar, StatusCard and ErrorView). It is only mounted
+// once a search runs, so it stays out of the initial bundle.
+const loadResultsPanel = () =>
+  import('./components/ResultsPanel').then((m) => ({ default: m.ResultsPanel }));
+const ResultsPanel = lazy(loadResultsPanel);
 
 const PROGRESS_DONE_DELAY_MS = 350;
 const COPY_NOTICE_MS = 2000;
@@ -79,6 +86,19 @@ export default function App() {
     [],
   );
 
+  // Warm the (lazily loaded) results chunk once the app has settled into idle,
+  // so the first search doesn't stall on a network fetch of the panel. This is
+  // best-effort and non-blocking — nothing depends on it completing.
+  useEffect(() => {
+    const preload = () => void loadResultsPanel();
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(preload);
+      return () => cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(preload, 1000);
+    return () => window.clearTimeout(id);
+  }, []);
+
   useEffect(() => {
     if (phase === 'idle' || isReadingHelp()) return;
     const mobile =
@@ -127,6 +147,7 @@ export default function App() {
       if (cached !== undefined) {
         // Same video + keyword was already searched this session: show the
         // cached results immediately instead of re-submitting and re-polling.
+        trackEvent('search_submit', { source: 'cache' });
         startedAtRef.current = Date.now();
         setQuery({ url, keyword });
         setErrorText('');
@@ -155,6 +176,7 @@ export default function App() {
       try {
         const response = await submitSearch(url, keyword, controller.signal);
         if (controller.signal.aborted) return;
+        trackEvent('search_submit', { source: 'network' });
         if (response.status === 'found' || response.status === 'not_found') {
           if (youtubeId) setCachedResults(youtubeId, keyword, response.results);
           setMatches(response.results);
@@ -170,7 +192,9 @@ export default function App() {
         });
       } catch (error) {
         if (controller.signal.aborted) return;
-        setErrorText(error instanceof ApiError ? error.messageKey : t('error.server'));
+        const messageKey = error instanceof ApiError ? error.messageKey : t('error.server');
+        trackEvent('search_error', { reason: messageKey });
+        setErrorText(messageKey);
         setPhase('error');
       }
     },
@@ -324,6 +348,7 @@ export default function App() {
   }, [resetSearch]);
 
   const handleCancelSearch = useCallback(() => {
+    trackEvent('search_cancel');
     resetSearch();
     formRef.current?.focusKeyword();
   }, [resetSearch]);
@@ -377,7 +402,15 @@ export default function App() {
             />
           </section>
           <section ref={resultsRef} className="min-w-0 scroll-mt-6">
-            <ResultsPanel
+            <Suspense
+              fallback={
+                <div
+                  aria-hidden="true"
+                  className="h-64 animate-pulse rounded-2xl border border-slate-200 bg-slate-50"
+                />
+              }
+            >
+              <ResultsPanel
               phase={phase}
               progress={progress}
               estimatedSeconds={estimatedWait}
@@ -398,7 +431,8 @@ export default function App() {
               onRetry={handleRetry}
               onCancel={searching ? handleCancelSearch : undefined}
               currentPlayingTimestamp={currentPlayingTimestamp}
-            />
+              />
+            </Suspense>
           </section>
         </div>
         <HowItWorks />

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLanguage } from '../i18n';
 
@@ -14,9 +14,11 @@ interface Props {
 
 /**
  * Transcription progress card with a spinner, status stepper and an
- * accessible determinate/indeterminate progress bar.
+ * accessible determinate/indeterminate progress bar. Memoized so a parent
+ * re-render (e.g. the App that owns many other search callbacks) doesn't
+ * rebuild the spinner/bar unless one of its own props actually changes.
  */
-export function StatusCard({
+export const StatusCard = memo(function StatusCard({
   progress,
   keyword = '',
   estimatedSeconds = null,
@@ -61,11 +63,10 @@ export function StatusCard({
           })
         : t('status.estimatedTime', { seconds: estimatedSeconds })
       : null;
-  // Clip the filled bar to the logged progress so its leading edge always lands
-  // exactly on the current %, with the floating % readout pinned just above it.
-  const fillClipPath = isRtl
-    ? `inset(0 0 0 ${100 - value}% round 9999px)`
-    : `inset(0 ${100 - value}% 0 0 round 9999px)`;
+  // Fill the bar to the logged progress. A `scaleX` transform (GPU-composited,
+  // no repaint) with the origin at the leading edge is cheaper than animating
+  // `clip-path`, which forces a repaint on every tick.
+  const fillScale = value / 100;
   // Keep the readout inside the track's flanks so it never hangs off the edge.
   const chipPct = Math.min(92, Math.max(6, value));
 
@@ -109,21 +110,23 @@ export function StatusCard({
               <span className="absolute inset-x-0 top-0 h-1/2 rounded-t-full bg-white/25" />
             </div>
           ) : (
-            <>
-              {/* Gradient fill clipped to the logged progress. */}
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 transition-[clip-path] duration-500 ease-out"
-                style={{ clipPath: fillClipPath }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-accent-strong via-accent to-accent rtl:bg-gradient-to-l">
-                  {/* Glossy top sheen, like light catching the pill's crown. */}
-                  <span className="absolute inset-x-0 top-0 h-1/2 rounded-t-full bg-white/25" />
-                  {/* Slow light sweep that keeps the fill feeling alive. */}
-                  <span className="progress-sheen absolute inset-y-0 w-2/5 bg-white/40 blur-[2px]" />
-                </div>
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 transition-transform duration-500 ease-out"
+              style={{
+                transform: `scaleX(${fillScale})`,
+                transformOrigin: isRtl ? 'right' : 'left',
+                willChange: 'transform',
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-accent-strong via-accent to-accent rtl:bg-gradient-to-l">
+                {/* Glossy top sheen, like light catching the pill's crown. */}
+                <span className="absolute inset-x-0 top-0 h-1/2 rounded-t-full bg-white/25" />
+                {/* Slow light sweep that keeps the fill feeling alive (no
+                    blur — a solid-gradient edge composites rather than repaints). */}
+                <span className="progress-sheen absolute inset-y-0 w-2/5 bg-white/40" />
               </div>
-            </>
+            </div>
           )}
         </div>
 
@@ -188,7 +191,7 @@ export function StatusCard({
       ) : null}
     </section>
   );
-}
+});
 
 function CheckIcon() {
   return (

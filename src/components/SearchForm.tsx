@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useImperativeHandle } from 'react';
+import { useRef, useState, useEffect, useImperativeHandle, memo } from 'react';
 import type { ChangeEvent, FormEvent, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLanguage } from '../i18n';
@@ -165,7 +165,7 @@ function PasteFallbackNotice({ issue }: { issue: PasteIssue }) {
  * scannable bullets; the full explanation sits behind a "Privacy & how it
  * works" popover (Escape or an outside click dismisses it).
  */
-export function SearchForm({
+export const SearchForm = memo(function SearchForm({
   ref,
   onSubmit,
   disabled = false,
@@ -713,4 +713,4 @@ export function SearchForm({
       </div>
     </form>
   );
-}
+});

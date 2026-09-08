@@ -2,6 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import ar from './locales/ar.json';
 import en from './locales/en.json';
+import { trackEvent } from '../utils/analytics';
 
 export type Language = 'en' | 'ar';
 const STORAGE_KEY = 'jumpto.lang';
@@ -32,6 +33,7 @@ export function getLanguage(): Language {
 export function setLanguage(lang: Language): void {
   localStorage.setItem(STORAGE_KEY, lang);
   applyDocumentLanguage(lang);
+  trackEvent('language_switch', { language: lang });
   void i18n.changeLanguage(lang);
 }
 

@@ -1,4 +1,3 @@
-import axios from 'axios';
 import type { SearchResponse, StatusResponse, VideoSearchResponse } from '../types';
 
 /** Error whose message can be shown to the user. */
@@ -14,78 +13,112 @@ export class ApiError extends Error {
   }
 }
 
-const http = axios.create({
-  baseURL: (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '',
-  timeout: 30_000,
-});
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
+const TIMEOUT_MS = 30_000;
 
 interface ErrorPayload {
-  response?: { status?: number; data?: { error?: { message?: string }; detail?: unknown } };
-  code?: string;
-  request?: unknown;
+  error?: { message?: string };
+  detail?: unknown;
 }
 
-function toApiError(error: unknown): ApiError {
-  const payload = error as ErrorPayload;
-  const data = payload.response?.data;
-  const serverMessage = data?.error?.message;
-  if (payload.response) {
-    const status = payload.response.status;
-    if (status === 400) return new ApiError('error.invalidUrl', serverMessage);
-    if (status === 404) return new ApiError('error.jobGone', serverMessage);
-    if (status === 422) return new ApiError('error.validation', serverMessage);
-    return new ApiError('error.server', serverMessage);
+/** Map an HTTP status (null = no response) to the matching localized error key. */
+function toApiError(status: number | null, serverMessage?: string): ApiError {
+  if (status === 400) return new ApiError('error.invalidUrl', serverMessage);
+  if (status === 404) return new ApiError('error.jobGone', serverMessage);
+  if (status === 422) return new ApiError('error.validation', serverMessage);
+  if (status === null) return new ApiError('error.network');
+  return new ApiError('error.server', serverMessage);
+}
+
+/**
+ * Minimal fetch wrapper with a 30s timeout and user-signal cancellation,
+ * replacing the (much heavier) axios dependency. Error mapping mirrors the
+ * previous axios behaviour: HTTP status decides the kind of error, a network
+ * failure (or timeout) surfaces as `error.network`, and a user-initiated
+ * abort rethrows so callers' `signal.aborted` checks short-circuit cleanly.
+ */
+async function request<T>(
+  path: string,
+  options: { method?: string; json?: unknown; signal?: AbortSignal } = {},
+): Promise<T> {
+  const { method, json, signal } = options;
+  const controller = new AbortController();
+  let timedOut = false;
+  const timeoutId = window.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, TIMEOUT_MS);
+  const propagateAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener('abort', propagateAbort, { once: true });
   }
-  if (!payload.response && payload.request) {
-    return new ApiError('error.network');
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      method: method ?? (json !== undefined ? 'POST' : 'GET'),
+      // The server expects JSON when a body is sent; plain GETs carry no body.
+      headers: json !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: json !== undefined ? JSON.stringify(json) : undefined,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    // A user-initiated abort must propagate so callers can act on signal.aborted.
+    if (
+      error instanceof DOMException &&
+      error.name === 'AbortError' &&
+      !timedOut &&
+      signal?.aborted
+    ) {
+      throw error;
+    }
+    // Anything else — a network failure or the 30s timeout — is a connectivity issue.
+    throw toApiError(null);
+  } finally {
+    window.clearTimeout(timeoutId);
+    signal?.removeEventListener('abort', propagateAbort);
   }
-  return new ApiError('error.server');
+
+  if (!res.ok) {
+    let serverMessage: string | undefined;
+    try {
+      const data = (await res.json()) as ErrorPayload;
+      serverMessage = data?.error?.message;
+    } catch {
+      // Non-JSON error body — fall back to the status-only mapping.
+    }
+    throw toApiError(res.status, serverMessage);
+  }
+  return (await res.json()) as T;
 }
 
 /** Submit a search; resolves to found results or a created job. */
-export async function submitSearch(
+export function submitSearch(
   youtubeUrl: string,
   keyword: string,
   signal?: AbortSignal,
 ): Promise<SearchResponse> {
-  try {
-    const { data } = await http.post<SearchResponse>(
-      '/api/search',
-      { youtube_url: youtubeUrl, keyword },
-      { signal },
-    );
-    return data;
-  } catch (error) {
-    throw toApiError(error);
-  }
+  return request<SearchResponse>('/api/search', {
+    method: 'POST',
+    json: { youtube_url: youtubeUrl, keyword },
+    signal,
+  });
 }
 
 /** Fetch the current status of a transcription job. */
-export async function fetchJobStatus(
-  jobId: string,
-  signal?: AbortSignal,
-): Promise<StatusResponse> {
-  try {
-    const { data } = await http.get<StatusResponse>(`/api/status/${jobId}`, { signal });
-    return data;
-  } catch (error) {
-    throw toApiError(error);
-  }
+export function fetchJobStatus(jobId: string, signal?: AbortSignal): Promise<StatusResponse> {
+  return request<StatusResponse>(`/api/status/${jobId}`, { signal });
 }
 
 /** Fetch cached search results for a transcribed video. */
-export async function fetchVideoSearch(
+export function fetchVideoSearch(
   videoId: string,
   keyword: string,
   signal?: AbortSignal,
 ): Promise<VideoSearchResponse> {
-  try {
-    const { data } = await http.get<VideoSearchResponse>(`/api/video/${videoId}/search`, {
-      params: { keyword },
-      signal,
-    });
-    return data;
-  } catch (error) {
-    throw toApiError(error);
-  }
+  return request<VideoSearchResponse>(
+    `/api/video/${videoId}/search?keyword=${encodeURIComponent(keyword)}`,
+    { signal },
+  );
 }

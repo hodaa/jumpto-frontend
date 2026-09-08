@@ -37,9 +37,10 @@ function start() {
   return view;
 }
 
-function cancel() {
-  // Cancellation now lives solely on the processing status card.
-  fireEvent.click(screen.getByRole('button', { name: 'Cancel search' }));
+async function cancel() {
+  // Cancellation now lives solely on the processing status card, which is
+  // lazily loaded with the results panel — await it so the button is present.
+  fireEvent.click(await screen.findByRole('button', { name: 'Cancel search' }));
 }
 
 function expectIdle() {
@@ -66,7 +67,7 @@ describe('search cancellation', () => {
     submit.mockReturnValue(pending.promise);
     start();
     const signal = submit.mock.calls[0][2];
-    cancel();
+    await cancel();
     expect(signal?.aborted).toBe(true);
     await act(async () => pending.resolve(response));
     expectIdle();
@@ -77,7 +78,7 @@ describe('search cancellation', () => {
     const pending = deferred<SearchResponse>();
     submit.mockReturnValue(pending.promise);
     start();
-    cancel();
+    await cancel();
     await act(async () => pending.reject(new ApiError('error.network')));
     expectIdle();
   });
@@ -88,7 +89,7 @@ describe('search cancellation', () => {
       status: 'found', results: [{ timestamp: '00:12', progress_seconds: 12, text_snippet: 'new result' }],
     });
     start();
-    cancel();
+    await cancel();
     fireEvent.change(screen.getByLabelText('Word or phrase'), { target: { value: 'new phrase' } });
     fireEvent.click(screen.getByRole('button', { name: 'Jump to the moment' }));
     expect(await screen.findByText('new result')).toBeInTheDocument();
@@ -104,7 +105,7 @@ describe('search cancellation', () => {
     start();
     await waitFor(() => expect(status).toHaveBeenCalledOnce());
     const signal = status.mock.calls[0][1];
-    cancel();
+    await cancel();
     expect(signal?.aborted).toBe(true);
     await act(async () => pending.resolve({ ...COMPLETED, status: result, error: 'stale failure' }));
     expectIdle();
@@ -120,21 +121,24 @@ describe('search cancellation', () => {
     start();
     await waitFor(() => expect(videoSearch).toHaveBeenCalledOnce());
     const signal = videoSearch.mock.calls[0][2];
-    cancel();
+    await cancel();
     expect(signal?.aborted).toBe(true);
     await act(async () => pending.resolve({ status: 'found', results: MATCHES }));
     expectIdle();
   });
 
   it('cancels a scheduled completion transition without changing progress behavior', async () => {
-    vi.useFakeTimers();
     submit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'video-1' });
     status.mockResolvedValue(COMPLETED);
     videoSearch.mockResolvedValue({ status: 'found', results: MATCHES });
     start();
+    // Let the lazily-loaded results panel resolve before swapping in fake
+    // timers (findBy/waitFor poll on real timers and would stall otherwise).
+    await screen.findByRole('button', { name: 'Cancel search' });
+    vi.useFakeTimers();
     await act(async () => {});
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
-    cancel();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel search' }));
     await act(async () => vi.advanceTimersByTime(500));
     expectIdle();
   });

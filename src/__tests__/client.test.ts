@@ -1,34 +1,46 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fetchJobStatus, fetchVideoSearch, submitSearch } from '../api/client';
 
-const { postMock, getMock, createMock } = vi.hoisted(() => {
-  const postMock = vi.fn();
-  const getMock = vi.fn();
-  const createMock = vi.fn(() => ({ post: postMock, get: getMock }));
-  return { postMock, getMock, createMock };
-});
+function jsonResponse(data: unknown, status = 200, ok = true): Response {
+  return {
+    ok,
+    status,
+    json: () => Promise.resolve(data),
+  } as unknown as Response;
+}
 
-vi.mock('axios', () => ({ default: { create: createMock } }));
+/** The prefix the client applies from VITE_API_BASE_URL before the /api path. */
+function pathOf(call: [string, RequestInit]): string {
+  const url = call[0];
+  const apiIndex = url.indexOf('/api');
+  return apiIndex === -1 ? url : url.slice(apiIndex);
+}
 
 describe('api client', () => {
+  const fetchMock = vi.fn();
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockReset();
   });
 
   it('posts a search request and returns data', async () => {
-    postMock.mockResolvedValue({ data: { status: 'found', results: [] } });
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'found', results: [] }));
     const result = await submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'hello');
-    expect(postMock).toHaveBeenCalledWith('/api/search', {
+    const call = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(pathOf(call)).toBe('/api/search');
+    expect(call[1].method).toBe('POST');
+    expect(JSON.parse(call[1].body as string)).toEqual({
       youtube_url: 'https://www.youtube.com/watch?v=abcdef12345',
       keyword: 'hello',
-    }, { signal: undefined });
+    });
+    expect(call[1].headers).toEqual({ 'Content-Type': 'application/json' });
     expect(result).toEqual({ status: 'found', results: [] });
   });
 
   it('maps a 400 to an invalid-url error', async () => {
-    postMock.mockRejectedValue({
-      response: { status: 400, data: { error: { message: 'bad url' } } },
-    });
+    fetchMock.mockResolvedValue(
+      jsonResponse({ error: { message: 'bad url' } }, 400, false),
+    );
     await expect(submitSearch('x', 'y')).rejects.toMatchObject({
       messageKey: 'error.invalidUrl',
       serverMessage: 'bad url',
@@ -36,73 +48,94 @@ describe('api client', () => {
   });
 
   it('maps a 422 to a validation error', async () => {
-    postMock.mockRejectedValue({ response: { status: 422, data: { detail: [] } } });
+    fetchMock.mockResolvedValue(jsonResponse({ detail: [] }, 422, false));
     await expect(
       submitSearch('https://www.youtube.com/watch?v=abcdef12345', ''),
     ).rejects.toMatchObject({ messageKey: 'error.validation' });
   });
 
-  it('maps a request without a response to a network error', async () => {
-    postMock.mockRejectedValue({ request: {} });
+  it('maps a network failure to a network error', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
     await expect(
       submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'x'),
     ).rejects.toMatchObject({ messageKey: 'error.network' });
   });
 
   it('maps any other status to a generic server error', async () => {
-    postMock.mockRejectedValue({ response: { status: 500, data: {} } });
-    await expect(
-      submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'x'),
-    ).rejects.toMatchObject({ messageKey: 'error.server' });
-  });
-
-  it('maps an unknown error to a generic server error', async () => {
-    postMock.mockRejectedValue(new Error('boom'));
+    fetchMock.mockResolvedValue(jsonResponse({}, 500, false));
     await expect(
       submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'x'),
     ).rejects.toMatchObject({ messageKey: 'error.server' });
   });
 
   it('fetches job status', async () => {
-    getMock.mockResolvedValue({
-      data: {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
         status: 'processing',
         video_id: 'v',
         progress: 10,
         results: null,
         error: null,
         video_language: null,
-      },
-    });
+      }),
+    );
     const result = await fetchJobStatus('job-1');
-    expect(getMock).toHaveBeenCalledWith('/api/status/job-1', { signal: undefined });
+    const call = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(pathOf(call)).toBe('/api/status/job-1');
     expect(result).toMatchObject({ status: 'processing' });
   });
 
   it('fetches video search results with keyword param', async () => {
-    getMock.mockResolvedValue({ data: { status: 'found', results: [] } });
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'found', results: [] }));
     const result = await fetchVideoSearch('vid-1', 'hello');
-    expect(getMock).toHaveBeenCalledWith('/api/video/vid-1/search', {
-      params: { keyword: 'hello' },
-      signal: undefined,
-    });
+    const call = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(pathOf(call)).toBe('/api/video/vid-1/search?keyword=hello');
     expect(result).toEqual({ status: 'found', results: [] });
   });
 
-  it('forwards cancellation signals through submission, polling and result requests', async () => {
+  it('forwards cancellation signals through all three calls', async () => {
     const { signal } = new AbortController();
-    postMock.mockResolvedValue({ data: { status: 'not_found', results: [] } });
-    getMock.mockResolvedValue({ data: { status: 'found', results: [] } });
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'not_found', results: [] }));
     await submitSearch('https://youtu.be/abcdef12345', 'hello', signal);
     await fetchJobStatus('job-1', signal);
     await fetchVideoSearch('vid-1', 'hello', signal);
-    expect(postMock).toHaveBeenCalledWith('/api/search', {
-      youtube_url: 'https://youtu.be/abcdef12345', keyword: 'hello',
-    }, { signal });
-    expect(getMock).toHaveBeenCalledWith('/api/status/job-1', { signal });
-    expect(getMock).toHaveBeenCalledWith('/api/video/vid-1/search', {
-      params: { keyword: 'hello' }, signal,
-    });
+    for (const call of fetchMock.mock.calls as [string, RequestInit][]) {
+      expect(call[1].signal).toBeDefined();
+      expect(call[1].signal).not.toBe(signal);
+    }
+  });
+
+  it('rethrows a user-initiated abort so callers can short-circuit', async () => {
+    fetchMock.mockRejectedValue(new DOMException('Aborted', 'AbortError'));
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      submitSearch('https://youtu.be/abcdef12345', 'hello', controller.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('maps a timeout to a network error', async () => {
+    vi.useFakeTimers();
+    fetchMock.mockImplementation(
+      (_url: string, init: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          (init.signal as AbortSignal).addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError')),
+          );
+        }),
+    );
+    // Attach the rejection handler up front so advancing the timer can't
+    // produce an unhandled rejection.
+    const pending = submitSearch('https://youtu.be/abcdef12345', 'hello');
+    const result = pending.then(
+      () => {
+        throw new Error('timeout test should not resolve');
+      },
+      (error: unknown) => error,
+    );
+    await vi.advanceTimersByTimeAsync(31_000);
+    expect(await result).toMatchObject({ messageKey: 'error.network' });
+    vi.useRealTimers();
   });
 
   it('exposes ApiError instances with server messages', () => {
