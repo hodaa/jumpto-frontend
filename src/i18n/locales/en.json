@@ -2,8 +2,8 @@
   "app": {
     "title": "Qfza",
     "logoAlt": "Qfza",
-    "pageTitle": "Qfza — Find the moments that matter",
-    "metaDescription": "Qfza — Jump to the moments that matter"
+    "pageTitle": "Qfza — Search Inside YouTube Videos & Jump to the Moment",
+    "metaDescription": "Qfza lets you search inside YouTube videos and their transcripts for any word or phrase, then jump straight to the exact timestamp where it appears."
   },
   "nav": {
     "howItWorks": "How it works?",
@@ -12,8 +12,8 @@
     "primary": "Primary"
   },
   "hero": {
-    "title": "Jump to the exact moment a phrase is spoken",
-    "subtitle": "Paste a YouTube URL, enter a word or phrase, and jump straight to every matching moment."
+    "title": "Search Inside YouTube Videos",
+    "subtitle": "Paste a YouTube video URL and search for any word or phrase. Qfza finds where it appears and lets you jump directly to that moment."
   },
   "features": {
     "title": "Why Qfza",

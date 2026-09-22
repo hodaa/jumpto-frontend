@@ -11,8 +11,8 @@ const SHELL_MARK = 'id="app-shell"';
 const shell = `
 <div id="app-shell">
   <div lang="en" dir="ltr">
-    <h1>Qfza — Jump to the exact moment a phrase is spoken</h1>
-    <p>Paste a YouTube URL, enter a word or phrase, and jump straight to every matching moment.</p>
+    <h1>Search Inside YouTube Videos</h1>
+    <p>Paste a YouTube video URL and search for any word or phrase. Qfza finds where it appears and lets you jump directly to that moment.</p>
     <p>Qfza (قفزة) searches a public YouTube video&rsquo;s transcript word by word and returns the exact timestamps where your phrase is spoken. Open a result to watch the moment on YouTube, or scrub no more.</p>
     <h2>How it works</h2>
     <ol>
@@ -29,8 +29,8 @@ const shell = `
     <p><a href="#main-content">Start searching on Qfza</a></p>
   </div>
   <div lang="ar" dir="rtl">
-    <h2>قفزة — انتقل إلى اللحظة المحددة التي تُنطق فيها العبارة</h2>
-    <p>الصق رابط يوتيوب، وأدخل كلمة أو عبارة، وانتقل مباشرةً إلى كل لحظة مطابقة.</p>
+    <h2>قفزة — ابحث داخل فيديوهات يوتيوب وانتقل إلى اللحظة</h2>
+    <p>الصق رابط فيديو على يوتيوب، وابحث عن أي كلمة أو عبارة؛ تجد «قفزة» مكان ظهورها، ويمكنك الانتقال مباشرةً إلى تلك اللحظة.</p>
     <p>يبحث تطبيق قفزة (وتُكتب أحيانًا «قفزه») في النص التفريغي لكامل الفيديو العام على يوتيوب كلمةً كلمة، ويعيد التوقيتات المحددة التي تُنطق فيها العبارة. افتح أي نتيجة لمشاهدة اللحظة على يوتيوب دون التقليب يدويًا.</p>
     <h3>كيف يعمل</h3>
     <ol>
