@@ -66,11 +66,14 @@ if (html.includes(SHELL_MARK)) {
 
 html = html.replace(
   MARKER,
-  `<div id="root">${shell
+  `<div id="root"></div>
+    <noscript>
+${shell
     .split('\n')
-    .map((line) => `        ${line}`)
+    .map((line) => `      ${line}`)
     .join('\n')}
-      </div>`,
+    </noscript>
+    <!-- crawlable fallback injected by scripts/prerender.mjs -->`,
 );
 
 await writeFile(htmlPath, html);
