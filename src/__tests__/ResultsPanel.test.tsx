@@ -95,9 +95,9 @@ describe('accessible results and announcements', () => {
     const { rerender, container } = render(<ResultsPanel {...baseProps} phase="idle" />);
     const live = screen.getByRole('status', { name: 'Search status' });
     expect(live).toBeEmptyDOMElement();
-    rerender(<ResultsPanel {...baseProps} phase="processing" progress={10} estimatedSeconds={100} />);
+    rerender(<ResultsPanel {...baseProps} phase="processing" progress={10} />);
     expect(live).toHaveTextContent('Search started. Fetching the transcript.');
-    rerender(<ResultsPanel {...baseProps} phase="processing" progress={40} estimatedSeconds={60} />);
+    rerender(<ResultsPanel {...baseProps} phase="processing" progress={40} />);
     expect(live).toHaveTextContent('Search started. Fetching the transcript.');
     expect(live).not.toHaveTextContent('%');
     expect(container.querySelector('[aria-busy="true"] [aria-live]')).toBeNull();

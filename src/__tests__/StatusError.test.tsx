@@ -55,16 +55,6 @@ describe('StatusCard', () => {
     expect(screen.getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
   });
 
-  it('humanizes long ETAs as whole minutes', () => {
-    render(<StatusCard progress={40} estimatedSeconds={150} />);
-    expect(screen.getByText('Estimated time remaining: ~3 minutes')).toBeInTheDocument();
-  });
-
-  it('keeps sub-minute ETAs in seconds', () => {
-    render(<StatusCard progress={40} estimatedSeconds={42} />);
-    expect(screen.getByText('Estimated time remaining: ~42s')).toBeInTheDocument();
-  });
-
   it('renders the status stepper steps', () => {
     render(<StatusCard progress={null} />);
     expect(screen.getByText('Fetching transcript…')).toBeInTheDocument();

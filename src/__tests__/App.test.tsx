@@ -224,37 +224,6 @@ describe('App', () => {
     });
   });
 
-  it('shows an estimated wait derived from backend progress', async () => {
-    mockSubmit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'vid-1' });
-    mockStatus.mockResolvedValue({
-      status: 'processing',
-      video_id: 'vid-1',
-      progress: 10,
-      results: null,
-      error: null,
-      video_language: null,
-    });
-
-    await fillAndSubmit();
-    expect(await screen.findByText(/Estimated time remaining/)).toBeInTheDocument();
-  });
-
-  it('prefers a server-provided estimated time over the computed estimate', async () => {
-    mockSubmit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'vid-1' });
-    mockStatus.mockResolvedValue({
-      status: 'processing',
-      video_id: 'vid-1',
-      progress: 10,
-      results: null,
-      error: null,
-      video_language: null,
-      estimatedTimeSeconds: 42,
-    });
-
-    await fillAndSubmit();
-    expect(await screen.findByText('Estimated time remaining: ~42s')).toBeInTheDocument();
-  });
-
   it('cancels an in-progress search and returns to the idle state', async () => {
     mockSubmit.mockImplementation(() => new Promise<SearchResponse>(() => {}));
 

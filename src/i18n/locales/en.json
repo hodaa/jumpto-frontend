@@ -70,9 +70,6 @@
     "message": "This can take a few minutes. We will show your results as soon as the transcript is ready.",
     "searchingFor": "Searching for “{{keyword}}”",
     "progress": "Progress: {{progress}}%",
-    "estimatedTime": "Estimated time remaining: ~{{seconds}}s",
-    "estimatedTimeMinutes_one": "Estimated time remaining: ~{{count}} minute",
-    "estimatedTimeMinutes_other": "Estimated time remaining: ~{{count}} minutes",
     "stillWorking": "Still working… this is taking longer than usual.",
     "fetching": "Fetching transcript…",
     "finding": "Finding timestamps…"

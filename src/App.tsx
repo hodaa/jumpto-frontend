@@ -445,7 +445,6 @@ export default function App() {
               <ResultsPanel
               phase={phase}
               progress={progress}
-              estimatedSeconds={estimatedWait}
               matches={matches}
               errorText={errorText}
               keyword={query.keyword}

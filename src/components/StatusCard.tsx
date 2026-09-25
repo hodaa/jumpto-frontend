@@ -5,7 +5,6 @@ import { getLanguage } from '../i18n';
 interface Props {
   progress: number | null;
   keyword?: string;
-  estimatedSeconds?: number | null;
   skeleton?: boolean;
   /** Optional abort affordance shown while the job is running — lets mobile
    *  users cancel without scrolling back up to the (read-only) form. */
@@ -21,7 +20,6 @@ interface Props {
 export const StatusCard = memo(function StatusCard({
   progress,
   keyword = '',
-  estimatedSeconds = null,
   skeleton = false,
   onCancel,
 }: Props) {
@@ -55,14 +53,6 @@ export const StatusCard = memo(function StatusCard({
   const progressLabel = indeterminate
     ? t('status.message')
     : t('status.progress', { progress: value });
-  const etaLabel =
-    estimatedSeconds !== null && estimatedSeconds !== undefined
-      ? estimatedSeconds >= 60
-        ? t('status.estimatedTimeMinutes', {
-            count: Math.max(1, Math.round(estimatedSeconds / 60)),
-          })
-        : t('status.estimatedTime', { seconds: estimatedSeconds })
-      : null;
   // Fill the bar to the logged progress. A `scaleX` transform (GPU-composited,
   // no repaint) with the origin at the leading edge is cheaper than animating
   // `clip-path`, which forces a repaint on every tick.
@@ -143,11 +133,6 @@ export const StatusCard = memo(function StatusCard({
 
       {indeterminate ? (
         <p className="m-0 max-w-md text-sm text-slate-600">{progressLabel}</p>
-      ) : null}
-      {etaLabel ? (
-        <p className="m-0 text-xs text-slate-500">
-          {etaLabel}
-        </p>
       ) : null}
       {atStallCap ? (
         <p className="m-0 flex items-center gap-2 text-sm font-medium text-slate-600">

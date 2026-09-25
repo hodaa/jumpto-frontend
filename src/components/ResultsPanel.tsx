@@ -15,7 +15,6 @@ export type Phase = 'idle' | 'processing' | 'done' | 'error';
 interface Props {
   phase: Phase;
   progress: number | null;
-  estimatedSeconds?: number | null;
   matches: SearchMatch[];
   errorText: string;
   keyword: string;
@@ -107,7 +106,6 @@ function IdleMockup() {
 function ResultsPanelContent({
   phase,
   progress,
-  estimatedSeconds,
   matches,
   errorText,
   keyword,
@@ -170,7 +168,6 @@ function ResultsPanelContent({
         <StatusCard
           progress={progress}
           keyword={keyword}
-          estimatedSeconds={estimatedSeconds ?? null}
           onCancel={onCancel}
         />
       </section>

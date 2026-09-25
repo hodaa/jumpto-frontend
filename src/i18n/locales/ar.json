@@ -70,12 +70,6 @@
     "message": "قد يستغرق هذا عدة دقائق. سنعرض لك النتائج بمجرد أن يصبح النص التفريغي جاهزًا.",
     "searchingFor": "جارٍ البحث عن “{{keyword}}”",
     "progress": "التقدم: {{progress}}٪",
-    "estimatedTime": "الوقت المتبقي المقدَّر: حوالي {{seconds}} ثانية",
-    "estimatedTimeMinutes_one": "الوقت المتبقي المقدَّر: حوالي {{count}} دقيقة",
-    "estimatedTimeMinutes_two": "الوقت المتبقي المقدَّر: حوالي {{count}} دقيقتين",
-    "estimatedTimeMinutes_few": "الوقت المتبقي المقدَّر: حوالي {{count}} دقائق",
-    "estimatedTimeMinutes_many": "الوقت المتبقي المقدَّر: حوالي {{count}} دقيقة",
-    "estimatedTimeMinutes_other": "الوقت المتبقي المقدَّر: حوالي {{count}} دقيقة",
     "stillWorking": "لا يزال العمل جاريًا… قد يستغرق وقتًا أطول من المعتاد.",
     "fetching": "جارٍ جلب النص التفريغي…",
     "finding": "جارٍ إيجاد التوقيتات…"
