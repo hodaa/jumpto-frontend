@@ -36,7 +36,8 @@
   },
   "footer": {
     "note": "Qfza — Find the moments that matter",
-    "rights": "© {{year}} Qfza. All rights reserved."
+    "rights": "© {{year}} Qfza. All rights reserved.",
+    "contact": "Contact us"
   },
   "form": {
     "title": "Search a YouTube video for a word or phrase",
@@ -142,5 +143,31 @@
     "finding": "Finding matching timestamps.",
     "complete": "Search complete: {{summary}}.",
     "failed": "The search couldn’t finish. Your inputs have been kept."
+  },
+"contact": {
+    "title": "Contact us",
+    "lead": "Have a question, a suggestion, or feedback about Qfza? We'd love to hear from you.",
+    "emailLabel": "Email us",
+    "emailNotice": "You can reach us any time — we usually reply within a day or two.",
+    "back": "Back to search",
+    "orEmail": "Prefer email? Write to us directly at",
+    "form": {
+      "nameLabel": "Your name",
+      "namePlaceholder": "e.g. Sara Ahmed",
+      "emailLabel": "Your email",
+      "emailPlaceholder": "you@example.com",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Tell us what's on your mind…",
+      "messageCount": "{{count}}/{{max}} characters",
+      "submit": "Send message",
+      "sending": "Sending…",
+      "requiredName": "Please enter your name.",
+      "requiredEmail": "Please enter your email.",
+      "invalidEmail": "This doesn't look like a valid email address.",
+      "requiredMessage": "Please enter a message.",
+      "success": "Thank you! Your message has been sent.",
+      "error": "Sorry, your message couldn't be sent. Please try again.",
+      "sendAnother": "Send another message"
+    }
   }
 }

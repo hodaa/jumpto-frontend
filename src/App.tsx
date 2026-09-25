@@ -9,6 +9,8 @@ import { SearchForm } from './components/SearchForm';
 import type { SearchFormHandle } from './components/SearchForm';
 import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
+import { ContactPage } from './components/ContactPage';
+import { useHashRoute } from './hooks/useHashRoute';
 import { useJobPolling } from './hooks/useJobPolling';
 import type { VideoPlayerHandle } from './hooks/useYouTubePlayer';
 import type { SearchMatch, StatusResponse } from './types';
@@ -381,6 +383,33 @@ export default function App() {
   const gridCols = resultsActive
     ? 'lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]'
     : 'lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.85fr)]';
+
+  const route = useHashRoute();
+
+  // When returning to the home view, honour a hash anchor (e.g. clicking a
+  // header nav link while on the contact page) once the sections are mounted.
+  useEffect(() => {
+    if (route !== 'home') return;
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!hash) return;
+    const target = document.getElementById(hash);
+    if (target && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [route]);
+
+  if (route === 'contact') {
+    return (
+      <div className="app">
+        <a href="#main-content" className="skip-link">
+          {t('actions.skipToContent')}
+        </a>
+        <SiteHeader />
+        <ContactPage />
+        <SiteFooter />
+      </div>
+    );
+  }
 
   return (
     <div className="app">
