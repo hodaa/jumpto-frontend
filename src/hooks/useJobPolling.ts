@@ -69,6 +69,12 @@ export function useJobPolling({
           return;
         }
         if (status.status === 'completed') {
+          // A completed job may carry an outcome note (e.g. no speech detected)
+          // in place of a transcript; surface it instead of searching nothing.
+          if (status.error) {
+            onError(t('error.noTranscript', { message: status.error }));
+            return;
+          }
           const video = await fetchVideoSearch(videoId, keyword, controller.signal);
           if (cancelled()) return;
           onSuccess(video.results);

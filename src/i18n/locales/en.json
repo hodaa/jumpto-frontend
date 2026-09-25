@@ -119,6 +119,7 @@
     "jobGone": "This transcription job no longer exists. Please search again.",
     "boundary": "Something unexpected went wrong. Please reload the page and try again.",
     "failed": "Transcription failed: {{message}}",
+    "noTranscript": "No transcript available: {{message}}",
     "network": "Could not connect. Check your internet connection and try again. If it continues, please try later.",
     "timeout": "This is taking longer than expected. Please try again later.",
     "title": "Search error",
