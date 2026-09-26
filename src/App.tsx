@@ -1,9 +1,10 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, submitSearch } from './api/client';
 import { Features } from './components/Features';
 import { Hero } from './components/Hero';
 import { HowItWorks } from './components/HowItWorks';
+import { ResultsPanel } from './components/ResultsPanel';
 import type { Phase } from './components/ResultsPanel';
 import { SearchForm } from './components/SearchForm';
 import type { SearchFormHandle } from './components/SearchForm';
@@ -19,13 +20,6 @@ import { isReadingHelp } from './utils/focus';
 import { parseYouTubeId } from './utils/youtube';
 import { getCachedResults, setCachedResults } from './utils/resultsCache';
 import { trackEvent } from './utils/analytics';
-
-// Lazy-load the results/status surface (ResultsPanel pulls in ResultsList,
-// VideoPlayer, ResultsToolbar, StatusCard and ErrorView). It is only mounted
-// once a search runs, so it stays out of the initial bundle.
-const loadResultsPanel = () =>
-  import('./components/ResultsPanel').then((m) => ({ default: m.ResultsPanel }));
-const ResultsPanel = lazy(loadResultsPanel);
 
 const PROGRESS_DONE_DELAY_MS = 350;
 const COPY_NOTICE_MS = 2000;
@@ -90,19 +84,6 @@ export default function App() {
     },
     [],
   );
-
-  // Warm the (lazily loaded) results chunk once the app has settled into idle,
-  // so the first search doesn't stall on a network fetch of the panel. This is
-  // best-effort and non-blocking — nothing depends on it completing.
-  useEffect(() => {
-    const preload = () => void loadResultsPanel();
-    if (typeof requestIdleCallback === 'function') {
-      const id = requestIdleCallback(preload);
-      return () => cancelIdleCallback(id);
-    }
-    const id = window.setTimeout(preload, 1000);
-    return () => window.clearTimeout(id);
-  }, []);
 
   useEffect(() => {
     if (phase === 'idle' || isReadingHelp()) return;
@@ -439,37 +420,28 @@ export default function App() {
             />
           </section>
           <section ref={resultsRef} className="min-w-0 scroll-mt-6">
-            <Suspense
-              fallback={
-                <div
-                  aria-hidden="true"
-                  className="h-64 animate-pulse rounded-2xl border border-slate-200 bg-slate-50"
-                />
-              }
-            >
-              <ResultsPanel
-                phase={phase}
-                progress={progress}
-                matches={matches}
-                noSpeech={noSpeech}
-                errorText={errorText}
-                keyword={query.keyword}
-                youtubeId={parseYouTubeId(query.url) ?? null}
-                copied={copied}
-                copyFailed={copyFailed}
-                matchLimit={MATCH_LIMIT}
-                playerRef={playerRef}
-                onCopy={() => void handleCopyResults()}
-                onExport={handleExportResults}
-                onSeek={handleSeek}
-                onPlaybackChange={setCurrentPlayingTimestamp}
-                onClear={handleClearKeyword}
-                onNewSearch={handleNewSearch}
-                onRetry={handleRetry}
-                onCancel={searching ? handleCancelSearch : undefined}
-                currentPlayingTimestamp={currentPlayingTimestamp}
-              />
-            </Suspense>
+            <ResultsPanel
+              phase={phase}
+              progress={progress}
+              matches={matches}
+              noSpeech={noSpeech}
+              errorText={errorText}
+              keyword={query.keyword}
+              youtubeId={parseYouTubeId(query.url) ?? null}
+              copied={copied}
+              copyFailed={copyFailed}
+              matchLimit={MATCH_LIMIT}
+              playerRef={playerRef}
+              onCopy={() => void handleCopyResults()}
+              onExport={handleExportResults}
+              onSeek={handleSeek}
+              onPlaybackChange={setCurrentPlayingTimestamp}
+              onClear={handleClearKeyword}
+              onNewSearch={handleNewSearch}
+              onRetry={handleRetry}
+              onCancel={searching ? handleCancelSearch : undefined}
+              currentPlayingTimestamp={currentPlayingTimestamp}
+            />
           </section>
         </div>
         <HowItWorks />
