@@ -1,9 +1,16 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadEnv } from 'vite';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-const htmlPath = resolve(root, 'dist/index.html');
+const dist = resolve(root, 'dist');
+const htmlPath = resolve(dist, 'index.html');
+
+// Standalone scripts don't pick up Vite's env replacement, so read the same
+// env Vite uses at build time and default to the published qfza.app origin.
+const env = loadEnv('production', root, '');
+const siteUrl = (env.VITE_SITE_URL || 'https://qfza.app').replace(/\/+$/, '');
 
 const MARKER = '<div id="root"></div>';
 const SHELL_MARK = 'id="app-shell"';
@@ -64,6 +71,17 @@ if (html.includes(SHELL_MARK)) {
   process.exit(1);
 }
 
+// Vite replaces %VITE_SITE_URL% in index.html at build time. If the variable
+// was missing the placeholder survives verbatim and would leak into canonical/
+// OG tags — refuse the build instead of shipping it.
+if (html.includes('%VITE_SITE_URL%')) {
+  console.error(
+    '[prerender] VITE_SITE_URL is unset; index.html still contains %VITE_SITE_URL%. ' +
+      'Set it in .env or the host environment.',
+  );
+  process.exit(1);
+}
+
 html = html.replace(
   MARKER,
   `<div id="root"></div>
@@ -78,3 +96,28 @@ ${shell
 
 await writeFile(htmlPath, html);
 console.log(`[prerender] injected static crawlable shell into ${htmlPath}`);
+
+// Generate crawlable site files from the configured origin. These live in
+// public/ sources declared per-origin; while the html env placeholder covers
+// index.html, sitemap.xml/robots.txt are plain files Vite copies verbatim,
+// so emit them here from the same env source of truth.
+await mkdir(dist, { recursive: true });
+await writeFile(
+  resolve(dist, 'robots.txt'),
+  ['User-agent: *', 'Allow: /', '', `Sitemap: ${siteUrl}/sitemap.xml`, ''].join('\n'),
+);
+await writeFile(
+  resolve(dist, 'sitemap.xml'),
+  [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    '  <url>',
+    `    <loc>${siteUrl}/</loc>`,
+    '    <changefreq>weekly</changefreq>',
+    '    <priority>1.0</priority>',
+    '  </url>',
+    '</urlset>',
+    '',
+  ].join('\n'),
+);
+console.log(`[prerender] wrote sitemap.xml + robots.txt for ${siteUrl}`);

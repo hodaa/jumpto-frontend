@@ -3,13 +3,14 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SearchMatch } from '../types';
 import { buildWatchUrl, formatYouTubeTime } from '../utils/youtube';
-import { IconExternalLink, IconSearch } from './icons';
+import { IconCheck, IconSearch, IconShare, IconYouTube } from './icons';
 
 const DEFAULT_MATCH_LIMIT = 50;
 
 interface Props {
   matches: SearchMatch[];
   keyword: string;
+  noSpeech?: boolean;
   onSeek: (seconds: number) => void;
   onClear?: () => void;
   youtubeId?: string | null;
@@ -57,6 +58,68 @@ interface MatchRowProps {
   isPlaying: boolean;
 }
 
+const SHARE_COPIED_MS = 2000;
+
+interface ShareButtonProps {
+  youtubeId: string;
+  seconds: number;
+  timestamp: string;
+}
+
+/** Share the timestamped watch link, falling back to copying it. */
+function ShareButton({ youtubeId, seconds, timestamp }: ShareButtonProps) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const url = buildWatchUrl(youtubeId, seconds);
+  const shareLabel = t('results.shareMoment', { timestamp });
+
+  useEffect(
+    () => () => {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    },
+    [],
+  );
+
+  const handleShare = async () => {
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ url, title: shareLabel });
+        return;
+      } catch (error) {
+        if ((error as Error).name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => setCopied(false), SHARE_COPIED_MS);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      aria-label={copied ? t('results.copied') : shareLabel}
+      title={copied ? t('results.copied') : shareLabel}
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-action ${
+        copied
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+          : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-primary'
+      }`}
+    >
+      {copied ? <IconCheck size={16} /> : <IconShare size={16} />}
+      <span role="status" aria-live="polite" className="sr-only">
+        {copied ? t('results.copied') : ''}
+      </span>
+    </button>
+  );
+}
+
 /**
  * One timestamped result. Memoized so a playback-status change re-renders only
  * the single row whose timestamp flips (rather than all 50), and so rows never
@@ -79,16 +142,20 @@ const MatchRow = memo(function MatchRow({
       <div className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm @min-[36rem]/matches:flex-row @min-[36rem]/matches:items-stretch">
         <button
           type="button"
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-3 ps-4 pe-2 text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 px-3 py-3 text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
           onClick={() => onSeek(match.progress_seconds)}
           aria-label={t('results.seek', { timestamp, snippet })}
         >
-          <span className="flex shrink-0 items-center gap-2.5">
+          <span className="flex shrink-0 items-center gap-2">
             <span
               aria-hidden="true"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm text-white shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-primary/90"
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-primary/90 ${
+                isPlaying ? 'ring-2 ring-accent ring-offset-1' : ''
+              }`}
             >
-              ▶
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5.14v13.72L19 12 8 5.14z" />
+              </svg>
             </span>
             <span
               className={`shrink-0 rounded-md px-2 py-1 text-sm font-bold tabular-nums ${
@@ -100,23 +167,30 @@ const MatchRow = memo(function MatchRow({
             </span>
           </span>
           <p
-            className="match-card__snippet min-w-0 flex-1 text-start text-sm leading-relaxed text-slate-600 [overflow-wrap:anywhere]"
+            className="match-card__snippet min-w-0 flex-1 text-start text-sm leading-relaxed text-slate-600 [overflow-wrap:anywhere] line-clamp-2"
             dir="auto"
           >
             {highlighted}
           </p>
         </button>
         {youtubeId ? (
-          <a
-            href={buildWatchUrl(youtubeId, match.progress_seconds)}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={t('results.watchMoment', { timestamp })}
-            className="inline-flex max-w-full items-center gap-1.5 self-start rounded-lg border-t border-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-500 transition-colors duration-200 hover:text-primary focus-visible:outline-2 focus-visible:outline-action @min-[36rem]/matches:self-stretch @min-[36rem]/matches:border-t-0 @min-[36rem]/matches:px-2.5 @min-[36rem]/matches:pe-3"
-          >
-            <IconExternalLink />
-            {t('results.watchOnYouTube')}
-          </a>
+          <div className="flex shrink-0 items-center gap-1.5 self-stretch p-2 max-sm:w-full max-sm:justify-end max-sm:border-t max-sm:border-slate-100 @min-[36rem]/matches:items-center @min-[36rem]/matches:border-s @min-[36rem]/matches:border-slate-100">
+            <ShareButton
+              youtubeId={youtubeId}
+              seconds={match.progress_seconds}
+              timestamp={timestamp}
+            />
+            <a
+              href={buildWatchUrl(youtubeId, match.progress_seconds)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t('results.watchMoment', { timestamp })}
+              title={t('results.watchOnYouTube')}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-200 bg-red-50 text-[#FF0000] transition-colors duration-200 hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-action"
+            >
+              <IconYouTube size={18} />
+            </a>
+          </div>
         ) : null}
       </div>
     </li>
@@ -126,6 +200,7 @@ const MatchRow = memo(function MatchRow({
 export const ResultsList = memo(function ResultsList({
   matches,
   keyword,
+  noSpeech = false,
   onSeek,
   onClear,
   youtubeId,
@@ -143,15 +218,21 @@ export const ResultsList = memo(function ResultsList({
     youtubeId: Props['youtubeId'];
     matchLimit: number;
   } | null>(null);
-  const expanded = expandedFor?.matches === matches && expandedFor.keyword === keyword &&
-    expandedFor.youtubeId === youtubeId && expandedFor.matchLimit === matchLimit;
+  const expanded =
+    expandedFor?.matches === matches &&
+    expandedFor.keyword === keyword &&
+    expandedFor.youtubeId === youtubeId &&
+    expandedFor.matchLimit === matchLimit;
   const capped = matchLimit > 0 && matches.length > matchLimit;
   const maxVisible = capped && !expanded ? matchLimit : matches.length;
   const hiddenCount = matches.length - maxVisible;
 
-  useEffect(() => () => {
-    if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
-  }, [matches, keyword, youtubeId, matchLimit]);
+  useEffect(
+    () => () => {
+      if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
+    },
+    [matches, keyword, youtubeId, matchLimit],
+  );
 
   const toggleExpanded = () => {
     setExpandedFor(expanded ? null : { matches, keyword, youtubeId, matchLimit });
@@ -179,17 +260,33 @@ export const ResultsList = memo(function ResultsList({
         className="flex flex-col items-center gap-3 py-8 text-center rtl:text-right"
         aria-label={t('results.listLabel', { keyword })}
       >
-        {countBadge}
-        <span
-          aria-hidden="true"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500"
-        >
-          <IconSearch size={20} />
-        </span>
-        <div className="max-w-sm space-y-1">
-          <p className="-mt-1 text-sm text-slate-500 rtl:text-right">{t('results.empty')}</p>
-          <p className="text-xs text-muted rtl:text-right">{t('results.emptyHint')}</p>
-        </div>
+        {noSpeech ? (
+          <>
+            <span
+              aria-hidden="true"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500"
+            >
+              <IconSearch size={20} />
+            </span>
+            <div className="max-w-sm space-y-1">
+              <p className="-mt-1 text-sm text-slate-500 rtl:text-right">{t('results.noSpeech')}</p>
+            </div>
+          </>
+        ) : (
+          <>
+            {countBadge}
+            <span
+              aria-hidden="true"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500"
+            >
+              <IconSearch size={20} />
+            </span>
+            <div className="max-w-sm space-y-1">
+              <p className="-mt-1 text-sm text-slate-500 rtl:text-right">{t('results.empty')}</p>
+              <p className="text-xs text-muted rtl:text-right">{t('results.emptyHint')}</p>
+            </div>
+          </>
+        )}
         {onClear ? (
           <button
             type="button"

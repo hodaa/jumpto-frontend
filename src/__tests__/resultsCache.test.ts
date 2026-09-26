@@ -12,12 +12,17 @@ describe('resultsCache', () => {
   it('returns undefined on a miss and stored results on a hit', () => {
     expect(getCachedResults('vid-1', 'hello')).toBeUndefined();
     setCachedResults('vid-1', 'hello', [ONE]);
-    expect(getCachedResults('vid-1', 'hello')).toEqual([ONE]);
+    expect(getCachedResults('vid-1', 'hello')).toEqual({ matches: [ONE], noSpeech: false });
   });
 
   it('normalizes the keyword when building the cache key', () => {
     setCachedResults('vid-1', '  Hello World  ', [ONE]);
-    expect(getCachedResults('vid-1', 'hello world')).toEqual([ONE]);
+    expect(getCachedResults('vid-1', 'hello world')).toEqual({ matches: [ONE], noSpeech: false });
+  });
+
+  it('stores the no-speech flag alongside the matches', () => {
+    setCachedResults('vid-1', 'quiet', [], true);
+    expect(getCachedResults('vid-1', 'quiet')).toEqual({ matches: [], noSpeech: true });
   });
 
   it('evicts the least-recently-used entry once the cache is full', () => {
@@ -25,18 +30,18 @@ describe('resultsCache', () => {
       setCachedResults('vid-1', `keyword-${i}`, [ONE]);
     }
     // Refresh entry 0 so it becomes the most-recent; then overflow.
-    expect(getCachedResults('vid-1', 'keyword-0')).toEqual([ONE]);
+    expect(getCachedResults('vid-1', 'keyword-0')).toEqual({ matches: [ONE], noSpeech: false });
     setCachedResults('vid-1', 'keyword-20', [ONE]);
     setCachedResults('vid-1', 'keyword-21', [ONE]);
 
     expect(getCachedResults('vid-1', 'keyword-1')).toBeUndefined();
-    expect(getCachedResults('vid-1', 'keyword-0')).toEqual([ONE]);
-    expect(getCachedResults('vid-1', 'keyword-21')).toEqual([ONE]);
+    expect(getCachedResults('vid-1', 'keyword-0')).toEqual({ matches: [ONE], noSpeech: false });
+    expect(getCachedResults('vid-1', 'keyword-21')).toEqual({ matches: [ONE], noSpeech: false });
   });
 
   it('overwrites an existing entry with the same key', () => {
     setCachedResults('vid-1', 'hello', [ONE]);
     setCachedResults('vid-1', 'hello', []);
-    expect(getCachedResults('vid-1', 'hello')).toEqual([]);
+    expect(getCachedResults('vid-1', 'hello')).toEqual({ matches: [], noSpeech: false });
   });
 });

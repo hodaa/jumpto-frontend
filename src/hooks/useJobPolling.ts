@@ -12,7 +12,7 @@ const POLL_MAX_DURATION_MS = Number(import.meta.env.VITE_POLL_TIMEOUT_MS) || 5 *
 
 interface PollCallbacks {
   onProgress: (status: StatusResponse) => void;
-  onSuccess: (matches: SearchMatch[]) => void;
+  onSuccess: (matches: SearchMatch[], noSpeech: boolean) => void;
   onError: (message: string) => void;
 }
 
@@ -69,15 +69,11 @@ export function useJobPolling({
           return;
         }
         if (status.status === 'completed') {
-          // A completed job may carry an outcome note (e.g. no speech detected)
-          // in place of a transcript; surface it instead of searching nothing.
-          if (status.error) {
-            onError(t('error.noTranscript', { message: status.error }));
-            return;
-          }
+          // A completed job re-reads the video's store: a null transcript
+          // distinguishes "no speech or sound" from a plain no-match outcome.
           const video = await fetchVideoSearch(videoId, keyword, controller.signal);
           if (cancelled()) return;
-          onSuccess(video.results);
+          onSuccess(video.results, video.no_speech ?? false);
           return;
         }
         failures = 0;

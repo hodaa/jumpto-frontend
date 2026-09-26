@@ -11,12 +11,16 @@ export interface SearchMatch {
 export interface SearchFoundResponse {
   status: 'found';
   results: SearchMatch[];
+  /** True when the video is transcribed but has no speech/sound at all. */
+  no_speech?: boolean;
 }
 
 /** Response shape when the video is transcribed but the phrase has no matches. */
 export interface SearchNotFoundResponse {
   status: 'not_found';
   results: [];
+  /** True when the video is transcribed but has no speech/sound at all. */
+  no_speech?: boolean;
 }
 
 /** Response shape when a transcription job was created. */

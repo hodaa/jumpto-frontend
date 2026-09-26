@@ -53,10 +53,10 @@ describe('ResultsList', () => {
     expect(onSeek).toHaveBeenCalledWith(75);
   });
 
-  it('keeps match rows clean with a prominent play button and no external link', () => {
+  it('keeps match rows clean with a play button and no external link', () => {
     render(<ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} />);
-    const playIcons = screen.getAllByText('▶');
-    expect(playIcons).toHaveLength(2);
+    const playButtons = screen.getAllByRole('button', { name: /Play at/ });
+    expect(playButtons).toHaveLength(2);
     expect(screen.queryByRole('link', { name: /Watch on YouTube at/ })).not.toBeInTheDocument();
   });
 

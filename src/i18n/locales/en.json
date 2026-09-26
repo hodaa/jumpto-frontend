@@ -89,6 +89,7 @@
     "hint": "Click a match to jump to that moment",
     "empty": "No exact matches found. Try a different word or phrase.",
     "emptyHint": "Try a shorter phrase or a distinctive word from the sentence.",
+    "noSpeech": "This video has no speech or sound.",
     "clearKeyword": "Clear search",
     "idle": "Your matches will appear here after you search.",
     "idleTitle": "Ready to find your moment",
@@ -108,7 +109,9 @@
     "showMore_other": "Show {{count}} more matches",
     "copyStatus": "Copy status",
     "watchOnYouTube": "Watch on YouTube",
-    "watchMoment": "Watch on YouTube at {{timestamp}} (opens in a new tab)"
+    "watchMoment": "Watch on YouTube at {{timestamp}} (opens in a new tab)",
+    "share": "Share",
+    "shareMoment": "Share link to {{timestamp}}"
   },
   "error": {
     "validation": "Please enter a YouTube URL and a word or phrase.",
@@ -142,7 +145,7 @@
     "complete": "Search complete: {{summary}}.",
     "failed": "The search couldn’t finish. Your inputs have been kept."
   },
-"contact": {
+  "contact": {
     "title": "Contact us",
     "lead": "Have a question, a suggestion, or feedback about Qfza? We'd love to hear from you.",
     "emailLabel": "Email us",

@@ -41,7 +41,7 @@ describe('App', () => {
     mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
     await fillAndSubmit();
     expect(await screen.findByText('00:05')).toBeInTheDocument();
-    expect(screen.getAllByText('▶')).toHaveLength(RESULTS.length);
+    expect(screen.getAllByRole('button', { name: /Play at/ })).toHaveLength(RESULTS.length);
   });
 
   it('disables toolbar actions and offers Clear keyword when there are no matches', async () => {

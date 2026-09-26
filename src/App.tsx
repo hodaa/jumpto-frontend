@@ -59,6 +59,7 @@ export default function App() {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>('idle');
   const [matches, setMatches] = useState<SearchMatch[]>([]);
+  const [noSpeech, setNoSpeech] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [estimatedWait, setEstimatedWait] = useState<number | null>(null);
   const [errorText, setErrorText] = useState('');
@@ -157,7 +158,8 @@ export default function App() {
         setEditedSinceSubmit(false);
         setErrorText('');
         setJob(null);
-        setMatches(cached);
+        setMatches(cached.matches);
+        setNoSpeech(cached.noSpeech);
         setCopyFailed(false);
         setCurrentPlayingTimestamp(null);
         clearPendingTransition();
@@ -171,6 +173,7 @@ export default function App() {
       setErrorText('');
       setJob(null);
       setMatches([]);
+      setNoSpeech(false);
       setCopyFailed(false);
       setCurrentPlayingTimestamp(null);
       clearPendingTransition();
@@ -184,8 +187,10 @@ export default function App() {
         if (controller.signal.aborted) return;
         trackEvent('search_submit', { source: 'network' });
         if (response.status === 'found' || response.status === 'not_found') {
-          if (youtubeId) setCachedResults(youtubeId, keyword, response.results);
+          if (youtubeId)
+            setCachedResults(youtubeId, keyword, response.results, response.no_speech ?? false);
           setMatches(response.results);
+          setNoSpeech(response.no_speech ?? false);
           setProgress(100);
           setPhase('done');
           return;
@@ -236,9 +241,10 @@ export default function App() {
   }, []);
 
   const handlePollSuccess = useCallback(
-    (value: SearchMatch[]) => {
+    (value: SearchMatch[], noSpeech: boolean) => {
       const youtubeId = parseYouTubeId(query.url) ?? '';
-      if (youtubeId) setCachedResults(youtubeId, query.keyword, value);
+      if (youtubeId) setCachedResults(youtubeId, query.keyword, value, noSpeech);
+      setNoSpeech(noSpeech);
       setProgress(100);
       clearPendingTransition();
       const signal = searchControllerRef.current?.signal;
@@ -373,8 +379,7 @@ export default function App() {
   // actually changes the URL or phrase — clicking it again would only replay
   // the exact same query. Retry (from an error panel) stays imperative, so it
   // is unaffected by the latch.
-  const submitLocked =
-    (phase === 'done' || phase === 'error') && !editedSinceSubmit;
+  const submitLocked = (phase === 'done' || phase === 'error') && !editedSinceSubmit;
   // Layout is state-dependent. While idle the form is the hero: it takes the
   // wider track and the placeholder preview sits in a narrower, de-emphasized
   // "empty state" column beside it. Once processing/done we flip the emphasis
@@ -443,25 +448,26 @@ export default function App() {
               }
             >
               <ResultsPanel
-              phase={phase}
-              progress={progress}
-              matches={matches}
-              errorText={errorText}
-              keyword={query.keyword}
-              youtubeId={parseYouTubeId(query.url) ?? null}
-              copied={copied}
-              copyFailed={copyFailed}
-              matchLimit={MATCH_LIMIT}
-              playerRef={playerRef}
-              onCopy={() => void handleCopyResults()}
-              onExport={handleExportResults}
-              onSeek={handleSeek}
-              onPlaybackChange={setCurrentPlayingTimestamp}
-              onClear={handleClearKeyword}
-              onNewSearch={handleNewSearch}
-              onRetry={handleRetry}
-              onCancel={searching ? handleCancelSearch : undefined}
-              currentPlayingTimestamp={currentPlayingTimestamp}
+                phase={phase}
+                progress={progress}
+                matches={matches}
+                noSpeech={noSpeech}
+                errorText={errorText}
+                keyword={query.keyword}
+                youtubeId={parseYouTubeId(query.url) ?? null}
+                copied={copied}
+                copyFailed={copyFailed}
+                matchLimit={MATCH_LIMIT}
+                playerRef={playerRef}
+                onCopy={() => void handleCopyResults()}
+                onExport={handleExportResults}
+                onSeek={handleSeek}
+                onPlaybackChange={setCurrentPlayingTimestamp}
+                onClear={handleClearKeyword}
+                onNewSearch={handleNewSearch}
+                onRetry={handleRetry}
+                onCancel={searching ? handleCancelSearch : undefined}
+                currentPlayingTimestamp={currentPlayingTimestamp}
               />
             </Suspense>
           </section>

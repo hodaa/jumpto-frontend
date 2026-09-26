@@ -16,6 +16,7 @@ interface Props {
   phase: Phase;
   progress: number | null;
   matches: SearchMatch[];
+  noSpeech?: boolean;
   errorText: string;
   keyword: string;
   youtubeId: string | null;
@@ -107,6 +108,7 @@ function ResultsPanelContent({
   phase,
   progress,
   matches,
+  noSpeech,
   errorText,
   keyword,
   youtubeId,
@@ -165,11 +167,7 @@ function ResultsPanelContent({
   if (phase === 'processing') {
     return (
       <section className={`${CARD_ACTIVE} animate-fade-in`} aria-label={t('status.title')}>
-        <StatusCard
-          progress={progress}
-          keyword={keyword}
-          onCancel={onCancel}
-        />
+        <StatusCard progress={progress} keyword={keyword} onCancel={onCancel} />
       </section>
     );
   }
@@ -209,6 +207,7 @@ function ResultsPanelContent({
           <ResultsList
             matches={matches}
             keyword={keyword}
+            noSpeech={noSpeech}
             onSeek={onSeek}
             onClear={onClear}
             matchLimit={matchLimit}
@@ -230,16 +229,31 @@ function ResultsPanelContent({
 /** Keep one concise search live region mounted and outside the busy status card. */
 export function ResultsPanel(props: Props) {
   const { t } = useTranslation();
-  const announcement = props.phase === 'processing'
-    // Mirror the existing visual stage threshold; never announce each percentage/ETA tick.
-    ? t(props.progress !== null && props.progress >= 50 ? 'announcements.finding' : 'announcements.fetching')
-    : props.phase === 'done'
-      ? t('announcements.complete', { summary: t('results.matchCount', { count: props.matches.length }) })
-      : props.phase === 'error' ? t('announcements.failed') : '';
+  const announcement =
+    props.phase === 'processing'
+      ? // Mirror the existing visual stage threshold; never announce each percentage/ETA tick.
+        t(
+          props.progress !== null && props.progress >= 50
+            ? 'announcements.finding'
+            : 'announcements.fetching',
+        )
+      : props.phase === 'done'
+        ? t('announcements.complete', {
+            summary: t('results.matchCount', { count: props.matches.length }),
+          })
+        : props.phase === 'error'
+          ? t('announcements.failed')
+          : '';
 
   return (
     <>
-      <p role="status" aria-live="polite" aria-atomic="true" aria-label={t('announcements.label')} className="sr-only">
+      <p
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label={t('announcements.label')}
+        className="sr-only"
+      >
         {announcement}
       </p>
       <ResultsPanelContent {...props} />
