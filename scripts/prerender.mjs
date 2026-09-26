@@ -16,21 +16,21 @@ const MARKER = '<div id="root"></div>';
 const SHELL_MARK = 'id="app-shell"';
 
 const shell = `
-<div id="app-shell">
   <div lang="en" dir="ltr">
-    <h1>Search Inside YouTube Videos</h1>
-    <p>Paste a YouTube video URL and search for any word or phrase. Qfza finds where it appears and lets you jump directly to that moment.</p>
-    <p>Qfza (قفزة) searches a public YouTube video&rsquo;s transcript word by word and returns the exact timestamps where your phrase is spoken. Open a result to watch the moment on YouTube, or scrub no more.</p>
+    <h1>Search Inside YouTube Videos &amp; Find Any Moment</h1>
+    <p>Qfza lets you search inside a YouTube video by word or phrase. Paste a public video URL, type what you are looking for, and Qfza scans the full transcript to find any moment and jump straight to the exact timestamp where your phrase is spoken.</p>
+    <p>Instead of scrubbing through the player or skimming a plain transcript, you get precise results. Every match shows the sentence around your phrase, the video that contains it, and a direct link to the exact second of playback. Qfza supports words and full sentences in many languages, so you can search everything from a single keyword to an exact quote you half-remember.</p>
+    <p>Qfza (قفزة) means &ldquo;leap&rdquo; or &ldquo;jump&rdquo; in Arabic — a quick motion straight to the moment you want. The app searches a public YouTube video&rsquo;s transcript word by word and returns the exact timestamps where your phrase is spoken. Open any result to watch that moment on YouTube, or refine your search with a different word.</p>
     <h2>How it works</h2>
     <ol>
-      <li><strong>Paste a YouTube URL</strong> — a public video, not a channel or playlist.</li>
+      <li><strong>Paste a YouTube URL</strong> — a public video, not a channel or a playlist.</li>
       <li><strong>Enter a word or phrase</strong> — a single word or a full sentence.</li>
-      <li><strong>Jump to the moment</strong> — open an exact timestamp once your search is ready.</li>
+      <li><strong>Jump to the moment</strong> — open an exact timestamp as soon as your search is ready.</li>
     </ol>
     <h2>Why Qfza</h2>
     <ul>
-      <li><strong>Exact phrase matching:</strong> the full transcript is searched word by word, so you only get timestamps where the exact phrase appears.</li>
-      <li><strong>Faster repeat searches:</strong> a new video may take a few minutes to process, but repeat searches reuse a cached transcript.</li>
+      <li><strong>Exact phrase matching:</strong> the whole transcript is searched word by word, so you only see timestamps where the exact phrase appears.</li>
+      <li><strong>Faster repeat searches:</strong> a new video may take a few minutes to process, but repeat searches reuse a cached transcript and come back instantly.</li>
       <li><strong>Watch at the right second:</strong> every result links straight to the exact moment, so you watch the scene instead of scrubbing.</li>
     </ul>
     <p><a href="#main-content">Start searching on Qfza</a></p>
@@ -53,7 +53,6 @@ const shell = `
     </ul>
     <p><a href="#main-content">ابدأ البحث على قفزة</a></p>
   </div>
-</div>
 `.trim();
 
 let html = await readFile(htmlPath, 'utf8');
@@ -82,17 +81,32 @@ if (html.includes('%VITE_SITE_URL%')) {
   process.exit(1);
 }
 
+// Server content as VISIBLE markup inside #root (not in a <noscript> block, which
+// crawlers and SEO audit tools never read). React wipes it on mount, so LCP is
+// served from the HTML and every crawler sees the real paragraphs and headings.
 html = html.replace(
   MARKER,
-  `<div id="root"></div>
-    <noscript>
+  `<div id="root">
+    <div id="app-shell" class="qlf-app-shell">
 ${shell
     .split('\n')
     .map((line) => `      ${line}`)
     .join('\n')}
-    </noscript>
-    <!-- crawlable fallback injected by scripts/prerender.mjs -->`,
+    </div>
+    <style id="app-shell-style" data-app-shell>
+      #app-shell{max-width:960px;margin:0 auto;padding:3rem 1.25rem;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#0f172a;line-height:1.7}
+      #app-shell h1{font-size:2rem;line-height:1.2;color:#02275a;margin-bottom:.75rem}
+      #app-shell h2,#app-shell h3{color:#02275a;margin:1.75rem 0 .5rem}
+      #app-shell ol,#app-shell ul{padding-inline-start:1.25rem;margin:.5rem 0 1rem}
+      #app-shell a{color:#ea580c;font-weight:600}
+    </style>
+  </div>
+  <!-- crawlable content injected by scripts/prerender.mjs -->
+  `,
 );
+
+// React replaces #root content on mount; the shell and its scoped style (both
+// harmless to leave) are only meaningful before hydration.
 
 await writeFile(htmlPath, html);
 console.log(`[prerender] injected static crawlable shell into ${htmlPath}`);
