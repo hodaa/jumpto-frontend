@@ -2,7 +2,7 @@ import { memo, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SearchMatch } from '../types';
-import { buildWatchUrl, formatYouTubeTime } from '../utils/youtube';
+import { buildShareUrl, buildWatchUrl, formatYouTubeTime } from '../utils/youtube';
 import { IconCheck, IconSearch, IconShare, IconYouTube } from './icons';
 
 const DEFAULT_MATCH_LIMIT = 50;
@@ -66,12 +66,12 @@ interface ShareButtonProps {
   timestamp: string;
 }
 
-/** Share the timestamped watch link, falling back to copying it. */
+/** Share the moment as a qfza.app link, falling back to copying it. */
 function ShareButton({ youtubeId, seconds, timestamp }: ShareButtonProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<number | null>(null);
-  const url = buildWatchUrl(youtubeId, seconds);
+  const url = buildShareUrl(youtubeId, seconds);
   const shareLabel = t('results.shareMoment', { timestamp });
 
   useEffect(

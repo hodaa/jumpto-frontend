@@ -17,7 +17,7 @@ import type { VideoPlayerHandle } from './hooks/useYouTubePlayer';
 import type { SearchMatch, StatusResponse } from './types';
 import { csvCell } from './utils/csv';
 import { isReadingHelp } from './utils/focus';
-import { parseYouTubeId } from './utils/youtube';
+import { parseYouTubeId, parseShareUrl, buildWatchUrl } from './utils/youtube';
 import { getCachedResults, setCachedResults } from './utils/resultsCache';
 import { trackEvent } from './utils/analytics';
 
@@ -48,17 +48,32 @@ function safeFilenamePart(value: string): string {
   return cleaned.slice(0, 50) || 'results';
 }
 
+/** Read a shared-moment deep link (?v=<id>&t=<seconds>) once, on first render. */
+function readSharedLink(): { youtubeId: string; seconds: number } | null {
+  try {
+    return parseShareUrl(window.location.search);
+  } catch {
+    return null;
+  }
+}
+
 /** قفزة app: two-column split — search on the left, results on the right. */
 export default function App() {
   const { t } = useTranslation();
-  const [phase, setPhase] = useState<Phase>('idle');
+  const [sharedSeconds, setSharedSeconds] = useState<number | null>(
+    () => readSharedLink()?.seconds ?? null,
+  );
+  const [phase, setPhase] = useState<Phase>(() => (readSharedLink() ? 'done' : 'idle'));
   const [matches, setMatches] = useState<SearchMatch[]>([]);
   const [noSpeech, setNoSpeech] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [estimatedWait, setEstimatedWait] = useState<number | null>(null);
   const [errorText, setErrorText] = useState('');
   const [job, setJob] = useState<ActiveJob | null>(null);
-  const [query, setQuery] = useState<Query>({ url: '', keyword: '' });
+  const [query, setQuery] = useState<Query>(() => {
+    const link = readSharedLink();
+    return link ? { url: buildWatchUrl(link.youtubeId, 0), keyword: '' } : { url: '', keyword: '' };
+  });
   // Latches true once the user edits either field after a completed search, so
   // the submit CTA can warn that the shown results are stale. Stored as a
   // boolean (not the live values) so typing doesn't re-render the whole tree
@@ -121,6 +136,14 @@ export default function App() {
     playerRef.current?.seekTo(seconds);
   }, []);
 
+  // A shared-moment link (?v=&t=) opens straight into the done phase with the
+  // player mounted. Queue the seek once the player ref is attached; the player
+  // holds it until YouTube is ready, then seeks and plays.
+  useEffect(() => {
+    if (phase !== 'done' || sharedSeconds === null) return;
+    playerRef.current?.seekTo(sharedSeconds);
+  }, [phase, sharedSeconds]);
+
   const handleSubmit = useCallback(
     async (url: string, keyword: string) => {
       // A signal identifies the whole search, including its polling lifecycle.
@@ -128,6 +151,8 @@ export default function App() {
       searchControllerRef.current?.abort();
       const controller = new AbortController();
       searchControllerRef.current = controller;
+      // A real search supersedes any shared-moment view.
+      setSharedSeconds(null);
       const youtubeId = parseYouTubeId(url) ?? '';
       const cached = youtubeId ? getCachedResults(youtubeId, keyword) : undefined;
       if (cached !== undefined) {
@@ -319,6 +344,7 @@ export default function App() {
     clearPendingTransition();
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
     setEditedSinceSubmit(false);
+    setSharedSeconds(null);
     setPhase('idle');
     setMatches([]);
     setProgress(null);
@@ -441,6 +467,7 @@ export default function App() {
               onRetry={handleRetry}
               onCancel={searching ? handleCancelSearch : undefined}
               currentPlayingTimestamp={currentPlayingTimestamp}
+              sharedSeconds={sharedSeconds}
             />
           </section>
         </div>

@@ -287,4 +287,20 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'New search' }));
     expect(await screen.findByText('Ready to find your moment')).toBeInTheDocument();
   });
+
+  it('opens a shared-moment link into the shared view with the video pre-filled', async () => {
+    window.history.replaceState({}, '', '/?v=abcdef12345&t=62');
+    try {
+      render(<App />);
+      expect(
+        await screen.findByRole('heading', { name: 'Shared moment at 01:02' }),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText('YouTube URL')).toHaveValue(
+        'https://www.youtube.com/watch?v=abcdef12345&t=0',
+      );
+      expect(screen.getByRole('button', { name: 'Search this video' })).toBeInTheDocument();
+    } finally {
+      window.history.replaceState({}, '', '/');
+    }
+  });
 });

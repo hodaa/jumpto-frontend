@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 import { isReadingHelp } from '../utils/focus';
+import { formatYouTubeTime } from '../utils/youtube';
 import { Trans, useTranslation } from 'react-i18next';
 import { ErrorView } from './ErrorView';
 import { IconPlay, IconTarget } from './icons';
@@ -33,6 +34,8 @@ interface Props {
   onRetry: () => void;
   onCancel?: () => void;
   currentPlayingTimestamp?: number | null;
+  /** Present when the page was opened from a shared-moment link (?v=&t=). */
+  sharedSeconds?: number | null;
 }
 
 // Idle panel: a dashed brand-orange border with a muted background and no
@@ -125,6 +128,7 @@ function ResultsPanelContent({
   onRetry,
   onCancel,
   currentPlayingTimestamp,
+  sharedSeconds = null,
 }: Props) {
   const { t } = useTranslation();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -168,6 +172,37 @@ function ResultsPanelContent({
     return (
       <section className={`${CARD_ACTIVE} animate-fade-in`} aria-label={t('status.title')}>
         <StatusCard progress={progress} keyword={keyword} onCancel={onCancel} />
+      </section>
+    );
+  }
+
+  if (phase === 'done' && sharedSeconds !== null) {
+    return (
+      <section className={`${CARD_ACTIVE} animate-fade-in`} aria-labelledby={headingId}>
+        <div className="mb-5 flex min-w-0 flex-col gap-1.5">
+          <h2
+            id={headingId}
+            ref={headingRef}
+            tabIndex={-1}
+            className="w-full min-w-0 text-lg font-bold text-brand focus:outline-none rtl:text-right [overflow-wrap:anywhere]"
+            dir="auto"
+          >
+            {t('shared.title', { timestamp: formatYouTubeTime(sharedSeconds) })}
+          </h2>
+          <p className="text-sm text-muted rtl:text-right">{t('shared.hint')}</p>
+        </div>
+        {youtubeId ? (
+          <VideoPlayer ref={playerRef} videoId={youtubeId} onPlaybackChange={onPlaybackChange} />
+        ) : null}
+        <div className="mt-5 flex">
+          <button
+            type="button"
+            onClick={onNewSearch}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 sm:px-4"
+          >
+            {t('shared.searchCta')}
+          </button>
+        </div>
       </section>
     );
   }
@@ -237,13 +272,15 @@ export function ResultsPanel(props: Props) {
             ? 'announcements.finding'
             : 'announcements.fetching',
         )
-      : props.phase === 'done'
-        ? t('announcements.complete', {
-            summary: t('results.matchCount', { count: props.matches.length }),
-          })
-        : props.phase === 'error'
-          ? t('announcements.failed')
-          : '';
+      : props.phase === 'done' && props.sharedSeconds != null
+        ? t('shared.title', { timestamp: formatYouTubeTime(props.sharedSeconds) })
+        : props.phase === 'done'
+          ? t('announcements.complete', {
+              summary: t('results.matchCount', { count: props.matches.length }),
+            })
+          : props.phase === 'error'
+            ? t('announcements.failed')
+            : '';
 
   return (
     <>

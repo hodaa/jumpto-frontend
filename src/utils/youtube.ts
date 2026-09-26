@@ -44,9 +44,48 @@ export function parseYouTubeId(url: string): string | null {
   return inspectYouTubeUrl(url).id;
 }
 
+const SITE_URL = (() => {
+  try {
+    const env = (import.meta as ImportMeta).env?.VITE_SITE_URL;
+    if (env) return env.replace(/\/$/, '');
+    return window.location.origin;
+  } catch {
+    return 'https://qfza.app';
+  }
+})();
+
 /** Build a YouTube watch URL that starts playback at the given second. */
 export function buildWatchUrl(youtubeId: string, seconds: number): string {
   return `https://www.youtube.com/watch?v=${encodeURIComponent(youtubeId)}&t=${Math.floor(seconds)}`;
+}
+
+/** Build a shareable qfza.app link that loads the video at the given second. */
+export function buildShareUrl(youtubeId: string, seconds: number): string {
+  const t = Math.max(0, Math.floor(seconds));
+  return `${SITE_URL}/?v=${encodeURIComponent(youtubeId)}&t=${t}`;
+}
+
+export interface DeepLink {
+  youtubeId: string;
+  seconds: number;
+}
+
+/**
+ * Read a `?v=<id>&t=<seconds>` deep link produced by {@link buildShareUrl}.
+ * Returns null when the URL is not a valid shared-moment link, so a normal
+ * visit to the site is unaffected.
+ */
+export function parseShareUrl(search: string): DeepLink | null {
+  try {
+    const params = new URLSearchParams(search);
+    const id = params.get('v');
+    if (!id || !YOUTUBE_ID_REGEX.test(id)) return null;
+    const raw = Number(params.get('t'));
+    const seconds = Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
+    return { youtubeId: id, seconds };
+  } catch {
+    return null;
+  }
 }
 
 /**

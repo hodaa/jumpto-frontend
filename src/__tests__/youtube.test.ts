@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildWatchUrl, inspectYouTubeUrl, parseYouTubeId } from '../utils/youtube';
+import { buildWatchUrl, buildShareUrl, inspectYouTubeUrl, parseShareUrl, parseYouTubeId } from '../utils/youtube';
 
 describe('parseYouTubeId', () => {
   it('extracts a watch URL id', () => {
@@ -28,6 +28,50 @@ describe('buildWatchUrl', () => {
     expect(buildWatchUrl('abcdef12345', 62)).toBe(
       'https://www.youtube.com/watch?v=abcdef12345&t=62',
     );
+  });
+});
+
+describe('buildShareUrl', () => {
+  it('builds a site link carrying the video id and moment', () => {
+    const url = new URL(buildShareUrl('abcdef12345', 62));
+    expect(url.searchParams.get('v')).toBe('abcdef12345');
+    expect(url.searchParams.get('t')).toBe('62');
+  });
+
+  it('floors fractional seconds and clamps negatives to zero', () => {
+    expect(new URL(buildShareUrl('abcdef12345', 62.9)).searchParams.get('t')).toBe('62');
+    expect(new URL(buildShareUrl('abcdef12345', -5)).searchParams.get('t')).toBe('0');
+  });
+
+  it('round-trips through parseShareUrl', () => {
+    expect(parseShareUrl(new URL(buildShareUrl('abcdef12345', 75)).search)).toEqual({
+      youtubeId: 'abcdef12345',
+      seconds: 75,
+    });
+  });
+});
+
+describe('parseShareUrl', () => {
+  it('reads a valid shared-moment link', () => {
+    expect(parseShareUrl('?v=abcdef12345&t=62')).toEqual({
+      youtubeId: 'abcdef12345',
+      seconds: 62,
+    });
+  });
+
+  it('defaults a missing or invalid t to zero', () => {
+    expect(parseShareUrl('?v=abcdef12345')).toEqual({ youtubeId: 'abcdef12345', seconds: 0 });
+    expect(parseShareUrl('?v=abcdef12345&t=abc')).toEqual({
+      youtubeId: 'abcdef12345',
+      seconds: 0,
+    });
+  });
+
+  it('returns null without a valid video id so a normal visit is unaffected', () => {
+    expect(parseShareUrl('')).toBeNull();
+    expect(parseShareUrl('?t=62')).toBeNull();
+    expect(parseShareUrl('?v=too-short&t=62')).toBeNull();
+    expect(parseShareUrl('?v=example.com&t=62')).toBeNull();
   });
 });
 

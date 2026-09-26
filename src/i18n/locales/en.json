@@ -113,6 +113,11 @@
     "share": "Share",
     "shareMoment": "Share link to {{timestamp}}"
   },
+  "shared": {
+    "title": "Shared moment at {{timestamp}}",
+    "hint": "Add a word or phrase on the left to find every moment in this video.",
+    "searchCta": "Search this video"
+  },
   "error": {
     "validation": "Please enter a YouTube URL and a word or phrase.",
     "urlRequired": "Please enter a YouTube URL.",
