@@ -153,6 +153,14 @@ describe('Landing sections', () => {
     ).toBeInTheDocument();
   });
 
+  it('links to the Facebook page in a new tab', () => {
+    render(<SiteFooter />);
+    const link = screen.getByRole('link', { name: 'Facebook' });
+    expect(link).toHaveAttribute('href', 'https://www.facebook.com/qfzaa/');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
   it('composes all landing sections on the idle home page', () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: 'Why Qfza' })).toBeInTheDocument();

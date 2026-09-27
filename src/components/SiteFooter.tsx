@@ -1,5 +1,8 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { IconFacebook } from './icons';
+
+const FACEBOOK_URL = 'https://www.facebook.com/qfzaa/';
 
 /** Site-wide footer with a short product note, contact link, and copyright line. */
 export const SiteFooter = memo(function SiteFooter() {
@@ -10,12 +13,24 @@ export const SiteFooter = memo(function SiteFooter() {
       style={{ animationDelay: '0.4s' }}
     >
       <p className="font-medium text-slate-600 mb-2">{t('footer.note')}</p>
-      <nav aria-label={t('footer.contact')} className="mb-2">
+      <nav aria-label={t('footer.links')} className="mb-2 flex items-center justify-center gap-1">
         <a
           className="inline-block rounded-md px-2.5 py-1.5 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
           href="#/contact"
         >
           {t('footer.contact')}
+        </a>
+        <span aria-hidden="true" className="text-slate-300">
+          ·
+        </span>
+        <a
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
+          href={FACEBOOK_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <IconFacebook size={16} />
+          {t('footer.facebook')}
         </a>
       </nav>
       <p className="text-xs text-muted">
