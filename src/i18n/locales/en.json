@@ -3,11 +3,17 @@
     "title": "Qfza",
     "logoAlt": "Qfza",
     "pageTitle": "Qfza — Search Inside YouTube Videos & Jump to the Moment",
-    "metaDescription": "Qfza lets you search inside YouTube videos and their transcripts for any word or phrase, then jump straight to the exact timestamp where it appears."
+    "metaDescription": "Qfza lets you search inside YouTube videos and their transcripts for any word or phrase, then jump straight to the exact timestamp where it appears.",
+    "ogTitle": "Qfza | Search Inside YouTube Videos",
+    "ogDescription": "Search inside YouTube videos and their transcripts for any word or phrase, then jump directly to the exact timestamp it appears.",
+    "ogImage": "/og-en.png",
+    "ogImageAlt": "Qfza — search inside YouTube videos",
+    "ogLocale": "en_US",
+    "ogLocaleAlternate": "ar_SA"
   },
   "nav": {
     "howItWorks": "How it works?",
-    "whyJumpto": "Why Qfza?",
+    "whyQfza": "Why Qfza?",
     "home": "Qfza home",
     "primary": "Primary"
   },
@@ -40,12 +46,14 @@
     "contact": "Contact us",
     "links": "Site links",
     "facebook": "Facebook",
-    "blog": "Blog"
+    "linkedin": "LinkedIn",
+    "blog": "Blog",
+    "privacy": "Privacy"
   },
   "form": {
     "title": "Search a YouTube video for a word or phrase",
     "urlLabel": "YouTube URL",
-    "urlPlaceholder": "https://www.youtube.com/watch?v=…",
+      "urlPlaceholder": "e.g. https://youtu.be/dQw4w9WgXcQ",
     "keywordLabel": "Word or phrase",
     "keywordPlaceholder": "e.g. never gonna give you up",
     "paste": "Paste",

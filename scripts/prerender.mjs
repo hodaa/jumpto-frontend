@@ -1,7 +1,10 @@
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadEnv } from 'vite';
+import { SHELL } from './lib/shell.mjs';
+import { renderNotFound } from './lib/notfound.mjs';
+import { removeOsMetadata } from './lib/osMetadata.mjs';
+import { resolveSiteUrl } from './lib/site-url.mjs';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
 const dist = resolve(root, 'dist');
@@ -9,51 +12,11 @@ const htmlPath = resolve(dist, 'index.html');
 
 // Standalone scripts don't pick up Vite's env replacement, so read the same
 // env Vite uses at build time and default to the published qfza.app origin.
-const env = loadEnv('production', root, '');
-const siteUrl = (env.VITE_SITE_URL || 'https://qfza.app').replace(/\/+$/, '');
+const siteUrl = resolveSiteUrl();
 
 const MARKER = '<div id="root"></div>';
 const SHELL_MARK = 'id="app-shell"';
 
-const shell = `
-  <div lang="en" dir="ltr">
-    <h1>Search Inside YouTube Videos &amp; Find Any Moment</h1>
-    <p>Qfza lets you search inside a YouTube video by word or phrase. Paste a public video URL, type what you are looking for, and Qfza scans the full transcript to find any moment and jump straight to the exact timestamp where your phrase is spoken.</p>
-    <p>Instead of scrubbing through the player or skimming a plain transcript, you get precise results. Every match shows the sentence around your phrase, the video that contains it, and a direct link to the exact second of playback. Qfza supports words and full sentences in many languages, so you can search everything from a single keyword to an exact quote you half-remember.</p>
-    <p>Qfza (قفزة) means &ldquo;leap&rdquo; or &ldquo;jump&rdquo; in Arabic — a quick motion straight to the moment you want. The app searches a public YouTube video&rsquo;s transcript word by word and returns the exact timestamps where your phrase is spoken. Open any result to watch that moment on YouTube, or refine your search with a different word.</p>
-    <h2>How it works</h2>
-    <ol>
-      <li><strong>Paste a YouTube URL</strong> — a public video, not a channel or a playlist.</li>
-      <li><strong>Enter a word or phrase</strong> — a single word or a full sentence.</li>
-      <li><strong>Jump to the moment</strong> — open an exact timestamp as soon as your search is ready.</li>
-    </ol>
-    <h2>Why Qfza</h2>
-    <ul>
-      <li><strong>Exact phrase matching:</strong> the whole transcript is searched word by word, so you only see timestamps where the exact phrase appears.</li>
-      <li><strong>Faster repeat searches:</strong> a new video may take a few minutes to process, but repeat searches reuse a cached transcript and come back instantly.</li>
-      <li><strong>Watch at the right second:</strong> every result links straight to the exact moment, so you watch the scene instead of scrubbing.</li>
-    </ul>
-    <p><a href="#main-content">Start searching on Qfza</a></p>
-  </div>
-  <div lang="ar" dir="rtl">
-    <h2>قفزة — ابحث داخل فيديوهات يوتيوب وانتقل إلى اللحظة</h2>
-    <p>الصق رابط فيديو على يوتيوب، وابحث عن أي كلمة أو عبارة؛ تجد «قفزة» مكان ظهورها، ويمكنك الانتقال مباشرةً إلى تلك اللحظة.</p>
-    <p>يبحث تطبيق قفزة (وتُكتب أحيانًا «قفزه») في النص التفريغي لكامل الفيديو العام على يوتيوب كلمةً كلمة، ويعيد التوقيتات المحددة التي تُنطق فيها العبارة. افتح أي نتيجة لمشاهدة اللحظة على يوتيوب دون التقليب يدويًا.</p>
-    <h3>كيف يعمل</h3>
-    <ol>
-      <li><strong>الصق رابط يوتيوب</strong> — فيديو عامًا وليس قناة أو قائمة تشغيل.</li>
-      <li><strong>أدخل كلمة أو عبارة</strong> — كلمة واحدة أو جملة كاملة.</li>
-      <li><strong>انتقل إلى اللحظة</strong> — انتقل إلى التوقيت المطلوب بعد اكتمال البحث.</li>
-    </ol>
-    <h3>لماذا قفزة؟</h3>
-    <ul>
-      <li><strong>مطابقة تامة للعبارة:</strong> نبحث في النص التفريغي الكامل كلمةً كلمة، فتحصل فقط على التوقيتات التي تظهر فيها العبارة نفسها تمامًا.</li>
-      <li><strong>بحث أسرع عند التكرار:</strong> قد تستغرق معالجة فيديو جديد بضع دقائق، وتستفيد عمليات البحث المتكررة من النص المخزّن مؤقتًا.</li>
-      <li><strong>شاهد في الثانية الصحيحة:</strong> كل نتيجة ترتبط مباشرةً باللحظة المحددة، لتشاهد المشهد بدلًا من التقليب يدويًا.</li>
-    </ul>
-    <p><a href="#main-content">ابدأ البحث على قفزة</a></p>
-  </div>
-`.trim();
 
 let html = await readFile(htmlPath, 'utf8');
 
@@ -88,7 +51,7 @@ html = html.replace(
   MARKER,
   `<div id="root">
     <div id="app-shell" class="qlf-app-shell">
-${shell
+${SHELL
     .split('\n')
     .map((line) => `      ${line}`)
     .join('\n')}
@@ -99,6 +62,7 @@ ${shell
       #app-shell h2,#app-shell h3{color:#02275a;margin:1.75rem 0 .5rem}
       #app-shell ol,#app-shell ul{padding-inline-start:1.25rem;margin:.5rem 0 1rem}
       #app-shell a{color:#ea580c;font-weight:600}
+      #app-shell nav{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #e2e8f0;font-size:.95rem}
     </style>
   </div>
   <!-- crawlable content injected by scripts/prerender.mjs -->
@@ -121,57 +85,132 @@ await writeFile(
   ['User-agent: *', 'Allow: /', '', `Sitemap: ${siteUrl}/sitemap.xml`, ''].join('\n'),
 );
 
-// Blog posts are emitted by build-blog.mjs, which runs after this script so
-// the sitemap can list the real post URLs it produced.
-const blogUrls = await readdir(resolve(dist, 'blog'), { withFileTypes: true })
-  .then((entries) =>
-    entries
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => `${siteUrl}/blog/${entry.name}/`),
-  )
+// Written at the dist root because that is the filename every static host looks
+// for. It is deliberately NOT added to the sitemap: listing an error page invites
+// Google to index it, and the document already carries noindex, follow.
+await writeFile(resolve(dist, '404.html'), renderNotFound(siteUrl));
+
+// Blog posts are emitted by build-blog.mjs, which runs BEFORE this script. It
+// also leaves blog-manifest.json behind, mapping each post url to its real
+// last-modified date, so the sitemap can carry truthful <lastmod> values
+// instead of guessing. Directory listing stays as the fallback so a build with
+// no manifest still produces a valid (if undated) sitemap.
+const manifest = await readFile(resolve(dist, 'blog-manifest.json'), 'utf8')
+  .then((raw) => JSON.parse(raw))
   .catch(() => []);
 
-const arabicUrls = await readdir(resolve(dist, 'ar/blog'), { withFileTypes: true })
-  .then((entries) =>
-    entries
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => `${siteUrl}/ar/blog/${entry.name}/`),
-  )
-  .catch(() => []);
+  const lastmodByUrl = new Map(manifest.map((entry) => [entry.url, entry.lastmod]));
 
-const indexUrl = (url) =>
-  [
+  // Legal pages ship their own manifest for the same reason: a real <lastmod> from
+  // frontmatter, never the build day. A policy with a fabricated date misleads
+  // users and search engines about when the terms actually changed.
+  const legalManifest = await readFile(resolve(dist, 'legal-manifest.json'), 'utf8')
+    .then((raw) => JSON.parse(raw))
+    .catch(() => []);
+  for (const entry of legalManifest) {
+    if (entry.lastmod) lastmodByUrl.set(entry.url, entry.lastmod);
+  }
+  const legalPaths = legalManifest.map((entry) => entry.url);
+
+
+const postPaths = (prefix) => {
+  const base = `${prefix}/blog/`;
+  return readdir(resolve(dist, base.replace(/^\//, '')), { withFileTypes: true })
+    .then((entries) =>
+      entries.filter((entry) => entry.isDirectory()).map((entry) => `${base}${entry.name}/`),
+    )
+    .catch(() => []);
+};
+
+const blogPaths = await postPaths('');
+const arabicPaths = await postPaths('/ar');
+
+// Only emit <lastmod> for urls we have a real date for. An invented or
+// build-day date is worse than none — Google trusts the field as a signal.
+const lastmodOf = (path, paths) => {
+  const direct = lastmodByUrl.get(path);
+  if (direct) return direct;
+  // A blog index changes exactly when its posts do, so it inherits the newest
+  // post date in its own locale rather than the build day.
+  const dates = paths.map((p) => lastmodByUrl.get(p)).filter(Boolean).sort();
+  return dates.length ? dates[dates.length - 1] : null;
+};
+
+  // Sitemap xhtml:link alternates. Google's own docs describe these as optional
+  // and secondary to the in-page hreflang, so this is belt-and-braces for crawlers
+  // that read the sitemap without parsing the HTML — not a substitute for the
+  // <link rel="alternate"> cluster, which remains the authoritative signal.
+  // The builders own the locale pairings, so they ship the hrefs with the manifest.
+  const alternates = new Map(
+    [...manifest, ...legalManifest]
+      .filter((e) => Array.isArray(e.alternates) && e.alternates.length)
+      .map((e) => [e.url, e.alternates]),
+  );
+
+  const xhtmlLinks = (path) =>
+    (alternates.get(path) ?? [])
+      .map((a) => `    <xhtml:link rel="alternate" hreflang="${a.hreflang}" href="${a.href}"/>`)
+      .join('\n');
+
+  const entry = (url, { changefreq, priority }, lastmod, path = '') => [
     '  <url>',
     `    <loc>${url}</loc>`,
-    '    <changefreq>weekly</changefreq>',
-    '    <priority>1.0</priority>',
+    ...(lastmod ? [`    <lastmod>${lastmod}</lastmod>`] : []),
+    ...(path && xhtmlLinks(path) ? [xhtmlLinks(path)] : []),
+    `    <changefreq>${changefreq}</changefreq>`,
+    `    <priority>${priority}</priority>`,
     '  </url>',
   ].join('\n');
 
-const postUrl = (url) =>
-  [
-    '  <url>',
-    `    <loc>${url}</loc>`,
-    '    <changefreq>monthly</changefreq>',
-    '    <priority>0.7</priority>',
-    '  </url>',
-  ].join('\n');
+const indexEntry = (path, paths) => {
+  const url = `${siteUrl}${path}`;
+  // The app shell is not content-managed, so it gets no invented lastmod.
+  const lastmod = path === '/' ? null : lastmodOf(path, paths);
+  return entry(url, { changefreq: 'weekly', priority: '1.0' }, lastmod, path);
+};
+
+  const postEntry = (path) =>
+    entry(`${siteUrl}${path}`, { changefreq: 'monthly', priority: '0.7' }, lastmodOf(path), path);
+
+  // Policy pages are legal documents, not content: they rank for nobody and
+  // change maybe once a year, so they get the lowest priority and a yearly
+  // changefreq. They stay in the sitemap because a policy a crawler cannot
+  // find is a policy nobody has agreed to.
+  const legalEntry = (path) =>
+    entry(
+      `${siteUrl}${path}`,
+      { changefreq: 'yearly', priority: '0.3' },
+      lastmodByUrl.get(path) ?? null,
+      path,
+    );
+
 
 await writeFile(
   resolve(dist, 'sitemap.xml'),
   [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    indexUrl(`${siteUrl}/`),
-    ...(blogUrls.length ? [indexUrl(`${siteUrl}/blog/`)] : []),
-    ...(arabicUrls.length ? [indexUrl(`${siteUrl}/ar/blog/`)] : []),
-    ...blogUrls.map(postUrl),
-    ...arabicUrls.map(postUrl),
-    '</urlset>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+    indexEntry('/', []),
+    ...(blogPaths.length ? [indexEntry('/blog/', blogPaths)] : []),
+    ...(arabicPaths.length ? [indexEntry('/ar/blog/', arabicPaths)] : []),
+      ...blogPaths.map(postEntry),
+      ...arabicPaths.map(postEntry),
+      ...legalPaths.map(legalEntry),
+      '</urlset>',
     '',
   ].join('\n'),
 );
-console.log(
-  `[prerender] wrote sitemap.xml + robots.txt for ${siteUrl} ` +
-    `(${blogUrls.length + arabicUrls.length} blog post(s) listed)`,
-);
+  console.log(
+    `[prerender] wrote sitemap.xml + robots.txt for ${siteUrl} ` +
+      `(${blogPaths.length + arabicPaths.length} blog post(s), ${legalPaths.length} legal page(s) listed)`,
+  );
+
+// Vite copies public/ into dist/ verbatim, so a macOS Finder-written
+// public/.DS_Store ships to the deployed site as a real file. It is untracked
+// junk rather than a build problem, so scrub it from the output rather than
+// failing the build — and do it last, so anything written above is covered too.
+const junk = await removeOsMetadata(dist);
+if (junk.length) {
+  console.log(`[prerender] removed ${junk.length} OS metadata file(s) from dist:`);
+  for (const file of junk) console.log(`  - ${file}`);
+}

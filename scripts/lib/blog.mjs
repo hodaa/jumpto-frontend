@@ -18,8 +18,21 @@ function resolveRoot() {
     return process.cwd();
   }
 }
-export const ROOT = resolveRoot();
-export const CONTENT_DIR = resolve(ROOT, 'content/blog');
+  export const ROOT = resolveRoot();
+  export const CONTENT_DIR = resolve(ROOT, 'content/blog');
+  // Blog index intro copy lives outside CONTENT_DIR on purpose: loadPosts() reads
+  // every .md under content/blog/<locale>/ and would turn an index file into a
+  // post with no date. A sibling directory keeps post discovery unchanged.
+  export const INDEX_DIR = resolve(ROOT, 'content/blog-index');
+
+  /** Intro copy for the /blog/ index, rendered above the post list. */
+  export async function loadIndexIntro(locale) {
+    const raw = await readFile(resolve(INDEX_DIR, `${locale}.md`), 'utf8').catch(() => null);
+    if (!raw) return '';
+    const { body } = parseFrontmatter(raw);
+    return marked.parse(body);
+  }
+
 
 /** Split a `---` fenced YAML-ish frontmatter block off the top of a post. */
 export function parseFrontmatter(raw) {
@@ -86,7 +99,7 @@ export async function loadPosts(contentDir) {
   return posts.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 }
 
-const esc = (value) =>
+export const esc = (value) =>
   String(value)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -110,11 +123,11 @@ const ARTICLE_CSS = `
 .qlf-post-nav a{color:#02275a;font-weight:600;text-decoration:none;font-size:.9rem}
 .qlf-post-nav a:hover{color:#ea580c}
 .qlf-post-eyebrow{margin:0 0 .5rem;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#ea580c}
-.qlf-post h1{margin:0 0 .75rem;font-size:2.1rem;line-height:1.2;color:var(--color-accent)}
-.qlf-post-meta{margin:0 0 2rem;color:#64748b;font-size:.9rem}
-.qlf-body{font-size:1.05rem;line-height:1.75;color:#334155}
-.qlf-body h2{margin:2.5rem 0 .75rem;font-size:1.4rem;line-height:1.3;color:#02275a}
-.qlf-body h3{margin:1.75rem 0 .5rem;font-size:1.15rem;line-height:1.35;color:#02275a}
+.qlf-post h1{margin:0 0 .75rem;font-size:2.25rem;line-height:1.2;color:var(--color-accent)}
+.qlf-post-meta{margin:0 0 2rem;color:#64748b;font-size:.95rem}
+.qlf-body{font-size:1.15rem;line-height:1.8;color:#334155}
+.qlf-body h2{margin:2.5rem 0 .75rem;font-size:1.5rem;line-height:1.3;color:#02275a}
+.qlf-body h3{margin:1.75rem 0 .5rem;font-size:1.25rem;line-height:1.35;color:#02275a}
 .qlf-body p{margin:0 0 1.1rem}
 .qlf-body ul,.qlf-body ol{margin:0 0 1.1rem;padding-inline-start:1.4rem}
 .qlf-body li{margin-bottom:.5rem}
@@ -133,9 +146,11 @@ const ARTICLE_CSS = `
 .qlf-cta a{display:inline-block;background:#ea580c;color:#fff;font-weight:700;text-decoration:none;padding:.65rem 1.5rem;border-radius:.5rem;min-height:44px;line-height:2}
 .qlf-cta a:hover{background:#c2410c}
 .qlf-index-list{list-style:none;padding:0;margin:0}
+/* Separates the intro copy from the post list below it. */
+.qlf-index-heading{margin:2.5rem 0 1.25rem;font-size:1.5rem;line-height:1.3;color:#02275a;border-top:1px solid #e2e8f0;padding-top:2rem}
 .qlf-index-list li{margin:0 0 1.5rem;padding-bottom:1.5rem;border-bottom:1px solid #e2e8f0}
 .qlf-index-list li:last-child{border-bottom:0}
-.qlf-index-list h2{margin:0 0 .35rem;font-size:1.2rem}
+.qlf-index-list h2{margin:0 0 .35rem;font-size:1.3rem}
 /* Index titles are normal-size text, where the bright brand orange misses the
    4.5:1 AA threshold, so these use the darker accent. Hover underlines so the
    state is not signalled by colour alone. */
@@ -147,8 +162,26 @@ const ARTICLE_CSS = `
 .qlf-foot a{color:#02275a;font-weight:600}
 `.trim();
 
-/** Shell shared by every generated page: metadata, inlined CSS, and JSON-LD. */
-function document_({ siteUrl, url, title, description, locale, dir, css, cssHref, jsonLd, body }) {
+  /** Shell shared by every generated page: metadata, inlined CSS, and JSON-LD. */
+  export function document_({
+  siteUrl,
+  url,
+  title,
+  description,
+  locale,
+  dir,
+  css,
+  cssHref,
+  jsonLd,
+  body,
+  // A listing page is a `website`, not an `article`. Getting this wrong tells
+  // Google a blog index is a post, which is what it was hardcoded to before.
+  ogType = 'article',
+  // Only meaningful when ogType is `article`; OG consumers ignore it otherwise.
+  articleTimes = '',
+  // Rendered verbatim after <link rel="canonical">. Used for hreflang clusters.
+  headExtra = '',
+}) {
   const canonical = `${siteUrl}${url}`;
   // Build inlines the app CSS; dev links it so HMR still applies.
   const styles = cssHref
@@ -162,8 +195,8 @@ function document_({ siteUrl, url, title, description, locale, dir, css, cssHref
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${esc(canonical)}">
-<meta property="og:type" content="article">
-<meta property="og:site_name" content="Qfza">
+${headExtra}<meta property="og:type" content="${ogType}">
+${articleTimes}<meta property="og:site_name" content="Qfza">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(canonical)}">
@@ -199,9 +232,23 @@ const alternates = (posts, current, siteUrl) => {
   return [
     `<link rel="alternate" hreflang="${twin.locale}" href="${esc(siteUrl + twin.url)}">`,
     `<link rel="alternate" hreflang="${current.locale}" href="${esc(siteUrl + current.url)}">`,
+    // Arabic is the source language for this blog, so x-default points at /ar/
+    // rather than the English translation. Mirrors indexAlternates below.
     '<link rel="alternate" hreflang="x-default" href="' +
-      esc(siteUrl + (current.locale === 'en' ? current.url : twin.url)) +
+      esc(siteUrl + (current.locale === 'ar' ? current.url : twin.url)) +
       '">',
+  ].join('\n');
+};
+
+// The two blog indexes form their own reciprocal pair. Unlike a post pair, they
+// are not found by matching a shared slug, so both locales are listed outright.
+const indexAlternates = (siteUrl) => {
+  const en = `${siteUrl}${LOCALES.en.prefix}/blog/`;
+  const ar = `${siteUrl}${LOCALES.ar.prefix}/blog/`;
+  return [
+    `<link rel="alternate" hreflang="en" href="${esc(en)}">`,
+    `<link rel="alternate" hreflang="ar" href="${esc(ar)}">`,
+    `<link rel="alternate" hreflang="x-default" href="${esc(ar)}">`,
   ].join('\n');
 };
 
@@ -225,11 +272,50 @@ export function renderPost(post, ctx) {
     inLanguage: post.locale,
     mainEntityOfPage: `${siteUrl}${post.url}`,
     url: `${siteUrl}${post.url}`,
+    // Without an image, BlogPosting is not eligible for image-carrying results.
+    // ImageObject with explicit dimensions is preferred over a bare URL.
+    image: {
+      '@type': 'ImageObject',
+      url: `${siteUrl}/og-blog.png`,
+      width: 1200,
+      height: 630,
+    },
     publisher: {
       '@type': 'Organization',
       name: 'Qfza',
       logo: { '@type': 'ImageObject', url: `${siteUrl}/favicon.svg` },
     },
+    // Google lists `author` as a recommended BlogPosting property. No named
+    // person runs the site, so the honest answer is the organisation itself
+    // rather than a fabricated byline.
+    author: {
+      '@type': 'Organization',
+      name: post.locale === 'ar' ? 'قفزة' : 'Qfza',
+      url: siteUrl,
+    },
+  };
+
+  // A second, standalone block rather than an @graph: the existing
+  // BlogPosting test parses the first ld+json script directly, and Google
+  // accepts sibling blocks. Breadcrumbs let the SERP show Home > Blog > Post.
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: post.locale === 'ar' ? 'الرئيسية' : 'Home', item: siteUrl },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: post.locale === 'ar' ? 'مدونة قفزة' : 'Qfza blog',
+        item: `${siteUrl}${post.prefix}/blog/`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: post.title,
+        item: `${siteUrl}${post.url}`,
+      },
+    ],
   };
 
   // The app is a hash-routed SPA whose language comes from localStorage, so
@@ -243,8 +329,7 @@ export function renderPost(post, ctx) {
       : 'Search inside any YouTube video and jump to the moment you need.';
   const ctaBtn = post.locale === 'ar' ? 'جرّب قفزة' : 'Try Qfza';
   const backText = post.locale === 'ar' ? 'كل المقالات' : 'All articles';
-  const olderText = post.locale === 'ar' ? 'أقدم' : 'Older';
-  const newerText = post.locale === 'ar' ? 'أحدث' : 'Newer';
+
 
   const body = `<nav class="qlf-post-nav" aria-label="${esc(homeLabel)}">
   <a href="${home || '/'}">${esc(backLabel)}</a>
@@ -264,7 +349,6 @@ ${post.html}
 </div>
 <nav class="qlf-post-nav" aria-label="${esc(backText)}">
   ${link(newer, 'prev')}
-  <span>${olderText} / ${newerText}</span>
   ${link(older, 'next')}
 </nav>
 <p class="qlf-foot"><a href="${home || '/'}">${esc(homeLabel)}</a>${post.locale === 'ar' ? ' — قفزة' : ''}</p>`;
@@ -281,14 +365,19 @@ ${post.html}
     jsonLd: [
       alternates(posts, post, siteUrl),
       `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`,
+      `<script type="application/ld+json">${JSON.stringify(breadcrumbLd)}</script>`,
     ]
       .filter(Boolean)
       .join('\n'),
+    articleTimes: [
+      `<meta property="article:published_time" content="${esc(post.date)}">`,
+      `<meta property="article:modified_time" content="${esc(post.updated || post.date)}">`,
+    ].join('\n'),
     body,
   });
 }
 
-export function renderIndex({ locale, posts, siteUrl, css, cssHref }) {
+  export function renderIndex({ locale, posts, siteUrl, css, cssHref, intro = '' }) {
   const meta = LOCALES[locale];
   const mine = posts.filter((p) => p.locale === locale);
   const isAr = locale === 'ar';
@@ -322,9 +411,13 @@ export function renderIndex({ locale, posts, siteUrl, css, cssHref }) {
 <h1>${isAr ? 'مدونة قفزة' : 'Qfza blog'}</h1>
 <p class="qlf-post-meta">${
     isAr
-      ? 'كيف تبحث داخل فيديوهات يوتيوب وتصل إلى اللحظة التي تحتاجها.'
+        ? 'كيف تبحث داخل الفيديوهات وتصل إلى اللحظة التي تحتاجها.'
       : 'How to search inside YouTube videos and get to the exact moment you need.'
-  }</p>
+  }  </p>
+  ${intro ? `<div class="qlf-body">
+  ${intro}
+</div>
+  <h2 class="qlf-index-heading">${isAr ? 'أحدث المقالات' : 'Latest articles'}</h2>` : ''}
 <ul class="qlf-index-list">
 ${items}
 </ul>`;
@@ -332,15 +425,22 @@ ${items}
   return document_({
     siteUrl,
     url: `${meta.prefix}/blog/`,
-    title: isAr ? 'مدونة قفزة — قفزة' : 'Qfza blog — Qfza',
+    // The brand is already the first half of this title, so appending the
+    // usual " — Qfza" suffix rendered "Qfza blog — Qfza". Extend with the
+    // topic instead, which also gives the index a keyword to rank for.
+    title: isAr
+      ? 'مدونة قفزة — البحث داخل فيديوهات يوتيوب'
+      : 'Qfza blog — searching inside YouTube videos',
     description: isAr
-      ? 'مقالات عن البحث داخل فيديوهات يوتيوب والانتقال إلى اللحظة التي تبحث عنها.'
-      : 'Articles about searching inside YouTube videos and jumping to the moment you need.',
+      ? 'مقالات عن البحث داخل فيديوهات يوتيوب عن كلمة أو جملة، وكيف تنتقل مباشرةً إلى الدقيقة التي قيلت فيها. أدلة وأمثلة وخطوات عملية.'
+      : 'Articles on searching inside YouTube videos by word or phrase, and jumping straight to the minute you need. Guides, examples and step-by-step walkthroughs.',
     locale,
     dir: meta.dir,
     css,
     cssHref,
+    ogType: 'website',
     jsonLd: `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`,
+    headExtra: indexAlternates(siteUrl),
     body,
   });
 }
@@ -367,6 +467,9 @@ export function blogDevPlugin(siteUrl) {
           const isArabic = Boolean(match[1]);
           const locale = isArabic ? 'ar' : 'en';
           const slug = match[2];
+          // Same intro the production build renders, so dev and the deployed page
+          // are not two different pages.
+          const intro = await loadIndexIntro(locale);
           // In dev the stylesheet is linked rather than inlined so HMR still applies.
           const ctx = { siteUrl, css: '', cssHref: '/src/index.css', posts };
           const html = slug
@@ -375,7 +478,7 @@ export function blogDevPlugin(siteUrl) {
                   { locale, ...LOCALES[locale], url, html: '<p>Not found.</p>' },
                 { ...ctx, posts },
               )
-            : renderIndex({ locale, ...ctx });
+            : renderIndex({ locale, ...ctx, intro });
           res.setHeader('Content-Type', 'text/html; charset=utf-8');
           res.end(html);
         } catch (error) {

@@ -1,8 +1,9 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconFacebook } from './icons';
+import { IconFacebook, IconLinkedIn } from './icons';
 
 const FACEBOOK_URL = 'https://www.facebook.com/qfzaa/';
+const LINKEDIN_URL = 'https://www.linkedin.com/company/qfza';
 
 const linkClass =
   'inline-flex min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action';
@@ -12,7 +13,11 @@ export const SiteFooter = memo(function SiteFooter() {
   const { t, i18n } = useTranslation();
   // The blog is static HTML served at real paths, so link the locale that
   // matches the active UI language (a plain href leaves the SPA, as intended).
-  const blogUrl = i18n.language.startsWith('ar') ? '/ar/blog/' : '/blog/';
+    const blogUrl = i18n.language.startsWith('ar') ? '/ar/blog/' : '/blog/';
+    // Same reasoning for the policy: it is a static page, and a visitor must be
+    // able to reach the terms in a language they actually read.
+    const privacyUrl = i18n.language.startsWith('ar') ? '/ar/privacy/' : '/privacy/';
+
   const dot = <span aria-hidden="true" className="text-slate-300">·</span>;
   return (
     <footer
@@ -30,6 +35,20 @@ export const SiteFooter = memo(function SiteFooter() {
         {dot}
         <a className={linkClass} href={blogUrl}>
           {t('footer.blog')}
+        </a>
+        {dot}
+        <a className={linkClass} href={privacyUrl}>
+          {t('footer.privacy')}
+        </a>
+        {dot}
+        <a
+          className={linkClass}
+          href={LINKEDIN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <IconLinkedIn size={16} />
+          {t('footer.linkedin')}
         </a>
         {dot}
         <a

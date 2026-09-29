@@ -215,10 +215,10 @@ describe('current-query retry and persistent help', () => {
     const pending = deferred<SearchResponse>();
     submit.mockReturnValue(pending.promise);
     start();
-    for (const id of ['how-it-works', 'why-jumpto']) {
-      expect(document.getElementById(id)).toBeInTheDocument();
-    }
-    const help = document.getElementById('how-it-works')!;
+      for (const id of ['how-it-works', 'why-qfza']) {
+        expect(document.getElementById(id)).toBeInTheDocument();
+      }
+      const help = document.getElementById('how-it-works')!;
     act(() => help.focus());
     expect(submit.mock.calls[0][2]?.aborted).toBe(false);
     await act(async () => {
@@ -226,11 +226,11 @@ describe('current-query retry and persistent help', () => {
       else pending.reject(new ApiError('error.network'));
     });
     expect(help).toHaveFocus();
-    for (const id of ['how-it-works', 'why-jumpto']) {
-      expect(document.getElementById(id)).toBeInTheDocument();
-    }
-    expect(submit).toHaveBeenCalledOnce();
-    expect(screen.getByLabelText('Word or phrase')).toHaveValue('first phrase');
+      for (const id of ['how-it-works', 'why-qfza']) {
+        expect(document.getElementById(id)).toBeInTheDocument();
+      }
+      expect(submit).toHaveBeenCalledOnce();
+      expect(screen.getByLabelText('Word or phrase')).toHaveValue('first phrase');
     expect(screen.getByLabelText('YouTube URL')).not.toHaveAttribute('readonly');
   });
 });

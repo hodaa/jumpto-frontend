@@ -1,6 +1,6 @@
 /** Contact email shown on the Contact page. Configurable via VITE_CONTACT_EMAIL. */
 export const CONTACT_EMAIL: string =
-  (import.meta.env.VITE_CONTACT_EMAIL as string | undefined)?.trim() ?? 'hoda.hussin@gmail.com';
+  (import.meta.env.VITE_CONTACT_EMAIL as string | undefined)?.trim() ?? 'support@qfza.app';
 
 /** Whether an explicit contact email was provided in the build env. */
 export const CONTACT_EMAIL_CONFIGURED: boolean = Boolean(

@@ -4,6 +4,7 @@ import type { Plugin } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { blogDevPlugin } from './scripts/lib/blog.mjs';
+import { legalDevPlugin } from './scripts/lib/legal.mjs';
 
 /** Inline the (small) emitted CSS into index.html so there is no render-blocking
     stylesheet fetch on the critical path. The bytes still ship — inside the
@@ -50,7 +51,15 @@ export default defineConfig(({ mode }) => {
   );
 
   return {
-    plugins: [react(), tailwindcss(), inlineCssPlugin(), blogDevPlugin(siteUrl)],    server: {
+    plugins: [
+      react(),
+      tailwindcss(),
+      inlineCssPlugin(),
+      // Both dev plugins must precede the SPA fallback so real static paths
+      // (/blog/, /privacy/) render the static page instead of the app.
+      blogDevPlugin(siteUrl),
+      legalDevPlugin(siteUrl),
+    ],    server: {
       port: 5173,
       allowedHosts: true,
       proxy: {

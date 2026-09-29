@@ -1,8 +1,11 @@
 import { act, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import App from '../App';
 import i18n, { setLanguage } from '../i18n';
 import englishMessages from '../i18n/locales/en.json';
+import arabicMessages from '../i18n/locales/ar.json';
 import { Features } from '../components/Features';
 import { Hero } from '../components/Hero';
 import { HowItWorks } from '../components/HowItWorks';
@@ -31,7 +34,7 @@ describe('Landing sections', () => {
   it('uses only Qfza for brand references in the English messages', () => {
     expect(JSON.stringify(englishMessages)).not.toContain('قفزة');
     expect(englishMessages.app.title).toBe('Qfza');
-    expect(englishMessages.nav.whyJumpto).toBe('Why Qfza?');
+    expect(englishMessages.nav.whyQfza).toBe('Why Qfza?');
     expect(englishMessages.form.helperDetails).toMatch(/^Qfza sends/);
   });
 
@@ -66,13 +69,33 @@ describe('Landing sections', () => {
     render(<SiteHeader />);
     expect(screen.getByAltText('Qfza')).toHaveAttribute('src', '/logo-en.svg?v=icon-left');
     expect(screen.getByRole('link', { name: 'Qfza home' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Why Qfza?' })).toHaveAttribute('href', '#why-jumpto');
-    expect(screen.getByRole('link', { name: 'How it works?' })).toHaveAttribute(
-      'href',
-      '#how-it-works',
-    );
-    expect(screen.getByRole('button', { name: 'Language' })).toBeInTheDocument();
-  });
+      expect(screen.getByRole('link', { name: 'Why Qfza?' })).toHaveAttribute('href', '#why-qfza');
+      expect(screen.getByRole('link', { name: 'How it works?' })).toHaveAttribute(
+        'href',
+        '#how-it-works',
+      );
+      expect(screen.getByRole('button', { name: 'Language' })).toBeInTheDocument();
+    });
+
+    it('points every in-page nav link at a section that actually exists', () => {
+      // The href and the section id are declared in different files, so pinning
+      // each on its own still passes when only one of them is renamed — the
+      // link then silently scrolls nowhere. Assert the pairing instead.
+      // "#/contact" is a hash route, not a fragment, so skip it.
+      render(<App />);
+      const anchors = [...document.querySelectorAll('a[href^="#"]')].filter(
+        (anchor) => !anchor.getAttribute('href')!.startsWith('#/'),
+      );
+      expect(anchors.length).toBeGreaterThan(0);
+      for (const anchor of anchors) {
+        const href = anchor.getAttribute('href')!;
+        expect(href).not.toBe('#');
+        expect(
+          document.getElementById(href.slice(1)),
+          `nav link ${href} has no matching element id`,
+        ).not.toBeNull();
+      }
+    });
 
   it('switches between English and Arabic logo assets without changing their layout size', async () => {
     render(<SiteHeader />);
@@ -159,6 +182,50 @@ describe('Landing sections', () => {
     expect(link).toHaveAttribute('href', 'https://www.facebook.com/qfzaa/');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it.each([
+    { language: 'en' as const, name: 'LinkedIn' },
+    { language: 'ar' as const, name: 'لينكدإن' },
+  ])('links to the LinkedIn company page from the $language footer', async ({ language, name }) => {
+    await act(async () => setLanguage(language));
+    render(<SiteFooter />);
+    const link = screen.getByRole('link', { name });
+    expect(link).toHaveAttribute('href', 'https://www.linkedin.com/company/qfza');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    // The 44px tap target is only meaningful if the label is still visible text;
+    // an icon-only link would drop the accessible name entirely.
+    expect(link).toHaveTextContent(name);
+    expect(link.className).toMatch(/min-h-11/);
+    // The mark is decorative, so the accessible name comes from the label alone.
+    expect(link.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('names every social profile in the homepage sameAs set', () => {
+    // sameAs is how the profiles are attached to the site entity in Google's
+    // knowledge graph, so a footer link alone does not establish the link.
+    // jsdom gives import.meta.url an http: scheme, so resolve from the project
+    // root rather than trying to read it as a file URL.
+    const raw = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    const block = /application\/ld\+json">([\s\S]*?)<\/script>/.exec(raw)![1];
+    const parsed = JSON.parse(block) as { sameAs?: string[]; '@graph'?: { sameAs?: string[] }[] };
+    // The document is a @graph now that the WebSite references a publisher, so
+    // the profiles live on the WebSite node rather than at the top level.
+    const nodes = parsed['@graph'] ?? [parsed];
+    for (const node of nodes) {
+      expect(node.sameAs).toContain('https://www.facebook.com/qfzaa/');
+      expect(node.sameAs).toContain('https://www.linkedin.com/company/qfza');
+    }
+  });
+
+  it('translates the social link labels in both locales', () => {
+    expect(englishMessages.footer.linkedin).toBe('LinkedIn');
+    expect(arabicMessages.footer.linkedin).toBe('لينكدإن');
+    // A key present in one locale and missing in the other renders the raw key.
+    expect(Object.keys(englishMessages.footer).sort()).toEqual(
+      Object.keys(arabicMessages.footer).sort(),
+    );
   });
 
   it('composes all landing sections on the idle home page', () => {

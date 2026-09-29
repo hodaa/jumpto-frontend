@@ -50,8 +50,8 @@ export const SiteHeader = memo(function SiteHeader() {
         <a className={NAV_LINK} href="#how-it-works">
           {t('nav.howItWorks')}
         </a>
-        <a className={NAV_LINK} href="#why-jumpto">
-          {t('nav.whyJumpto')}
+        <a className={NAV_LINK} href="#why-qfza">
+          {t('nav.whyQfza')}
         </a>
       </nav>
       <div className="order-2 flex flex-1 items-center justify-end sm:order-3 sm:flex-none sm:justify-self-end">
