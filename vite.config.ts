@@ -3,6 +3,7 @@ import { loadEnv } from 'vite';
 import type { Plugin } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { blogDevPlugin } from './scripts/lib/blog.mjs';
 
 /** Inline the (small) emitted CSS into index.html so there is no render-blocking
     stylesheet fetch on the critical path. The bytes still ship — inside the
@@ -38,10 +39,18 @@ function inlineCssPlugin(): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const apiBase = (env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8000';
+  // Default to the production origin, not a dev port. scripts/build-blog.mjs and
+  // scripts/prerender.mjs already fall back to this same value; a localhost
+  // default here was the one place that could disagree with them and emit dev
+  // URLs into dev-mode HTML. prerender.mjs still hard-fails the build if
+  // VITE_SITE_URL is unset, so the placeholder can never reach production.
+  const siteUrl = ((env.VITE_SITE_URL as string | undefined) ?? 'https://qfza.app').replace(
+    /\/+$/,
+    '',
+  );
 
   return {
-    plugins: [react(), tailwindcss(), inlineCssPlugin()],
-    server: {
+    plugins: [react(), tailwindcss(), inlineCssPlugin(), blogDevPlugin(siteUrl)],    server: {
       port: 5173,
       allowedHosts: true,
       proxy: {

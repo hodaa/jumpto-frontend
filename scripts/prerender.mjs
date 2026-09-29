@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
@@ -120,18 +120,58 @@ await writeFile(
   resolve(dist, 'robots.txt'),
   ['User-agent: *', 'Allow: /', '', `Sitemap: ${siteUrl}/sitemap.xml`, ''].join('\n'),
 );
+
+// Blog posts are emitted by build-blog.mjs, which runs after this script so
+// the sitemap can list the real post URLs it produced.
+const blogUrls = await readdir(resolve(dist, 'blog'), { withFileTypes: true })
+  .then((entries) =>
+    entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `${siteUrl}/blog/${entry.name}/`),
+  )
+  .catch(() => []);
+
+const arabicUrls = await readdir(resolve(dist, 'ar/blog'), { withFileTypes: true })
+  .then((entries) =>
+    entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `${siteUrl}/ar/blog/${entry.name}/`),
+  )
+  .catch(() => []);
+
+const indexUrl = (url) =>
+  [
+    '  <url>',
+    `    <loc>${url}</loc>`,
+    '    <changefreq>weekly</changefreq>',
+    '    <priority>1.0</priority>',
+    '  </url>',
+  ].join('\n');
+
+const postUrl = (url) =>
+  [
+    '  <url>',
+    `    <loc>${url}</loc>`,
+    '    <changefreq>monthly</changefreq>',
+    '    <priority>0.7</priority>',
+    '  </url>',
+  ].join('\n');
+
 await writeFile(
   resolve(dist, 'sitemap.xml'),
   [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    '  <url>',
-    `    <loc>${siteUrl}/</loc>`,
-    '    <changefreq>weekly</changefreq>',
-    '    <priority>1.0</priority>',
-    '  </url>',
+    indexUrl(`${siteUrl}/`),
+    ...(blogUrls.length ? [indexUrl(`${siteUrl}/blog/`)] : []),
+    ...(arabicUrls.length ? [indexUrl(`${siteUrl}/ar/blog/`)] : []),
+    ...blogUrls.map(postUrl),
+    ...arabicUrls.map(postUrl),
     '</urlset>',
     '',
   ].join('\n'),
 );
-console.log(`[prerender] wrote sitemap.xml + robots.txt for ${siteUrl}`);
+console.log(
+  `[prerender] wrote sitemap.xml + robots.txt for ${siteUrl} ` +
+    `(${blogUrls.length + arabicUrls.length} blog post(s) listed)`,
+);
