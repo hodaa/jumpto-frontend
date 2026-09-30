@@ -8,8 +8,12 @@ instead of scrubbing.
 
 ## Live site
 
-- English: <https://qfza.vercel.app/>
-- عربي: <https://qfza.vercel.app/>
+- English: <https://qfza.app/>
+- عربي: <https://qfza.app/>
+
+Hosted on Vercel. The retired blog URLs are permanently redirected in
+`vercel.json`; `middleware.ts` returns a 503 with a bilingual notice while
+`VITE_MAINTENANCE` is on.
 
 ## Features
 

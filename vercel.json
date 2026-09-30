@@ -1,0 +1,35 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/blog/lose-place-lecture-video/",
+      "destination": "/blog/search-youtube-video/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/search-youtube-transcript/",
+      "destination": "/blog/search-youtube-video/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/why-youtube-search-fails/",
+      "destination": "/blog/search-youtube-video/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ar/blog/lose-place-lecture-video/",
+      "destination": "/ar/blog/search-youtube-video/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ar/blog/search-youtube-transcript/",
+      "destination": "/ar/blog/search-youtube-video/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ar/blog/why-youtube-search-fails/",
+      "destination": "/ar/blog/search-youtube-video/",
+      "statusCode": 301
+    }
+  ]
+}
