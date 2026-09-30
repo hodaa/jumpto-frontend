@@ -3,7 +3,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { renderHeader, counterpartPath } from '../../scripts/lib/header.mjs';
+import { renderMaintenance, isMaintenanceOn } from '../../scripts/lib/maintenance.mjs';
 
+const SITE_URL = 'https://qfza.app';
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8');
 
 describe('counterpartPath', () => {
@@ -94,5 +96,52 @@ describe('header on built pages', () => {
       expect(block?.[0], `${lang} block has no header`).toContain('qlf-header-logo');
       expect(block?.[0], `${lang} block has the wrong wordmark`).toContain(logo);
     }
+  });
+});
+
+describe('maintenance flag', () => {
+  it.each([
+    ['true', true],
+    ['TRUE', true],
+    ['1', true],
+    ['on', true],
+    ['yes', true],
+    ['false', false],
+    ['', false],
+    ['no', false],
+    [undefined, false],
+    // A stray space or a typo must not take the site down; failing to show the
+    // page is much cheaper than showing it by accident.
+    [' true ', true],
+    ['ture', false],
+    ['2', false],
+  ])('parses %o as %s', (raw, expected) => {
+    expect(isMaintenanceOn(raw)).toBe(expected);
+  });
+});
+
+describe('maintenance page', () => {
+  it('is noindex, so a forgotten flag cannot deindex the site', () => {
+    expect(renderMaintenance(SITE_URL)).toContain('<meta name="robots" content="noindex, follow">');
+  });
+
+  it('ships no JavaScript', () => {
+    expect(renderMaintenance(SITE_URL)).not.toMatch(/<script/i);
+  });
+
+  it('serves both locales with correct dir', () => {
+    const html = renderMaintenance(SITE_URL);
+    expect(html).toContain('lang="en" dir="ltr"');
+    expect(html).toContain('lang="ar" dir="rtl"');
+    expect(html).toContain('We will be back shortly');
+    expect(html).toContain('سنعود قريبًا');
+  });
+
+  it('offers a contact route, since the site is otherwise unusable', () => {
+    expect(renderMaintenance(SITE_URL)).toContain('mailto:support@qfza.app');
+  });
+
+  it('carries the canonical origin in og:url', () => {
+    expect(renderMaintenance(SITE_URL)).toContain(`<meta property="og:url" content="${SITE_URL}/">`);
   });
 });

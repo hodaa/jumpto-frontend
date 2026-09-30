@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { blogDevPlugin } from './scripts/lib/blog.mjs';
 import { legalDevPlugin } from './scripts/lib/legal.mjs';
+import { maintenanceDevPlugin, isMaintenanceOn } from './scripts/lib/maintenance.mjs';
 
 /** Inline the (small) emitted CSS into index.html so there is no render-blocking
     stylesheet fetch on the critical path. The bytes still ship — inside the
@@ -57,6 +58,7 @@ export default defineConfig(({ mode }) => {
       inlineCssPlugin(),
       // Both dev plugins must precede the SPA fallback so real static paths
       // (/blog/, /privacy/) render the static page instead of the app.
+      ...(isMaintenanceOn(env.VITE_MAINTENANCE) ? [maintenanceDevPlugin(siteUrl)] : []),
       blogDevPlugin(siteUrl),
       legalDevPlugin(siteUrl),
     ],    server: {

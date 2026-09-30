@@ -31,5 +31,5 @@ npm install
 npm run dev        # start the dev server
 npm test           # vitest
 npm run lint       # eslint
-npm run build      # typecheck + vite build + prerender crawlable shell
+npm run build      # typecheck + vite build + prerender shell + sitemap/404/robots
 ```

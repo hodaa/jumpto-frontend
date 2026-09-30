@@ -44,33 +44,31 @@ if (html.includes('%VITE_SITE_URL%')) {
   process.exit(1);
 }
 
-// Server content as VISIBLE markup inside #root (not in a <noscript> block, which
-// crawlers and SEO audit tools never read). React wipes it on mount, so LCP is
-// served from the HTML and every crawler sees the real paragraphs and headings.
+// Crawlers and SEO audit tools never read a <noscript> block, so the content is
+// served as real markup inside #root where they will find the headings,
+// paragraphs and cross-locale links. React wipes it on mount.
+//
+// It carries `hidden`, though. It is a bare-text duplicate of a page React is
+// about to render properly, and leaving it visible meant every refresh flashed a
+// stripped, unbranded version of the homepage before the app painted. `hidden`
+// keeps the markup in the DOM for crawlers while showing the visitor nothing.
+// The native attribute is used over a stylesheet rule on purpose: it holds even
+// if the CSS never loads, and it needs no extra bytes on the critical path.
+//
+// Nothing is lost for a visitor without JavaScript — the app is a client-rendered
+// SPA and showed them an empty #root before this shell existed.
 html = html.replace(
   MARKER,
   `<div id="root">
-    <div id="app-shell" class="qlf-app-shell">
+    <div id="app-shell" class="qlf-app-shell" hidden>
 ${SHELL
     .split('\n')
     .map((line) => `      ${line}`)
     .join('\n')}
     </div>
-    <style id="app-shell-style" data-app-shell>
-      #app-shell{max-width:960px;margin:0 auto;padding:3rem 1.25rem;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#0f172a;line-height:1.7}
-      #app-shell h1{font-size:2rem;line-height:1.2;color:#02275a;margin-bottom:.75rem}
-      #app-shell h2,#app-shell h3{color:#02275a;margin:1.75rem 0 .5rem}
-      #app-shell ol,#app-shell ul{padding-inline-start:1.25rem;margin:.5rem 0 1rem}
-      #app-shell a{color:#ea580c;font-weight:600}
-      #app-shell nav{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #e2e8f0;font-size:.95rem}
-    </style>
-  </div>
-  <!-- crawlable content injected by scripts/prerender.mjs -->
+    <!-- crawlable content injected by scripts/prerender.mjs -->
   `,
 );
-
-// React replaces #root content on mount; the shell and its scoped style (both
-// harmless to leave) are only meaningful before hydration.
 
 await writeFile(htmlPath, html);
 console.log(`[prerender] injected static crawlable shell into ${htmlPath}`);

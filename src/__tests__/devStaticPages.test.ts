@@ -46,23 +46,31 @@ describe('production origin guard', () => {
 });
 
 describe('legal dev server plugin', () => {
+  type Middleware = (req: { url?: string }, res: MockRes, next: () => void) => void | Promise<void>;
+
+  class MockRes {
+    headers: Record<string, string> = {};
+    body = '';
+    setHeader(k: string, v: string) {
+      this.headers[k] = v;
+    }
+    end(html: string) {
+      this.body = html;
+    }
+  }
+
   /** Drive the middleware the plugin installs, with a minimal req/res. */
   async function request(path: string) {
-    const middlewares: any[] = [];
-    (legalDevPlugin(SITE_URL) as any).configureServer({ middlewares: { use: (fn: any) => middlewares.push(fn) } });
-    expect(middlewares).toHaveLength(1);
+    const middlewares: Middleware[] = [];
+    // Narrow to just the hook shape we drive, rather than reaching into Vite's
+    // full server context type (and losing `this` by destructuring it).
+    const plugin = legalDevPlugin(SITE_URL) as unknown as {
+      configureServer: (server: { middlewares: { use: (fn: Middleware) => void } }) => void;
+    };
+    plugin.configureServer({ middlewares: { use: (fn) => middlewares.push(fn) } });
 
     const req = { url: path };
-    const res = {
-      headers: {} as Record<string, string>,
-      body: '',
-      setHeader(k: string, v: string) {
-        this.headers[k] = v;
-      },
-      end(html: string) {
-        this.body = html;
-      },
-    };
+    const res = new MockRes();
     let calledNext = false;
     await middlewares[0](req, res, () => {
       calledNext = true;

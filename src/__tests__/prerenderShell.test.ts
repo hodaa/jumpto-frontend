@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { SHELL } from '../../scripts/lib/shell.mjs';
 
 /**
@@ -58,5 +60,48 @@ describe('prerender shell', () => {
     // drafts of this file, which silently shipped to the live homepage.
     expect(SHELL).not.toMatch(/[一-鿿぀-ヿ가-힯]/);
     expect(SHELL).not.toMatch(/�/);
+  });
+});
+
+/**
+ * The shell is the SEO half of a deliberate trade: its text must reach crawlers
+ * in the served HTML, and it must never reach a visitor's screen. Both
+ * assertions below are load-bearing, and neither is sufficient alone — the
+ * "obvious fix" for a flash of unstyled content is to delete the shell, which
+ * would satisfy a visibility-only test and silently empty the homepage.
+ */
+describe('prerender shell in the built homepage', () => {
+  const htmlPath = resolve(process.cwd(), 'dist/index.html');
+  const built = existsSync(htmlPath);
+  const html = built ? readFileSync(htmlPath, 'utf8') : '';
+  const shellMarkup = html.match(/<div id="app-shell"[^>]*>/)?.[0] ?? '';
+
+  it.runIf(built)('hides the shell so a refresh cannot flash unstyled content', () => {
+    // `hidden` rather than a CSS rule: it holds even if the stylesheet fails to
+    // load, and it costs no bytes on the critical path.
+    expect(shellMarkup).not.toBe('');
+    expect(shellMarkup).toContain('hidden');
+  });
+
+  it.runIf(built)('keeps the crawlable text in the HTML that ships', () => {
+    // Deleting the shell is the cheap way to remove a flash, and it is the one
+    // way to break the homepage for search engines without any test noticing.
+    expect(html).toContain('Search Inside YouTube Videos');
+    expect(html).toMatch(/<h1[\s>]/);
+    expect(html).toContain('href="/blog/"');
+    expect(html).toContain('href="/ar/blog/"');
+  });
+
+  it.runIf(built)('leaves no visible fallback styling to fight the real app', () => {
+    // The old shell shipped a <style> block that styled headings and links.
+    // Pointless once hidden, and a stray unlayered rule can outrank the app.
+    expect(html).not.toContain('app-shell-style');
+    expect(html).not.toMatch(/<style[^>]*data-app-shell/);
+  });
+
+  it.runIf(built)('does not put the shell inside a noscript block', () => {
+    // Google skips <noscript>; content hidden that way is not crawlable at all.
+    const before = html.slice(0, html.indexOf('id="app-shell"'));
+    expect(before).not.toMatch(/<noscript/i);
   });
 });
