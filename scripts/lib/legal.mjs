@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { marked } from 'marked';
 
 import { LOCALES, ROOT, parseFrontmatter, document_, esc } from './blog.mjs';
+import { HEADER_CSS, renderHeader } from './header.mjs';
 
 export { LOCALES, ROOT };
 export const CONTENT_DIR = resolve(ROOT, 'content/legal');
@@ -49,20 +50,8 @@ function headExtra(page, twin, siteUrl) {
 
 export function renderPage(page, { siteUrl, css, cssHref, twin }) {
   const meta = LOCALES[page.locale];
-  const isArabic = page.locale === 'ar';
-  // Legal pages get opened directly from a shared link, an email or a search
-  // result, so they need the same way back that the blog has. Without this nav
-  // the only way off the page was the browser's back button.
   const body = [
-    `<nav class="qlf-post-nav" aria-label="${isArabic ? 'قفزة' : 'Qfza'}">`,
-    `<a href="/">${isArabic ? 'العودة إلى قفزة' : 'Back to Qfza'}</a>`,
-    `<a href="${meta.prefix}/blog/">${isArabic ? 'المدونة' : 'Blog'}</a>`,
-    twin
-      ? `<a href="${twin.url}" hreflang="${twin.locale}" lang="${twin.locale}">${
-          isArabic ? 'النسخة الإنجليزية' : 'Arabic version'
-        }</a>`
-      : '',
-    '</nav>',
+    renderHeader(page.locale, page.url),
     `<p class="qlf-post-eyebrow">${esc(page.updated)}</p>`,
     `<h1>${esc(page.title)}</h1>`,
     `<p class="qlf-post-meta">${esc(page.description)}</p>`,

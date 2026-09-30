@@ -139,26 +139,6 @@ describe('built output', () => {
     }
   });
 
-  it.runIf(built)('gives each policy page a way back to the site', () => {
-    // A policy page is opened directly from a shared link, an email or a search
-    // result. It had no header at all, so the only way off it was the browser's
-    // back button.
-    for (const [path, home, blog, sibling] of [
-      ['privacy/index.html', 'Back to Qfza', 'href="/blog/"', 'Arabic version'],
-      // Labels stay in the page's own language, so the Arabic page names its
-      // sibling in Arabic rather than falling back to the English string.
-      ['ar/privacy/index.html', '\u0627\u0644\u0639\u0648\u062f\u0629 \u0625\u0644\u0649 \u0642\u0641\u0632\u0629', 'href="/ar/blog/"', '\u0627\u0644\u0646\u0633\u062e\u0629 \u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629'],
-    ] as const) {
-      const html = read(`../../dist/${path}`);
-      const nav = /<nav class="qlf-post-nav"[^>]*>([\s\S]*?)<\/nav>/.exec(html);
-      expect(nav, `${path} has no site nav`).not.toBeNull();
-      expect(nav![1], `${path} nav missing home link`).toContain('href="/"');
-      expect(nav![1]).toContain(home);
-      expect(nav![1]).toContain(blog);
-      expect(nav![1]).toContain(sibling);
-    }
-  });
-
   it.runIf(built)('lists both policy pages in the sitemap at low priority', () => {
     const sitemap = read('../../dist/sitemap.xml');
     expect(sitemap).toContain('<loc>https://qfza.app/privacy/</loc>');

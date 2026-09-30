@@ -13,6 +13,8 @@
  * `noindex, follow` is deliberate: a 404 must never be indexed, but the links it
  * carries still let a crawler route back into the site.
  */
+import { HEADER_CSS, renderHeader } from './header.mjs';
+
 const PAGE_CSS = `
   .nf{max-width:44rem;margin:0 auto;padding:3rem 1.25rem 4rem;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#334155;line-height:1.7}
   .nf-code{margin:0 0 .5rem;font-size:3.5rem;font-weight:800;line-height:1;color:#02275a;letter-spacing:-.02em}
@@ -73,12 +75,13 @@ export function renderNotFound(siteUrl) {
 <link rel="icon" type="image/svg+xml" sizes="any" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<style>${PAGE_CSS.trim()}
+<style>${HEADER_CSS}${PAGE_CSS.trim()}
 </style>
 </head>
 <body>
 <main class="nf">
   <div class="nf-block" lang="en" dir="ltr">
+    ${renderHeader('en', '/404.html', { language: false })}
     <p class="nf-code">404</p>
     <h1>We could not find that page</h1>
     <p>The link may be broken, or the page may have moved. If you were looking for a
@@ -89,6 +92,7 @@ export function renderNotFound(siteUrl) {
   </div>
 
   <div class="nf-block" lang="ar" dir="rtl">
+    ${renderHeader('ar', '/404.html', { language: false })}
     <p class="nf-code">404</p>
     <h1>لم نعثر على هذه الصفحة</h1>
     <p>قد يكون الرابط معطوبًا، أو أن الصفحة قد نُقلت. إن كنت تبحث عن لحظة داخل

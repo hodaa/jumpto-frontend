@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
+import { HEADER_CSS, renderHeader } from './header.mjs';
 
 export const LOCALES = {
   en: { dir: 'ltr', prefix: '', ogLocale: 'en_US' },
@@ -185,8 +186,8 @@ const ARTICLE_CSS = `
   const canonical = `${siteUrl}${url}`;
   // Build inlines the app CSS; dev links it so HMR still applies.
   const styles = cssHref
-    ? `<link rel="stylesheet" href="${cssHref}">\n<style>${ARTICLE_CSS}</style>`
-    : `<style>${css}\n${ARTICLE_CSS}</style>`;
+    ? `<link rel="stylesheet" href="${cssHref}">\n<style>${HEADER_CSS}${ARTICLE_CSS}</style>`
+    : `<style>${HEADER_CSS}${css}\n${ARTICLE_CSS}</style>`;
   return `<!doctype html>
 <html lang="${locale}" dir="${dir}">
 <head>
@@ -331,10 +332,7 @@ export function renderPost(post, ctx) {
   const backText = post.locale === 'ar' ? 'كل المقالات' : 'All articles';
 
 
-  const body = `<nav class="qlf-post-nav" aria-label="${esc(homeLabel)}">
-  <a href="${home || '/'}">${esc(backLabel)}</a>
-  <a href="${LOCALES[post.locale].prefix}/blog/">${esc(backText)}</a>
-</nav>
+  const body = `${renderHeader(post.locale, post.url)}
 <article>
 <p class="qlf-post-eyebrow">${esc(homeLabel)}</p>
 <h1>${esc(post.title)}</h1>
@@ -404,9 +402,7 @@ ${post.html}
     )
     .join('\n');
 
-  const body = `<nav class="qlf-post-nav" aria-label="${isAr ? 'قفزة' : 'Qfza'}">
-  <a href="${home}">${isAr ? 'العودة إلى قفزة' : 'Back to Qfza'}</a>
-</nav>
+  const body = `${renderHeader(locale, `${meta.prefix}/blog/`)}
 <p class="qlf-post-eyebrow">${isAr ? 'قفزة' : 'Qfza'}</p>
 <h1>${isAr ? 'مدونة قفزة' : 'Qfza blog'}</h1>
 <p class="qlf-post-meta">${
