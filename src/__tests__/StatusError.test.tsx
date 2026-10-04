@@ -8,7 +8,9 @@ describe('ErrorView', () => {
   it('translates a message key', () => {
     render(<ErrorView message="error.network" onRetry={vi.fn()} />);
     expect(
-      screen.getByText('Could not connect. Check your internet connection and try again. If it continues, please try later.'),
+      screen.getByText(
+        'Could not connect. Check your internet connection and try again. If it continues, please try later.',
+      ),
     ).toBeInTheDocument();
   });
 

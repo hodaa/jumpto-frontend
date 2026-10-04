@@ -16,6 +16,12 @@ interface Props {
   youtubeId?: string | null;
   matchLimit?: number;
   currentPlayingTimestamp?: number | null;
+  /**
+   * Accessible name for the list. Defaults to the keyword-scoped label, but a
+   * replayed moment with no keyword behind it would otherwise announce
+   * "Matching moments for “”" — so the caller names those rows itself.
+   */
+  listLabel?: string;
 }
 
 /** Wrap every case-insensitive occurrence of the keyword in a highlight mark. */
@@ -126,7 +132,7 @@ function ShareButton({ youtubeId, seconds, timestamp }: ShareButtonProps) {
  * re-render (and never re-run `highlightKeyword`) on an unrelated progress/ETA
  * poll.
  */
-const MatchRow = memo(function MatchRow({
+export const MatchRow = memo(function MatchRow({
   match,
   keyword,
   onSeek,
@@ -134,7 +140,7 @@ const MatchRow = memo(function MatchRow({
   isPlaying,
 }: MatchRowProps) {
   const { t } = useTranslation();
-  const snippet = match.text_snippet ?? t('results.noSnippet');
+  const snippet = match.text_snippet ?? keyword;
   const timestamp = formatYouTubeTime(match.progress_seconds);
   const highlighted = highlightKeyword(snippet, keyword);
   return (
@@ -145,11 +151,15 @@ const MatchRow = memo(function MatchRow({
           className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 px-3 py-3 text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
           onClick={() => onSeek(match.progress_seconds)}
           aria-label={t('results.seek', { timestamp, snippet })}
+          // The row the player is parked on. The accent ring says so visually;
+          // this says it to a screen reader, which otherwise hears the same
+          // list of matches with no indication of where the video actually is.
+          aria-current={isPlaying ? 'true' : undefined}
         >
           <span className="flex shrink-0 items-center gap-2">
             <span
               aria-hidden="true"
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-primary/90 ${
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-action text-white shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-action/90 ${
                 isPlaying ? 'ring-2 ring-accent ring-offset-1' : ''
               }`}
             >
@@ -159,7 +169,7 @@ const MatchRow = memo(function MatchRow({
             </span>
             <span
               className={`shrink-0 rounded-md px-2 py-1 text-sm font-bold tabular-nums ${
-                isPlaying ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
+                isPlaying ? 'bg-action text-white' : 'bg-slate-100 text-slate-600'
               }`}
               dir="ltr"
             >
@@ -186,7 +196,7 @@ const MatchRow = memo(function MatchRow({
               rel="noopener noreferrer"
               aria-label={t('results.watchMoment', { timestamp })}
               title={t('results.watchOnYouTube')}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-200 bg-red-50 text-[#FF0000] transition-colors duration-200 hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-action"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-200 bg-red-50 text-youtube transition-colors duration-200 hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-action"
             >
               <IconYouTube size={18} />
             </a>
@@ -206,8 +216,10 @@ export const ResultsList = memo(function ResultsList({
   youtubeId,
   matchLimit = DEFAULT_MATCH_LIMIT,
   currentPlayingTimestamp,
+  listLabel,
 }: Props) {
   const { t } = useTranslation();
+  const listLabelText = listLabel ?? t('results.listLabel', { keyword });
   const listId = useId();
   const listRef = useRef<HTMLOListElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -249,7 +261,7 @@ export const ResultsList = memo(function ResultsList({
   };
 
   const countBadge = (
-    <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
+    <span className="inline-flex items-center rounded-full bg-action/10 px-3 py-1 text-sm font-bold text-primary">
       {t('results.matchCount', { count: matches.length })}
     </span>
   );
@@ -258,7 +270,7 @@ export const ResultsList = memo(function ResultsList({
     return (
       <section
         className="flex flex-col items-center gap-3 py-8 text-center rtl:text-right"
-        aria-label={t('results.listLabel', { keyword })}
+        aria-label={listLabelText}
       >
         {noSpeech ? (
           <>
@@ -301,7 +313,7 @@ export const ResultsList = memo(function ResultsList({
   }
 
   return (
-    <section className="@container/matches" aria-label={t('results.listLabel', { keyword })}>
+    <section className="@container/matches" aria-label={listLabelText}>
       <div className="mb-3 flex flex-col gap-1">
         <div className="flex min-w-0 flex-wrap items-center gap-2 rtl:text-right">
           {countBadge}

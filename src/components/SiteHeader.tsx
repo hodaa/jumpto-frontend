@@ -1,6 +1,8 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AccountMenu } from './auth/AccountMenu';
 import { LanguageToggle } from './LanguageToggle';
+import { RouteLink } from './RouteLink';
 import { getLanguage } from '../i18n';
 
 const NAV_LINK =
@@ -9,9 +11,9 @@ const NAV_LINK =
 function Logo() {
   const { t } = useTranslation();
   return (
-    <a
+    <RouteLink
+      to="home"
       className="order-1 flex shrink-0 items-center rounded-lg transition-transform duration-200 hover:scale-[1.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-action sm:justify-self-start"
-      href="/"
       aria-label={t('nav.home')}
     >
       <img
@@ -21,7 +23,7 @@ function Logo() {
         width="124"
         height="48"
       />
-    </a>
+    </RouteLink>
   );
 }
 
@@ -47,15 +49,16 @@ export const SiteHeader = memo(function SiteHeader() {
         className="order-3 flex w-full items-center justify-center gap-x-8 border-t border-slate-100 pt-3 sm:order-2 sm:w-auto sm:gap-x-6 sm:border-0 sm:pt-0"
         aria-label={t('nav.primary')}
       >
-        <a className={NAV_LINK} href="#how-it-works">
+        <a className={NAV_LINK} href="/#how-it-works">
           {t('nav.howItWorks')}
         </a>
-        <a className={NAV_LINK} href="#why-qfza">
+        <a className={NAV_LINK} href="/#why-qfza">
           {t('nav.whyQfza')}
         </a>
       </nav>
-      <div className="order-2 flex flex-1 items-center justify-end sm:order-3 sm:flex-none sm:justify-self-end">
+      <div className="order-2 flex flex-1 items-center justify-end gap-3 sm:order-3 sm:flex-none sm:justify-self-end">
         <LanguageToggle />
+        <AccountMenu />
       </div>
     </header>
   );

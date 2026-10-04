@@ -36,6 +36,20 @@ interface Props {
   currentPlayingTimestamp?: number | null;
   /** Present when the page was opened from a shared-moment link (?v=&t=). */
   sharedSeconds?: number | null;
+  /** The keyword a replayed moment belongs to; null for a bare ?v=&t= link. */
+  sharedKeyword?: string | null;
+  /**
+   * Every result the replayed search found, so the saved search is shown again
+   * rather than trimmed to one moment. Null for a bare ?v=&t= link, which knows
+   * of a second and nothing else.
+   */
+  sharedMatches?: SearchMatch[] | null;
+  /**
+   * False when the replayed search matched nothing. Distinct from an empty
+   * `sharedMatches`: "found nothing" is a finished, empty result, not a search
+   * whose results have yet to arrive.
+   */
+  sharedMatched?: boolean;
 }
 
 // Idle panel: a dashed brand-orange border with a muted background and no
@@ -92,9 +106,7 @@ function IdleMockup() {
               {row.widths.map((width, index) => (
                 <span
                   key={width}
-                  className={`h-2 rounded-full ${
-                    index === 0 ? 'bg-primary/70' : 'bg-slate-300/70'
-                  }`}
+                  className={`h-2 rounded-full ${index === 0 ? 'bg-action/70' : 'bg-slate-300/70'}`}
                   style={{ width }}
                 />
               ))}
@@ -129,6 +141,9 @@ function ResultsPanelContent({
   onCancel,
   currentPlayingTimestamp,
   sharedSeconds = null,
+  sharedKeyword = null,
+  sharedMatches = null,
+  sharedMatched = true,
 }: Props) {
   const { t } = useTranslation();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -176,10 +191,13 @@ function ResultsPanelContent({
     );
   }
 
-  if (phase === 'done' && sharedSeconds !== null) {
+  // A saved search that matched nothing replays as the empty result it was. The
+  // moment block is skipped entirely: it is built around a match existing, and
+  // inventing one at 00:00 would tell the visitor their phrase was found.
+  if (phase === 'done' && sharedSeconds !== null && !sharedMatched) {
     return (
       <section className={`${CARD_ACTIVE} animate-fade-in`} aria-labelledby={headingId}>
-        <div className="mb-5 flex min-w-0 flex-col gap-1.5">
+        <div className="mb-5 flex min-w-0 flex-col gap-3">
           <h2
             id={headingId}
             ref={headingRef}
@@ -187,21 +205,116 @@ function ResultsPanelContent({
             className="w-full min-w-0 text-lg font-bold text-brand focus:outline-none rtl:text-right [overflow-wrap:anywhere]"
             dir="auto"
           >
-            {t('shared.title', { timestamp: formatYouTubeTime(sharedSeconds) })}
+            {(sharedKeyword ?? keyword) ? (
+              <Trans
+                i18nKey="results.title"
+                values={{ keyword: sharedKeyword ?? keyword }}
+                components={{
+                  keyword: <bdi className="results-keyword" dir="auto" />,
+                }}
+              />
+            ) : (
+              // A `?v=…&t=0&empty=1` link knows the search found nothing but not
+              // what it searched for: the keyword is deliberately kept out of the
+              // URL, so it is not there to name. "Matches for "" " would be
+              // worse than saying what is actually true.
+              t('results.noKeywordTitle')
+            )}
           </h2>
-          <p className="text-sm text-muted rtl:text-right">{t('shared.hint')}</p>
         </div>
         {youtubeId ? (
           <VideoPlayer ref={playerRef} videoId={youtubeId} onPlaybackChange={onPlaybackChange} />
         ) : null}
-        <div className="mt-5 flex">
-          <button
-            type="button"
-            onClick={onNewSearch}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 sm:px-4"
+        <div className="mt-5">
+          <ResultsList
+            matches={[]}
+            keyword={sharedKeyword ?? keyword}
+            noSpeech={noSpeech}
+            onSeek={onSeek}
+            onClear={onClear}
+            matchLimit={matchLimit}
+            currentPlayingTimestamp={currentPlayingTimestamp}
+            youtubeId={youtubeId}
+          />
+        </div>
+      </section>
+    );
+  }
+
+  if (phase === 'done' && sharedSeconds !== null) {
+    // A replayed search looks like the search it came from: same heading, same
+    // match rows, same active treatment. Every saved match is listed when the
+    // history entry carried them; only a bare ?v=&t= link is trimmed to the one
+    // moment it actually knows about.
+    const momentTimestamp = formatYouTubeTime(sharedSeconds);
+    // An empty saved list means the search found nothing and was recorded anyway;
+    // a null one means we were handed a bare moment and have nothing else to
+    // show, so the single row below stands in for it.
+    const rows: SearchMatch[] =
+      sharedMatches && sharedMatches.length > 0
+        ? sharedMatches
+        : [
+            {
+              progress_seconds: sharedSeconds,
+              timestamp: momentTimestamp,
+              text_snippet: null,
+            },
+          ];
+    return (
+      <section className={`${CARD_ACTIVE} animate-fade-in`} aria-labelledby={headingId}>
+        <div className="mb-5 flex min-w-0 flex-col gap-3">
+          <h2
+            id={headingId}
+            ref={headingRef}
+            tabIndex={-1}
+            className="w-full min-w-0 text-lg font-bold text-brand focus:outline-none rtl:text-right [overflow-wrap:anywhere]"
+            dir="auto"
           >
-            {t('shared.searchCta')}
-          </button>
+            {sharedKeyword ? (
+              <Trans
+                i18nKey="results.title"
+                values={{ keyword: sharedKeyword }}
+                components={{
+                  keyword: <bdi className="results-keyword" dir="auto" />,
+                }}
+              />
+            ) : (
+              t('shared.title', { timestamp: momentTimestamp })
+            )}
+          </h2>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent-strong">
+              <IconTarget size={14} />
+              {t('shared.savedBadge')}
+            </span>
+            <p className="text-sm text-muted rtl:text-right">{t('shared.hint')}</p>
+          </div>
+        </div>
+        {youtubeId ? (
+          <VideoPlayer ref={playerRef} videoId={youtubeId} onPlaybackChange={onPlaybackChange} />
+        ) : null}
+        <div className="mt-5">
+          <ResultsList
+            // The same list the search view renders, not a hand-rolled copy of it.
+            // MatchRow decides row-vs-column with a container query against the
+            // `@container/matches` wrapper ResultsList provides; render the rows
+            // directly and that wrapper is gone, so every replayed match stacks its
+            // share and YouTube buttons onto a second line — a visible difference
+            // from the search the visitor is being shown as a replay of.
+            matches={rows}
+            keyword={sharedKeyword ?? keyword}
+            // Only a bare moment link has no phrase behind it; a replayed search
+            // is named after its keyword exactly as the search it replays is.
+            listLabel={sharedKeyword ? undefined : t('shared.momentListLabel')}
+            noSpeech={noSpeech}
+            onSeek={onSeek}
+            onClear={onClear}
+            matchLimit={matchLimit}
+            // The player is parked on the saved moment, so that row is the active
+            // one — the same row, and the same accent ring, the search view marks.
+            currentPlayingTimestamp={sharedSeconds}
+            youtubeId={youtubeId}
+          />
         </div>
       </section>
     );
@@ -272,15 +385,20 @@ export function ResultsPanel(props: Props) {
             ? 'announcements.finding'
             : 'announcements.fetching',
         )
-      : props.phase === 'done' && props.sharedSeconds != null
-        ? t('shared.title', { timestamp: formatYouTubeTime(props.sharedSeconds) })
-        : props.phase === 'done'
-          ? t('announcements.complete', {
-              summary: t('results.matchCount', { count: props.matches.length }),
-            })
-          : props.phase === 'error'
-            ? t('announcements.failed')
-            : '';
+      : props.phase === 'done' && props.sharedSeconds != null && !props.sharedMatched
+        ? // A fruitless search has no moment to announce, and "Shared moment at
+          // 00:00" would tell a screen-reader user the opposite of what the
+          // panel underneath them shows.
+          t('announcements.noMatches')
+        : props.phase === 'done' && props.sharedSeconds != null
+          ? t('shared.title', { timestamp: formatYouTubeTime(props.sharedSeconds) })
+          : props.phase === 'done'
+            ? t('announcements.complete', {
+                summary: t('results.matchCount', { count: props.matches.length }),
+              })
+            : props.phase === 'error'
+              ? t('announcements.failed')
+              : '';
 
   return (
     <>
@@ -288,7 +406,6 @@ export function ResultsPanel(props: Props) {
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        aria-label={t('announcements.label')}
         className="sr-only"
       >
         {announcement}

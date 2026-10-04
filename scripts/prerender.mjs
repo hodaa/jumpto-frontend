@@ -110,6 +110,38 @@ const manifest = await readFile(resolve(dist, 'blog-manifest.json'), 'utf8')
   }
   const legalPaths = legalManifest.map((entry) => entry.url);
 
+  // Mount the app on the static pages that are also client routes.
+  //
+  // Contact is the only one: build-legal.mjs wrote it as a real document with its
+  // own title, description, canonical and markdown copy, and flagged it `hydrate`
+  // so the copy landed inside #root with the static chrome hidden. All that is
+  // left is the module tag that lets React take over — the same tag the homepage
+  // already carries, copied verbatim rather than rebuilt, so there is exactly one
+  // source of truth for which bundle ships.
+  //
+  // Every other page is deliberately left alone. They ship no script at all, which
+  // is the whole point of generating them.
+  const entryScript = html.match(/<script[^>]*\bsrc="\/assets\/[^"]+"[^>]*><\/script>/)?.[0];
+  if (!entryScript) {
+    console.error(
+      '[prerender] no built module script found in dist/index.html — cannot hydrate. ' +
+        'Did vite build run first?',
+    );
+    process.exit(1);
+  }
+
+  for (const row of legalManifest.filter((entry) => entry.hydrate)) {
+    const file = resolve(dist, row.url.replace(/^\//, '').replace(/\/$/, ''), 'index.html');
+    const doc = await readFile(file, 'utf8');
+    if (doc.includes('src="/assets/')) {
+      console.warn(`[prerender] ${row.url} already hydrated — skipping`);
+      continue;
+    }
+    // Before </body>, where a module script belongs, so parsing never blocks.
+    await writeFile(file, doc.replace('</body>', `  ${entryScript}\n</body>`), 'utf8');
+    console.log(`[prerender] hydrated ${row.url} with the app entry script`);
+  }
+
 
 const postPaths = (prefix) => {
   const base = `${prefix}/blog/`;
@@ -170,17 +202,25 @@ const indexEntry = (path, paths) => {
   const postEntry = (path) =>
     entry(`${siteUrl}${path}`, { changefreq: 'monthly', priority: '0.7' }, lastmodOf(path), path);
 
-  // Policy pages are legal documents, not content: they rank for nobody and
-  // change maybe once a year, so they get the lowest priority and a yearly
-  // changefreq. They stay in the sitemap because a policy a crawler cannot
-  // find is a policy nobody has agreed to.
-  const legalEntry = (path) =>
-    entry(
-      `${siteUrl}${path}`,
-      { changefreq: 'yearly', priority: '0.3' },
-      lastmodByUrl.get(path) ?? null,
-      path,
+  // Static pages (policies, the FAQ, About, Terms, Contact) ship one manifest. Each
+  // entry carries the changefreq/priority its builder chose, because only the
+  // builder knows what a page is — a policy and an FAQ want opposite treatment.
+  // The defaults cover a manifest written before those fields existed.
+  const staticDefaults = {
+    legal: { changefreq: 'yearly', priority: '0.3' },
+    faq: { changefreq: 'monthly', priority: '0.7' },
+    pages: { changefreq: 'monthly', priority: '0.6' },
+  };
+
+  const staticEntry = (row) => {
+    const fallback = staticDefaults[row.section] ?? staticDefaults.legal;
+    return entry(
+      `${siteUrl}${row.url}`,
+      { changefreq: row.changefreq ?? fallback.changefreq, priority: row.priority ?? fallback.priority },
+      lastmodByUrl.get(row.url) ?? null,
+      row.url,
     );
+  };
 
 
 await writeFile(
@@ -193,14 +233,14 @@ await writeFile(
     ...(arabicPaths.length ? [indexEntry('/ar/blog/', arabicPaths)] : []),
       ...blogPaths.map(postEntry),
       ...arabicPaths.map(postEntry),
-      ...legalPaths.map(legalEntry),
+      ...legalManifest.map(staticEntry),
       '</urlset>',
     '',
   ].join('\n'),
 );
   console.log(
     `[prerender] wrote sitemap.xml + robots.txt for ${siteUrl} ` +
-      `(${blogPaths.length + arabicPaths.length} blog post(s), ${legalPaths.length} legal page(s) listed)`,
+      `(${blogPaths.length + arabicPaths.length} blog post(s), ${legalPaths.length} static page(s) listed)`,
   );
 
 // Vite copies public/ into dist/ verbatim, so a macOS Finder-written

@@ -25,7 +25,10 @@ describe('WebSite structured data', () => {
     // reference exists AND resolves to a real node in the same graph.
     expect(web.publisher, 'WebSite has no publisher').toBeDefined();
     const id = typeof web.publisher === 'string' ? web.publisher : web.publisher['@id'];
-    expect(nodes.some((n) => n['@id'] === id), `publisher ${id} does not resolve`).toBe(true);
+    expect(
+      nodes.some((n) => n['@id'] === id),
+      `publisher ${id} does not resolve`,
+    ).toBe(true);
   });
 
   it('gives the Organization a logo with dimensions', () => {
@@ -43,9 +46,7 @@ describe('WebSite structured data', () => {
     const nodes = Array.isArray(data['@graph']) ? data['@graph'] : [data];
     for (const type of ['Organization', 'WebSite']) {
       const node = nodes.find((n) => n['@type'] === type);
-      expect(node.sameAs, `${type} lost sameAs`).toContain(
-        'https://www.linkedin.com/company/qfza',
-      );
+      expect(node.sameAs, `${type} lost sameAs`).toContain('https://www.linkedin.com/company/qfza');
     }
   });
 
@@ -68,9 +69,7 @@ describe('WebSite structured data', () => {
 
 describe('sitemap xhtml alternates', () => {
   it.runIf(built)('declares the xhtml namespace', () => {
-    expect(read('../../dist/sitemap.xml')).toContain(
-      'xmlns:xhtml="http://www.w3.org/1999/xhtml"',
-    );
+    expect(read('../../dist/sitemap.xml')).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"');
   });
 
   it.runIf(built)('pairs every bilingual URL with its other locale and x-default', () => {
@@ -92,24 +91,18 @@ describe('sitemap xhtml alternates', () => {
     // A dangling alternate is worse than none: it points a crawler at a URL the
     // sitemap never claims exists.
     const sitemap = read('../../dist/sitemap.xml');
-    const listed = new Set(
-      [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1]),
-    );
-    for (const href of [...sitemap.matchAll(/hreflang="[^"]+" href="([^"]+)"/g)].map(
-      (m) => m[1],
-    )) {
+    const listed = new Set([...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1]));
+    for (const href of [...sitemap.matchAll(/hreflang="[^"]+" href="([^"]+)"/g)].map((m) => m[1])) {
       expect(listed, `alternate ${href} is not in the sitemap`).toContain(href);
     }
   });
 
-  it.runIf(built)('points x-default at Arabic everywhere', () => {
+  it.runIf(built)('points x-default at English everywhere', () => {
     const sitemap = read('../../dist/sitemap.xml');
-    const defaults = [...sitemap.matchAll(/hreflang="x-default" href="([^"]+)"/g)].map(
-      (m) => m[1],
-    );
+    const defaults = [...sitemap.matchAll(/hreflang="x-default" href="([^"]+)"/g)].map((m) => m[1]);
     expect(defaults.length).toBeGreaterThan(0);
     for (const href of defaults) {
-      expect(href, `x-default ${href} is not Arabic`).toContain('/ar/');
+      expect(href, `x-default ${href} is not English`).not.toContain('/ar/');
     }
   });
 
@@ -120,9 +113,7 @@ describe('sitemap xhtml alternates', () => {
     const pairs: Record<string, string[]> = {};
     for (const block of [...sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)].map((m) => m[1])) {
       const loc = block.match(/<loc>([^<]*)<\/loc>/)![1];
-      pairs[loc] = [...block.matchAll(/hreflang="([^"]+)" href="([^"]+)"/g)].map(
-        (m) => m[2],
-      );
+      pairs[loc] = [...block.matchAll(/hreflang="([^"]+)" href="([^"]+)"/g)].map((m) => m[2]);
     }
     for (const page of ['privacy/index.html', 'ar/privacy/index.html']) {
       const html = read(`../../dist/${page}`);
@@ -185,8 +176,9 @@ describe('blog index depth', () => {
     const blogDir = resolve(__dirname, '../../content/blog/en');
     expect(existsSync(blogDir), 'content/blog/en missing').toBe(true);
     const files = readdirSync(blogDir);
-    expect(files.filter((f) => f.startsWith('_')), 'underscore files are not skipped by loadPosts').toEqual(
-      [],
-    );
+    expect(
+      files.filter((f) => f.startsWith('_')),
+      'underscore files are not skipped by loadPosts',
+    ).toEqual([]);
   });
 });

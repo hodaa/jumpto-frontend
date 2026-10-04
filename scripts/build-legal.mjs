@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { loadPages, renderPage, ROOT, CONTENT_DIR } from './lib/legal.mjs';
+import { loadAllPages, renderPage, ROOT } from './lib/legal.mjs';
 import { resolveSiteUrl } from './lib/site-url.mjs';
 
 const dist = resolve(ROOT, 'dist');
@@ -19,9 +19,27 @@ function extractAppCss(html) {
   return blocks.sort((a, b) => b.length - a.length)[0];
 }
 
-const pages = await loadPages(CONTENT_DIR);
+/**
+ * Sitemap treatment per section, decided here rather than in prerender.mjs
+ * because only this module knows what a page *is*.
+ *
+ * A policy is a legal document: it ranks for nobody and changes maybe once a
+ * year. An FAQ is the opposite — it is written to answer questions people
+ * actually search for, so burying it at priority 0.3 would be wrong. Ordinary
+ * pages sit in between and carry no strong signal, so the section default is
+ * deliberately modest; a page overrides it in frontmatter when it deserves more
+ * (About) or less (Terms, which is legal in substance even though it lives under
+ * `pages` for build reasons).
+ */
+const SITEMAP = {
+  legal: { changefreq: 'yearly', priority: '0.3' },
+  faq: { changefreq: 'monthly', priority: '0.7' },
+  pages: { changefreq: 'monthly', priority: '0.6' },
+};
+
+const pages = await loadAllPages();
 if (!pages.length) {
-  console.log('[legal] no legal pages found — skipping');
+  console.log('[legal] no static pages found — skipping');
   process.exit(0);
 }
 
@@ -34,8 +52,8 @@ for (const page of pages) {
   const twin = pages.find((p) => p.slug === page.slug && p.locale !== page.locale);
   if (!twin) {
     throw new Error(
-      `[legal] ${page.slug}.md has no ${page.locale === 'en' ? 'ar' : 'en'} counterpart — ` +
-        'legal pages must exist in both locales',
+      `[legal] ${page.section}/${page.slug}.md has no ${page.locale === 'en' ? 'ar' : 'en'} counterpart — ` +
+        `${page.section} pages must exist in both locales`,
     );
   }
 
@@ -60,12 +78,24 @@ await writeFile(
   `${JSON.stringify(
     pages.map((p) => {
       const twin = pages.find((o) => o.slug === p.slug && o.locale !== p.locale);
-      // Arabic is the source language, so x-default resolves to the Arabic URL
-      // whichever locale we are emitting. With no twin yet, fall back to self.
-      const xDefault = p.locale === 'ar' ? p : (twin ?? p);
+      // English is the primary SEO target, so x-default resolves to the English
+      // URL whichever locale we are emitting. With no twin yet, fall back to self.
+      const xDefault = p.locale === 'en' ? p : (twin ?? p);
+      const defaults = SITEMAP[p.section] ?? SITEMAP.pages;
       return {
         url: p.url,
+        section: p.section,
+        // Frontmatter wins over the section default, so one section can hold a
+        // page that changes weekly and a page that changes yearly. Read as
+        // strings because that is how YAML frontmatter arrives and how the
+        // sitemap emits them.
+        changefreq: p.changefreq ?? defaults.changefreq,
+        priority: p.priority ?? defaults.priority,
         lastmod: p.updated || null,
+        // Contact ships as a real document and is also a client route, so it
+        // carries the flag prerender.mjs uses to mount the app over the
+        // generated copy. Absent for every other page, which stay script-free.
+        ...(p.hydrate ? { hydrate: true } : {}),
         alternates: [
           { hreflang: p.locale, href: `${siteUrl}${p.url}` },
           ...(twin ? [{ hreflang: twin.locale, href: `${siteUrl}${twin.url}` }] : []),

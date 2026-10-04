@@ -38,9 +38,7 @@ describe('legal page content', () => {
       // The app's only localStorage write is the language preference. If a
       // future cache change persists searches, this fails and the policy must
       // be rewritten before it ships a claim that is no longer true.
-      expect(html, `${page.url} mentions what is stored`).toMatch(
-        /local storage|التخزين المحلي/,
-      );
+      expect(html, `${page.url} mentions what is stored`).toMatch(/local storage|التخزين المحلي/);
       expect(html, `${page.url} disclaims disk storage`).toMatch(
         /never written to disk|لا تُكتب على القرص أبدًا/,
       );
@@ -82,7 +80,7 @@ describe('legal page content', () => {
 });
 
 describe('legal page rendering', () => {
-  it('emits reciprocal hreflang and an x-default pointing at Arabic', async () => {
+  it('emits reciprocal hreflang and an x-default pointing at English', async () => {
     const list = await pages();
     for (const page of list) {
       const html = renderPage(page, {
@@ -93,14 +91,18 @@ describe('legal page rendering', () => {
       const twin = twinOf(list, page)!;
       expect(html).toContain(`hreflang="${twin.locale}" href="https://qfza.app${twin.url}"`);
       expect(html).toContain(`hreflang="${page.locale}" href="https://qfza.app${page.url}"`);
-      expect(html).toContain('hreflang="x-default" href="https://qfza.app/ar/privacy/"');
+      expect(html).toContain('hreflang="x-default" href="https://qfza.app/privacy/"');
     }
   });
 
   it('sets lang and dir from the locale, not from the page content', async () => {
     const list = await pages();
     for (const page of list) {
-      const html = renderPage(page, { siteUrl: 'https://qfza.app', css: '', twin: twinOf(list, page) });
+      const html = renderPage(page, {
+        siteUrl: 'https://qfza.app',
+        css: '',
+        twin: twinOf(list, page),
+      });
       expect(html).toContain(`<html lang="${page.locale}" dir="${LOCALES[page.locale].dir}">`);
     }
   });
@@ -108,7 +110,11 @@ describe('legal page rendering', () => {
   it('uses a self-referencing canonical', async () => {
     const list = await pages();
     for (const page of list) {
-      const html = renderPage(page, { siteUrl: 'https://qfza.app', css: '', twin: twinOf(list, page) });
+      const html = renderPage(page, {
+        siteUrl: 'https://qfza.app',
+        css: '',
+        twin: twinOf(list, page),
+      });
       expect(html).toContain(`rel="canonical" href="https://qfza.app${page.url}"`);
     }
   });
@@ -118,7 +124,11 @@ describe('legal page rendering', () => {
     // article is a false structured-data signal.
     const list = await pages();
     for (const page of list) {
-      const html = renderPage(page, { siteUrl: 'https://qfza.app', css: '', twin: twinOf(list, page) });
+      const html = renderPage(page, {
+        siteUrl: 'https://qfza.app',
+        css: '',
+        twin: twinOf(list, page),
+      });
       expect(html).not.toContain('BlogPosting');
       expect(html).toContain('og:type" content="website"');
     }

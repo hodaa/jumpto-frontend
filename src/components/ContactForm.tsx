@@ -1,5 +1,6 @@
 import { type FormEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { fieldStateClass } from '../utils/fieldStyles';
 import { CONTACT_FORM_ENDPOINT } from '../config';
 
 const MAX_MESSAGE = 500;
@@ -26,12 +27,6 @@ const FIELD_ERROR_MAP: Record<Field, { required: string; invalid?: string }> = {
   email: { required: 'contact.form.requiredEmail', invalid: 'contact.form.invalidEmail' },
   message: { required: 'contact.form.requiredMessage' },
 };
-
-function fieldStateClass(hasError: boolean): string {
-  return hasError
-    ? 'border-danger bg-danger-soft focus:border-danger focus:ring-danger'
-    : 'border-slate-200 bg-slate-50 focus:border-action focus:ring-action';
-}
 
 /** Contact form that posts JSON to a form service (e.g. Formspree). */
 export function ContactForm() {
@@ -109,7 +104,7 @@ export function ContactForm() {
           <p className="text-lg font-semibold text-brand">{t('contact.form.success')}</p>
           <button
             type="button"
-            className="mt-4 inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
+            className="mt-4 inline-flex rounded-lg bg-action px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-action/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
             onClick={() => setState('idle')}
           >
             {t('contact.form.sendAnother')}
@@ -133,7 +128,10 @@ export function ContactForm() {
                 aria-describedby={errors.name ? errorId('name') : undefined}
               />
               {errors.name ? (
-                <p id={errorId('name')} className="mt-2 flex items-center gap-1.5 text-sm font-medium text-danger">
+                <p
+                  id={errorId('name')}
+                  className="mt-2 flex items-center gap-1.5 text-sm font-medium text-danger"
+                >
                   {resolveError('name')}
                 </p>
               ) : null}
@@ -154,7 +152,10 @@ export function ContactForm() {
                 aria-describedby={errors.email ? errorId('email') : undefined}
               />
               {errors.email ? (
-                <p id={errorId('email')} className="mt-2 flex items-center gap-1.5 text-sm font-medium text-danger">
+                <p
+                  id={errorId('email')}
+                  className="mt-2 flex items-center gap-1.5 text-sm font-medium text-danger"
+                >
                   {resolveError('email')}
                 </p>
               ) : null}
@@ -180,7 +181,10 @@ export function ContactForm() {
                 aria-describedby={errors.message ? errorId('message') : undefined}
               />
               {errors.message ? (
-                <p id={errorId('message')} className="mt-2 flex items-center gap-1.5 text-sm font-medium text-danger">
+                <p
+                  id={errorId('message')}
+                  className="mt-2 flex items-center gap-1.5 text-sm font-medium text-danger"
+                >
                   {resolveError('message')}
                 </p>
               ) : null}
@@ -194,7 +198,7 @@ export function ContactForm() {
           <button
             type="submit"
             disabled={state === 'sending'}
-            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-base font-bold text-white transition-all duration-200 hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-action px-5 py-3.5 text-base font-bold text-white shadow-lg transition-all duration-200 hover:bg-action-hover hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {state === 'sending' ? t('contact.form.sending') : t('contact.form.submit')}
           </button>

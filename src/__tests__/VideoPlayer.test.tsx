@@ -55,17 +55,55 @@ describe('VideoPlayer', () => {
     const onPlaybackChange = vi.fn();
     render(<VideoPlayer ref={ref} videoId="abcdef12345" onPlaybackChange={onPlaybackChange} />);
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
-    act(() => { ref.current?.seekTo(5); ref.current?.seekTo(75); });
+    act(() => {
+      ref.current?.seekTo(5);
+      ref.current?.seekTo(75);
+    });
     expect(instances[0].player.seekTo).not.toHaveBeenCalled();
-    expect(screen.getByText('Loading video — we’ll jump to 01:15 when it’s ready.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Loading video — we’ll jump to 01:15 when it’s ready.'),
+    ).toBeInTheDocument();
     ready();
     expect(instances[0].player.seekTo).toHaveBeenCalledExactlyOnceWith(75, true);
     expect(instances[0].player.playVideo).toHaveBeenCalledOnce();
     expect(onPlaybackChange).not.toHaveBeenCalledWith(75);
-    act(() => instances[0].options.events?.onStateChange?.({ target: instances[0].player, data: 1 }));
+    act(() =>
+      instances[0].options.events?.onStateChange?.({ target: instances[0].player, data: 1 }),
+    );
     expect(onPlaybackChange).toHaveBeenLastCalledWith(75);
-    act(() => instances[0].options.events?.onStateChange?.({ target: instances[0].player, data: 2 }));
+    act(() =>
+      instances[0].options.events?.onStateChange?.({ target: instances[0].player, data: 2 }),
+    );
     expect(onPlaybackChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it('parks on a moment without playing it when autoplay is off', async () => {
+    const ref = createRef<VideoPlayerHandle>();
+    const onPlaybackChange = vi.fn();
+    render(<VideoPlayer ref={ref} videoId="abcdef12345" onPlaybackChange={onPlaybackChange} />);
+    await waitFor(() => expect(construct).toHaveBeenCalledOnce());
+
+    // Queued before the player exists, exactly as the shared-moment path does.
+    act(() => ref.current?.seekTo(754, { autoplay: false }));
+    expect(instances[0].player.playVideo).not.toHaveBeenCalled();
+    ready();
+
+    // The frame is the point, so the video must not run past it.
+    expect(instances[0].player.seekTo).toHaveBeenCalledExactlyOnceWith(754, true);
+    expect(instances[0].player.playVideo).not.toHaveBeenCalled();
+
+    // Parked is not "no position": report the moment so the view can mark it as
+    // the current one, otherwise the cue would look like nothing was selected.
+    expect(onPlaybackChange).toHaveBeenLastCalledWith(754);
+  });
+
+  it('still plays a plain seek, so selecting a result is unchanged', async () => {
+    const ref = createRef<VideoPlayerHandle>();
+    render(<VideoPlayer ref={ref} videoId="abcdef12345" />);
+    await waitFor(() => expect(construct).toHaveBeenCalledOnce());
+    act(() => ref.current?.seekTo(42));
+    ready();
+    expect(instances[0].player.playVideo).toHaveBeenCalledOnce();
   });
 
   it('shows an unavailable state immediately when the API script fails', async () => {
@@ -123,7 +161,9 @@ describe('VideoPlayer', () => {
   });
 
   it('handles player-construction errors', async () => {
-    construct.mockImplementationOnce(function () { throw new Error('blocked'); });
+    construct.mockImplementationOnce(function () {
+      throw new Error('blocked');
+    });
     render(<VideoPlayer videoId="abcdef12345" />);
     expect(await screen.findByText('Video preview unavailable')).toBeInTheDocument();
   });
@@ -146,7 +186,11 @@ describe('VideoPlayer', () => {
   it('does not leave polling timers or duplicate scripts after StrictMode cleanup', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('YT', undefined);
-    const { unmount } = render(<StrictMode><VideoPlayer videoId="abcdef12345" /></StrictMode>);
+    const { unmount } = render(
+      <StrictMode>
+        <VideoPlayer videoId="abcdef12345" />
+      </StrictMode>,
+    );
     expect(document.querySelectorAll('#youtube-iframe-api')).toHaveLength(1);
     unmount();
     await act(async () => {});

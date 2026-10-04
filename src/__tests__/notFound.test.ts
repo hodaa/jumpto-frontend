@@ -18,7 +18,9 @@ const hasArabic = (s: string) => /[\u0600-\u06ff]/.test(s);
 function blocksOf(html: string) {
   // Anchored on the 404's own link nav, not the first <nav> in the block: the
   // site header added one of those ahead of it.
-  return [...html.matchAll(/<div class="nf-block"[^>]*>([\s\S]*?<nav class="nf-links"[\s\S]*?)<\/nav>/g)].map((m) => ({
+  return [
+    ...html.matchAll(/<div class="nf-block"[^>]*>([\s\S]*?<nav class="nf-links"[\s\S]*?)<\/nav>/g),
+  ].map((m) => ({
     lang: m[0].match(/lang="([a-z]+)"/)![1],
     html: m[1],
   }));

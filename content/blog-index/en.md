@@ -2,7 +2,7 @@
 
 Most "find it in a video" problems are not really video problems. They are **search** problems wearing a video costume. Somebody remembers a claim, a name, or a single sentence, and now wants the exact second it was said — but scrubbing back and forth through an hour of footage is the slowest possible way to get there.
 
-YouTube captions help, but only if you can read faster than the video plays, and they give you no way to jump to the one moment that matters. This blog is about the gap between the two: getting from *a word you half-remember* to *the timestamp where it was said*.
+YouTube captions help, but only if you can read faster than the video plays, and they give you no way to jump to the one moment that matters. This blog is about the gap between the two: getting from _a word you half-remember_ to _the timestamp where it was said_.
 
 If you just want the tool, [search inside any YouTube video on Qfza](/). The articles here go deeper on how it works and how to get better results from it.
 
@@ -18,7 +18,7 @@ This changes the shape of the question. Instead of "find a video that talks abou
 
 **Search the exact phrase first.** Transcript search matches whole words in order, so a multi-word phrase returns fewer, more relevant hits than a single common word. A three-word phrase will usually get you to the moment faster than a single keyword will.
 
-**Pick words the speaker would actually say.** Transcripts are generated from audio, so a term that only exists in a slide, a chart, or a URL shown on screen will not be in the transcript. Search for the *spoken* version of what you are looking for.
+**Pick words the speaker would actually say.** Transcripts are generated from audio, so a term that only exists in a slide, a chart, or a URL shown on screen will not be in the transcript. Search for the _spoken_ version of what you are looking for.
 
 **Expect the odd token.** Auto-generated captions get numbers, names, and technical terms wrong more often than ordinary words. If a precise phrase returns nothing, try the nearest common phrasing before assuming the video does not cover it.
 

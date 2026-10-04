@@ -54,7 +54,11 @@ describe('SearchForm', () => {
     await user.type(screen.getByLabelText('YouTube URL'), 'https://example.com/video');
     await user.type(screen.getByLabelText('Word or phrase'), 'hello');
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByText('Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.',
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Please enter a word or phrase.')).not.toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -183,7 +187,9 @@ describe('SearchForm', () => {
     expect(url).toHaveStyle({ direction: 'rtl', textAlign: 'right' });
     expect(url).toHaveClass('search-input--rtl', 'placeholder:text-right');
     expect(url.parentElement).toHaveAttribute('dir', 'rtl');
-    expect(screen.getByRole('button', { name: 'لصق' }).parentElement?.parentElement).toBe(url.parentElement);
+    expect(screen.getByRole('button', { name: 'لصق' }).parentElement?.parentElement).toBe(
+      url.parentElement,
+    );
   });
 
   it('changes URL alignment with the UI language without changing its value or following the phrase', async () => {
@@ -231,11 +237,19 @@ describe('SearchForm', () => {
     await user.type(url, 'https://example.com/video');
     await user.type(screen.getByLabelText('Word or phrase'), 'hello');
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByText('Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.',
+      ),
+    ).toBeInTheDocument();
 
     await user.clear(url);
     await user.type(url, 'https://youtu.be/abcdef12345');
-    expect(screen.queryByText('Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.',
+      ),
+    ).not.toBeInTheDocument();
     expect(url).not.toHaveAttribute('aria-invalid');
     expect(url.className).not.toContain('border-danger');
   });
@@ -258,7 +272,11 @@ describe('SearchForm', () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} />);
     await user.type(screen.getByLabelText('YouTube URL'), 'not a url yet');
-    expect(screen.queryByText('Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.',
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps the error message in the language the user switches to', async () => {
@@ -296,18 +314,37 @@ describe('SearchForm', () => {
     const bullets = screen.getByRole('list');
     expect(within(bullets).getAllByRole('listitem')).toHaveLength(3);
     expect(screen.getByText('Public YouTube videos (watch / youtu.be links).')).toBeInTheDocument();
-    expect(screen.getByText('First search: a few minutes. Cached searches are usually faster.')).toBeInTheDocument();
-    expect(screen.getByText('Nothing is stored beyond the session cache.')).toBeInTheDocument();
+    expect(
+      screen.getByText('First search: a few minutes. Cached searches are usually faster.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('If you sign in, your searches are saved to your account history.'),
+    ).toBeInTheDocument();
     // The long paragraph no longer sits in the reading flow.
-    expect(screen.queryByText(/Transcripts are kept only in the session cache/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Transcripts are stored on our server in a database/),
+    ).not.toBeInTheDocument();
 
     const trigger = screen.getByRole('button', { name: 'Privacy & how it works' });
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     expect(
-      screen.getByText(/Transcripts are kept only in the session cache/),
+      screen.getByText(/Transcripts are stored on our server in a database/),
     ).toBeInTheDocument();
+  });
+
+  it('never claims the app stores nothing, which stopped being true', () => {
+    render(<SearchForm onSubmit={onSubmit} />);
+
+    // These claims were accurate while the app kept everything in the tab. It
+    // now holds transcripts in a database and, for signed-in visitors, their
+    // searches in an account history — so the copy has to name what is kept,
+    // and must not slide back into claiming it keeps nothing.
+    expect(screen.queryByText(/session cache/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/nothing is stored beyond/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/never stored/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/nothing is written to a database/i)).not.toBeInTheDocument();
   });
 
   it('flips and bounds the help popover when its trigger is near a viewport edge', async () => {
@@ -321,7 +358,9 @@ describe('SearchForm', () => {
     bounds.mockReturnValue(new DOMRect(10, window.innerHeight - 40, 240, 28));
     fireEvent(window, new Event('resize'));
     expect(screen.getByRole('group', { name: 'Data & timing' })).toHaveClass('bottom-full');
-    expect(screen.getByRole('group', { name: 'Data & timing' })).toHaveStyle({ maxHeight: '384px' });
+    expect(screen.getByRole('group', { name: 'Data & timing' })).toHaveStyle({
+      maxHeight: '384px',
+    });
     bounds.mockReturnValue(new DOMRect(10, -100, 240, 28));
     fireEvent(window, new Event('scroll'));
     expect(screen.queryByRole('group', { name: 'Data & timing' })).not.toBeInTheDocument();
@@ -333,14 +372,20 @@ describe('SearchForm', () => {
     const trigger = screen.getByRole('button', { name: 'Privacy & how it works' });
 
     await user.click(trigger);
-    expect(screen.getByText(/Transcripts are kept only in the session cache/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Transcripts are stored on our server in a database/),
+    ).toBeInTheDocument();
     await user.keyboard('{Escape}');
-    expect(screen.queryByText(/Transcripts are kept only in the session cache/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Transcripts are stored on our server in a database/),
+    ).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
 
     await user.click(trigger);
     await user.click(document.body);
-    expect(screen.queryByText(/Transcripts are kept only in the session cache/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Transcripts are stored on our server in a database/),
+    ).not.toBeInTheDocument();
   });
 
   it('translates the helper bullets and the popover trigger with the UI language', async () => {
@@ -356,34 +401,51 @@ describe('SearchForm', () => {
       'aria-expanded',
       'true',
     );
-    expect(screen.getByText('لا يُخزَّن شيء بعد انتهاء جلسة المتصفح.')).toBeInTheDocument();
-    expect(screen.queryByText('Public YouTube videos (watch / youtu.be links).')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('إذا سجّلت الدخول، تُحفظ عمليات بحثك في سجلّ حسابك.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Public YouTube videos (watch / youtu.be links).'),
+    ).not.toBeInTheDocument();
   });
 });
 
 describe('source guidance, locked searches and clipboard recovery', () => {
   const urlValue = 'https://youtu.be/abcdef12345';
 
-  it.each(['shorts', 'live', 'embed'])('gives correction instructions for a %s URL', async (format) => {
-    const user = userEvent.setup();
-    render(<SearchForm onSubmit={onSubmit} initialUrl={`https://youtube.com/${format}/abcdef12345`} initialKeyword="hello" />);
-    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Open the video’s watch page');
-    expect(screen.getByLabelText('YouTube URL')).toHaveFocus();
-    expect(screen.getByLabelText('YouTube URL')).toHaveClass('border-danger');
-    expect(onSubmit).not.toHaveBeenCalled();
-  });
+  it.each(['shorts', 'live', 'embed'])(
+    'gives correction instructions for a %s URL',
+    async (format) => {
+      const user = userEvent.setup();
+      render(
+        <SearchForm
+          onSubmit={onSubmit}
+          initialUrl={`https://youtube.com/${format}/abcdef12345`}
+          initialKeyword="hello"
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+      expect(screen.getByRole('alert')).toHaveTextContent('Open the video’s watch page');
+      expect(screen.getByLabelText('YouTube URL')).toHaveFocus();
+      expect(screen.getByLabelText('YouTube URL')).toHaveClass('border-danger');
+      expect(onSubmit).not.toHaveBeenCalled();
+    },
+  );
 
   it('keeps invalid-link guidance distinct from unsupported-source guidance', async () => {
     const user = userEvent.setup();
     render(<SearchForm onSubmit={onSubmit} initialUrl="not a link" initialKeyword="hello" />);
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('This link does not identify a YouTube video.');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'This link does not identify a YouTube video.',
+    );
   });
 
   it('locks both fields and their actions while a search is in progress', async () => {
     const user = userEvent.setup();
-    render(<SearchForm onSubmit={onSubmit} disabled initialUrl={urlValue} initialKeyword="hello" />);
+    render(
+      <SearchForm onSubmit={onSubmit} disabled initialUrl={urlValue} initialKeyword="hello" />,
+    );
     const url = screen.getByLabelText('YouTube URL');
     const keyword = screen.getByLabelText('Word or phrase');
     expect(url).toHaveAttribute('readonly');
@@ -416,7 +478,9 @@ describe('source guidance, locked searches and clipboard recovery', () => {
     }
     const url = screen.getByLabelText('YouTube URL');
     expect(url.parentElement).toContainElement(screen.getByRole('button', { name: 'Paste' }));
-    expect(url.parentElement).not.toContainElement(screen.getByRole('button', { name: 'Clear YouTube URL' }));
+    expect(url.parentElement).not.toContainElement(
+      screen.getByRole('button', { name: 'Clear YouTube URL' }),
+    );
   });
 
   it('offers manual recovery when the Clipboard API is unavailable', async () => {
@@ -440,24 +504,31 @@ describe('source guidance, locked searches and clipboard recovery', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it.each(['denied', 'empty'] as const)('preserves the URL and offers mobile/keyboard recovery for a %s clipboard', async (reason) => {
-    const user = userEvent.setup();
-    const read = vi.spyOn(navigator.clipboard, 'readText');
-    if (reason === 'denied') read.mockRejectedValue(new Error('denied'));
-    else read.mockResolvedValue('   ');
-    render(<SearchForm onSubmit={onSubmit} initialUrl={urlValue} />);
-    await user.click(screen.getByRole('button', { name: 'Paste' }));
-    const notice = screen.getByRole('alert');
-    expect(notice).toHaveTextContent(reason === 'denied' ? 'Clipboard access isn’t available here.' : 'Your clipboard is empty.');
-    expect(notice).toHaveTextContent('On a phone, touch and hold the URL field and choose Paste.');
-    expect(notice).toHaveTextContent('Ctrl/⌘+V');
-    const input = screen.getByLabelText<HTMLInputElement>('YouTube URL');
-    await waitFor(() => expect(input).toHaveFocus());
-    expect(input).toHaveValue(urlValue);
-    expect([input.selectionStart, input.selectionEnd]).toEqual([0, urlValue.length]);
-    await user.type(input, 'https://youtu.be/zyxwvut9876');
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  });
+  it.each(['denied', 'empty'] as const)(
+    'preserves the URL and offers mobile/keyboard recovery for a %s clipboard',
+    async (reason) => {
+      const user = userEvent.setup();
+      const read = vi.spyOn(navigator.clipboard, 'readText');
+      if (reason === 'denied') read.mockRejectedValue(new Error('denied'));
+      else read.mockResolvedValue('   ');
+      render(<SearchForm onSubmit={onSubmit} initialUrl={urlValue} />);
+      await user.click(screen.getByRole('button', { name: 'Paste' }));
+      const notice = screen.getByRole('alert');
+      expect(notice).toHaveTextContent(
+        reason === 'denied' ? 'Clipboard access isn’t available here.' : 'Your clipboard is empty.',
+      );
+      expect(notice).toHaveTextContent(
+        'On a phone, touch and hold the URL field and choose Paste.',
+      );
+      expect(notice).toHaveTextContent('Ctrl/⌘+V');
+      const input = screen.getByLabelText<HTMLInputElement>('YouTube URL');
+      await waitFor(() => expect(input).toHaveFocus());
+      expect(input).toHaveValue(urlValue);
+      expect([input.selectionStart, input.selectionEnd]).toEqual([0, urlValue.length]);
+      await user.type(input, 'https://youtu.be/zyxwvut9876');
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    },
+  );
 
   it('does not hide clipboard recovery behind an existing URL validation error', async () => {
     const user = userEvent.setup();
@@ -484,7 +555,11 @@ describe('source guidance, locked searches and clipboard recovery', () => {
   it('ignores clipboard responses that arrive after the fields become locked', async () => {
     const user = userEvent.setup();
     let resolve!: (value: string) => void;
-    vi.spyOn(navigator.clipboard, 'readText').mockReturnValue(new Promise((res) => { resolve = res; }));
+    vi.spyOn(navigator.clipboard, 'readText').mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }),
+    );
     const { rerender } = render(<SearchForm onSubmit={onSubmit} initialUrl={urlValue} />);
     await user.click(screen.getByRole('button', { name: 'Paste' }));
     rerender(<SearchForm onSubmit={onSubmit} disabled initialUrl={urlValue} />);

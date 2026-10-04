@@ -6,7 +6,7 @@ import { clearResultsCache } from '../utils/resultsCache';
 import type { SearchMatch, SearchResponse, StatusResponse, VideoSearchResponse } from '../types';
 
 vi.mock('../api/client', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../api/client')>(),
+  ...(await importOriginal<typeof import('../api/client')>()),
   submitSearch: vi.fn(),
   fetchJobStatus: vi.fn(),
   fetchVideoSearch: vi.fn(),
@@ -16,16 +16,25 @@ const submit = vi.mocked(submitSearch);
 const status = vi.mocked(fetchJobStatus);
 const videoSearch = vi.mocked(fetchVideoSearch);
 const URL = 'https://youtu.be/abcdef12345';
-const MATCHES: SearchMatch[] = [{ timestamp: '00:07', progress_seconds: 7, text_snippet: 'old result' }];
+const MATCHES: SearchMatch[] = [
+  { timestamp: '00:07', progress_seconds: 7, text_snippet: 'old result' },
+];
 const COMPLETED: StatusResponse = {
-  status: 'completed', video_id: 'video-1', progress: 100,
-  results: null, error: null, video_language: 'en',
+  status: 'completed',
+  video_id: 'video-1',
+  progress: 100,
+  results: null,
+  error: null,
+  video_language: 'en',
 };
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason: unknown) => void;
-  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
   return { promise, resolve, reject };
 }
 
@@ -86,7 +95,8 @@ describe('search cancellation', () => {
   it('cannot overwrite a newer search with a canceled response', async () => {
     const old = deferred<SearchResponse>();
     submit.mockReturnValueOnce(old.promise).mockResolvedValueOnce({
-      status: 'found', results: [{ timestamp: '00:12', progress_seconds: 12, text_snippet: 'new result' }],
+      status: 'found',
+      results: [{ timestamp: '00:12', progress_seconds: 12, text_snippet: 'new result' }],
     });
     start();
     await cancel();
@@ -98,20 +108,25 @@ describe('search cancellation', () => {
     expect(screen.queryByText('old result')).not.toBeInTheDocument();
   });
 
-  it.each(['completed', 'failed'] as const)('ignores a late %s poll after cancel', async (result) => {
-    const pending = deferred<StatusResponse>();
-    submit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'video-1' });
-    status.mockReturnValue(pending.promise);
-    start();
-    await waitFor(() => expect(status).toHaveBeenCalledOnce());
-    const signal = status.mock.calls[0][1];
-    await cancel();
-    expect(signal?.aborted).toBe(true);
-    await act(async () => pending.resolve({ ...COMPLETED, status: result, error: 'stale failure' }));
-    expectIdle();
-    expect(screen.queryByText('stale failure')).not.toBeInTheDocument();
-    expect(videoSearch).not.toHaveBeenCalled();
-  });
+  it.each(['completed', 'failed'] as const)(
+    'ignores a late %s poll after cancel',
+    async (result) => {
+      const pending = deferred<StatusResponse>();
+      submit.mockResolvedValue({ status: 'processing', job_id: 'job-1', video_id: 'video-1' });
+      status.mockReturnValue(pending.promise);
+      start();
+      await waitFor(() => expect(status).toHaveBeenCalledOnce());
+      const signal = status.mock.calls[0][1];
+      await cancel();
+      expect(signal?.aborted).toBe(true);
+      await act(async () =>
+        pending.resolve({ ...COMPLETED, status: result, error: 'stale failure' }),
+      );
+      expectIdle();
+      expect(screen.queryByText('stale failure')).not.toBeInTheDocument();
+      expect(videoSearch).not.toHaveBeenCalled();
+    },
+  );
 
   it('ignores results already being fetched when cancel is clicked', async () => {
     const pending = deferred<VideoSearchResponse>();
@@ -150,7 +165,9 @@ describe('search cancellation', () => {
     const signal = submit.mock.calls[0][2];
     unmount();
     expect(signal?.aborted).toBe(true);
-    await act(async () => pending.resolve({ status: 'processing', job_id: 'old', video_id: 'old' }));
+    await act(async () =>
+      pending.resolve({ status: 'processing', job_id: 'old', video_id: 'old' }),
+    );
     expect(status).not.toHaveBeenCalled();
   });
 });
@@ -186,23 +203,35 @@ describe('returning to the form', () => {
 
 describe('current-query retry and persistent help', () => {
   it('retries the currently visible URL and phrase instead of the failed query', async () => {
-    submit.mockRejectedValueOnce(new ApiError('error.network')).mockResolvedValueOnce({ status: 'found', results: MATCHES });
+    submit
+      .mockRejectedValueOnce(new ApiError('error.network'))
+      .mockResolvedValueOnce({ status: 'found', results: MATCHES });
     start();
     await screen.findByRole('button', { name: 'Try again' });
     const changedUrl = 'https://youtu.be/zyxwvut9876';
     fireEvent.change(screen.getByLabelText('YouTube URL'), { target: { value: changedUrl } });
-    fireEvent.change(screen.getByLabelText('Word or phrase'), { target: { value: 'corrected phrase' } });
+    fireEvent.change(screen.getByLabelText('Word or phrase'), {
+      target: { value: 'corrected phrase' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     await screen.findByText('old result');
-    expect(submit).toHaveBeenLastCalledWith(changedUrl, 'corrected phrase', expect.any(AbortSignal));
-    expect(screen.getByRole('heading', { name: 'Matches for “corrected phrase”' })).toBeInTheDocument();
+    expect(submit).toHaveBeenLastCalledWith(
+      changedUrl,
+      'corrected phrase',
+      expect.any(AbortSignal),
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Matches for “corrected phrase”' }),
+    ).toBeInTheDocument();
   });
 
   it('validates edited fields on retry and focuses the first invalid one without submitting', async () => {
     submit.mockRejectedValue(new ApiError('error.network'));
     start();
     await screen.findByRole('button', { name: 'Try again' });
-    fireEvent.change(screen.getByLabelText('YouTube URL'), { target: { value: 'https://vimeo.com/123' } });
+    fireEvent.change(screen.getByLabelText('YouTube URL'), {
+      target: { value: 'https://vimeo.com/123' },
+    });
     fireEvent.change(screen.getByLabelText('Word or phrase'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(submit).toHaveBeenCalledOnce();
@@ -211,26 +240,29 @@ describe('current-query retry and persistent help', () => {
     expect(screen.getByLabelText('Word or phrase')).toHaveAttribute('aria-invalid', 'true');
   });
 
-  it.each(['found', 'failure'] as const)('keeps help available and does not steal its focus on %s', async (outcome) => {
-    const pending = deferred<SearchResponse>();
-    submit.mockReturnValue(pending.promise);
-    start();
+  it.each(['found', 'failure'] as const)(
+    'keeps help available and does not steal its focus on %s',
+    async (outcome) => {
+      const pending = deferred<SearchResponse>();
+      submit.mockReturnValue(pending.promise);
+      start();
       for (const id of ['how-it-works', 'why-qfza']) {
         expect(document.getElementById(id)).toBeInTheDocument();
       }
       const help = document.getElementById('how-it-works')!;
-    act(() => help.focus());
-    expect(submit.mock.calls[0][2]?.aborted).toBe(false);
-    await act(async () => {
-      if (outcome === 'found') pending.resolve({ status: 'found', results: MATCHES });
-      else pending.reject(new ApiError('error.network'));
-    });
-    expect(help).toHaveFocus();
+      act(() => help.focus());
+      expect(submit.mock.calls[0][2]?.aborted).toBe(false);
+      await act(async () => {
+        if (outcome === 'found') pending.resolve({ status: 'found', results: MATCHES });
+        else pending.reject(new ApiError('error.network'));
+      });
+      expect(help).toHaveFocus();
       for (const id of ['how-it-works', 'why-qfza']) {
         expect(document.getElementById(id)).toBeInTheDocument();
       }
       expect(submit).toHaveBeenCalledOnce();
       expect(screen.getByLabelText('Word or phrase')).toHaveValue('first phrase');
-    expect(screen.getByLabelText('YouTube URL')).not.toHaveAttribute('readonly');
-  });
+      expect(screen.getByLabelText('YouTube URL')).not.toHaveAttribute('readonly');
+    },
+  );
 });

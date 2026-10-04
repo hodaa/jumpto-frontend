@@ -37,10 +37,26 @@ describe('api client', () => {
     expect(result).toEqual({ status: 'found', results: [] });
   });
 
+  /**
+   * Every call in this client needs the session cookie, not just the auth one.
+   * The API is a separate origin in development, where the `same-origin`
+   * default silently drops the cookie; the backend then treats the search as
+   * anonymous and records no history, so a signed-in visitor searched and found
+   * an empty history page with no error anywhere.
+   */
+  it.each([
+    ['a search', () => submitSearch('https://www.youtube.com/watch?v=abcdef12345', 'hi')],
+    ['a job status poll', () => fetchJobStatus('job-1')],
+    ['a re-read of a finished search', () => fetchVideoSearch('abcdef12345', 'hi')],
+  ])('sends credentials with %s', async (_label, call) => {
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'found', results: [] }));
+    await call();
+    const request = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(request[1].credentials).toBe('include');
+  });
+
   it('maps a 400 to an invalid-url error', async () => {
-    fetchMock.mockResolvedValue(
-      jsonResponse({ error: { message: 'bad url' } }, 400, false),
-    );
+    fetchMock.mockResolvedValue(jsonResponse({ error: { message: 'bad url' } }, 400, false));
     await expect(submitSearch('x', 'y')).rejects.toMatchObject({
       messageKey: 'error.invalidUrl',
       serverMessage: 'bad url',

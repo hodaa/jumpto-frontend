@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLanguage, setLanguage } from '../i18n';
 import type { Language } from '../i18n';
+import { localizedStaticPath } from '../routes';
 
 const OPTIONS: Array<{ value: Language; label: string }> = [
   { value: 'en', label: 'English' },
@@ -73,6 +74,16 @@ export function LanguageToggle() {
   }, [open]);
 
   const select = (value: Language) => {
+    // On a generated page the two locales are separate documents, so switching
+    // language is a real navigation. Flipping it in place would put Arabic chrome
+    // around copy that was baked into the HTML at build time, and would leave the
+    // page's own metadata (which deliberately ignores in-app language changes)
+    // describing a language the visitor is no longer reading.
+    const counterpart = localizedStaticPath(window.location.pathname, value);
+    if (counterpart && counterpart !== window.location.pathname) {
+      window.location.assign(counterpart);
+      return;
+    }
     setLanguage(value);
     setOpen(false);
     triggerRef.current?.focus();
@@ -114,7 +125,10 @@ export function LanguageToggle() {
       ref={rootRef}
       className="relative inline-block"
       onBlur={(event) => {
-        if (event.relatedTarget === triggerRef.current || !event.currentTarget.contains(event.relatedTarget)) {
+        if (
+          event.relatedTarget === triggerRef.current ||
+          !event.currentTarget.contains(event.relatedTarget)
+        ) {
           setOpen(false);
         }
       }}
@@ -189,7 +203,11 @@ export function LanguageToggle() {
                   onClick={() => select(option.value)}
                   onKeyDown={(event) => handleOptionKeyDown(event, index)}
                 >
-                  <span lang={option.value} dir={option.value === 'ar' ? 'rtl' : 'ltr'} className={option.value === 'ar' ? 'u-ar-font' : undefined}>
+                  <span
+                    lang={option.value}
+                    dir={option.value === 'ar' ? 'rtl' : 'ltr'}
+                    className={option.value === 'ar' ? 'u-ar-font' : undefined}
+                  >
                     {option.label}
                   </span>
                   {selected ? (

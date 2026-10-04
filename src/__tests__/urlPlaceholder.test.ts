@@ -32,10 +32,13 @@ describe('URL field placeholder', () => {
     expect(text.trimEnd().endsWith('...')).toBe(false);
   });
 
-  it.each(PLACEHOLDERS)('%s uses the same example-marking style as the keyword field', (_locale, text) => {
-    const marker = _locale === 'en' ? 'e.g.' : 'مثال:';
-    expect(text.startsWith(marker), `${text} should start with "${marker}"`).toBe(true);
-  });
+  it.each(PLACEHOLDERS)(
+    '%s uses the same example-marking style as the keyword field',
+    (_locale, text) => {
+      const marker = _locale === 'en' ? 'e.g.' : 'مثال:';
+      expect(text.startsWith(marker), `${text} should start with "${marker}"`).toBe(true);
+    },
+  );
 
   it('shows the youtu.be form, which is what mobile share actually produces', () => {
     for (const [, text] of PLACEHOLDERS) {

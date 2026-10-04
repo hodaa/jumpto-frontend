@@ -38,7 +38,9 @@ function resolvePath(source: Json, dotted: string): unknown {
  */
 function keyExists(messages: Json, dotted: string): boolean {
   if (resolvePath(messages, dotted) !== undefined) return true;
-  return PLURAL_SUFFIXES.some((suffix) => resolvePath(messages, `${dotted}_${suffix}`) !== undefined);
+  return PLURAL_SUFFIXES.some(
+    (suffix) => resolvePath(messages, `${dotted}_${suffix}`) !== undefined,
+  );
 }
 
 function sourceFiles(dir: string): string[] {

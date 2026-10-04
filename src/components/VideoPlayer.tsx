@@ -20,11 +20,16 @@ const PlayerInstance = forwardRef<VideoPlayerHandle, Props>(function PlayerInsta
   useImperativeHandle(ref, () => handle, [handle]);
   const { status, requestedTimestamp, playbackBlocked } = state;
   const timestamp = requestedTimestamp === null ? null : formatYouTubeTime(requestedTimestamp);
-  const message = status === 'loading'
-    ? timestamp ? t('player.loadingMoment', { timestamp }) : t('player.loading')
-    : status === 'unavailable'
-      ? t('player.unavailableHint')
-      : playbackBlocked ? t('player.playbackBlocked') : '';
+  const message =
+    status === 'loading'
+      ? timestamp
+        ? t('player.loadingMoment', { timestamp })
+        : t('player.loading')
+      : status === 'unavailable'
+        ? t('player.unavailableHint')
+        : playbackBlocked
+          ? t('player.playbackBlocked')
+          : '';
 
   useEffect(() => {
     if (status === 'ready') {
@@ -48,7 +53,10 @@ const PlayerInstance = forwardRef<VideoPlayerHandle, Props>(function PlayerInsta
           aria-hidden={status !== 'ready' ? true : undefined}
         />
         {status === 'loading' ? (
-          <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6" aria-hidden="true">
+          <div
+            className="absolute inset-0 flex items-center justify-center p-4 sm:p-6"
+            aria-hidden="true"
+          >
             <div className="w-full max-w-sm">
               <StatusCard progress={null} skeleton />
             </div>
@@ -61,7 +69,11 @@ const PlayerInstance = forwardRef<VideoPlayerHandle, Props>(function PlayerInsta
         ) : null}
       </div>
       <div className="mt-3 flex min-w-0 flex-col items-start gap-2">
-        <p aria-live="polite" aria-atomic="true" className={message ? 'text-start text-sm text-muted' : 'sr-only'}>
+        <p
+          aria-live="polite"
+          aria-atomic="true"
+          className={message ? 'text-start text-sm text-muted' : 'sr-only'}
+        >
           {message}
         </p>
       </div>

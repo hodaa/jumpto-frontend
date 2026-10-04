@@ -16,14 +16,14 @@ describe('ResultsList', () => {
     expect(screen.getByText('2 matches')).toBeInTheDocument();
     expect(screen.getByText('00:03')).toBeInTheDocument();
     expect(screen.getByText('01:15')).toBeInTheDocument();
-    expect(screen.getByText('Exact match')).toBeInTheDocument();
+    expect(screen.getAllByText('hello world').length).toBeGreaterThan(0);
   });
 
   it('highlights the searched keyword inside the snippet', () => {
     render(<ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} />);
-    const mark = screen.getByText('hello world', { selector: 'mark' });
-    expect(mark).toBeInTheDocument();
-    expect(mark).toHaveTextContent('hello world');
+    const marks = screen.getAllByText('hello world', { selector: 'mark' });
+    expect(marks.length).toBeGreaterThan(0);
+    expect(marks[0]).toHaveTextContent('hello world');
   });
 
   it('formats long durations to YouTube player HH:MM:SS format', () => {
@@ -61,7 +61,9 @@ describe('ResultsList', () => {
   });
 
   it('opens each match on YouTube at its timestamp when a video id is known', () => {
-    render(<ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />);
+    render(
+      <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+    );
     const watch = screen.getAllByRole('link', { name: /Watch on YouTube at/ });
     expect(watch).toHaveLength(2);
     expect(watch[0]).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc123&t=3');
@@ -86,7 +88,9 @@ describe('ResultsList', () => {
 
   it('shows an empty state when there are no matches', () => {
     render(<ResultsList matches={[]} keyword="zzz" onSeek={vi.fn()} />);
-    expect(screen.getByText('No exact matches found. Try a different word or phrase.')).toBeInTheDocument();
+    expect(
+      screen.getByText('No exact matches found. Try a different word or phrase.'),
+    ).toBeInTheDocument();
   });
 });
 
@@ -111,42 +115,55 @@ describe('formatYouTubeTime', () => {
   });
 });
 
-const manyMatches = (count: number) => Array.from({ length: count }, (_, i) => ({
-  timestamp: formatYouTubeTime(i), progress_seconds: i, text_snippet: `hello moment ${i}`,
-}));
+const manyMatches = (count: number) =>
+  Array.from({ length: count }, (_, i) => ({
+    timestamp: formatYouTubeTime(i),
+    progress_seconds: i,
+    text_snippet: `hello moment ${i}`,
+  }));
 
 describe('predictable result browsing', () => {
   it.each([
     { language: 'en' as const, more: 'Show 5 more matches', less: 'Show fewer matches' },
     { language: 'ar' as const, more: 'عرض 5 نتائج إضافية', less: 'عرض نتائج أقل' },
-  ])('expands and collapses 55 results with correct labels, state and focus in $language', async ({ language, more, less }) => {
-    const user = userEvent.setup();
-    await act(async () => setLanguage(language));
-    render(<ResultsList matches={manyMatches(55)} keyword="hello" onSeek={vi.fn()} />);
-    const toggle = screen.getByRole('button', { name: more });
-    expect(screen.getAllByRole('listitem')).toHaveLength(50);
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(document.getElementById(toggle.getAttribute('aria-controls')!)).toBe(screen.getByRole('list'));
-    await user.click(toggle);
-    expect(screen.getAllByRole('listitem')).toHaveLength(55);
-    expect(toggle).toHaveAccessibleName(less);
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await waitFor(() => expect(screen.getByText('00:50').closest('button')).toHaveFocus());
-    await user.click(toggle);
-    expect(screen.getAllByRole('listitem')).toHaveLength(50);
-    expect(toggle).toHaveAccessibleName(more);
-    await waitFor(() => expect(toggle).toHaveFocus());
-  });
+  ])(
+    'expands and collapses 55 results with correct labels, state and focus in $language',
+    async ({ language, more, less }) => {
+      const user = userEvent.setup();
+      await act(async () => setLanguage(language));
+      render(<ResultsList matches={manyMatches(55)} keyword="hello" onSeek={vi.fn()} />);
+      const toggle = screen.getByRole('button', { name: more });
+      expect(screen.getAllByRole('listitem')).toHaveLength(50);
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(document.getElementById(toggle.getAttribute('aria-controls')!)).toBe(
+        screen.getByRole('list'),
+      );
+      await user.click(toggle);
+      expect(screen.getAllByRole('listitem')).toHaveLength(55);
+      expect(toggle).toHaveAccessibleName(less);
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      await waitFor(() => expect(screen.getByText('00:50').closest('button')).toHaveFocus());
+      await user.click(toggle);
+      expect(screen.getAllByRole('listitem')).toHaveLength(50);
+      expect(toggle).toHaveAccessibleName(more);
+      await waitFor(() => expect(toggle).toHaveFocus());
+    },
+  );
 
   it('collapses a newly selected video even when the search phrase is unchanged', async () => {
     const user = userEvent.setup();
     const results = manyMatches(55);
-    const { rerender } = render(<ResultsList matches={results} keyword="hello" youtubeId="first" onSeek={vi.fn()} />);
+    const { rerender } = render(
+      <ResultsList matches={results} keyword="hello" youtubeId="first" onSeek={vi.fn()} />,
+    );
     await user.click(screen.getByRole('button', { name: 'Show 5 more matches' }));
     expect(screen.getAllByRole('listitem')).toHaveLength(55);
     rerender(<ResultsList matches={results} keyword="hello" youtubeId="second" onSeek={vi.fn()} />);
     expect(screen.getAllByRole('listitem')).toHaveLength(50);
-    expect(screen.getByRole('button', { name: 'Show 5 more matches' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: 'Show 5 more matches' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
   it('shows the count for an empty result set as well', () => {
@@ -155,8 +172,12 @@ describe('predictable result browsing', () => {
   });
 
   it.each([
-    [0, 'لا توجد نتائج'], [1, 'نتيجة واحدة'], [2, 'نتيجتان'],
-    [3, '3 نتائج'], [11, '11 نتيجة'], [100, '100 نتيجة'],
+    [0, 'لا توجد نتائج'],
+    [1, 'نتيجة واحدة'],
+    [2, 'نتيجتان'],
+    [3, '3 نتائج'],
+    [11, '11 نتيجة'],
+    [100, '100 نتيجة'],
   ] as const)('uses the Arabic plural form for %i results', async (count, label) => {
     await act(async () => setLanguage('ar'));
     render(<ResultsList matches={manyMatches(count)} keyword="hello" onSeek={vi.fn()} />);
@@ -164,16 +185,22 @@ describe('predictable result browsing', () => {
   });
 
   it('gives every external result link a distinct timestamp and a new-tab cue', () => {
-    render(<ResultsList matches={matches} keyword="hello" youtubeId="abcdef12345" onSeek={vi.fn()} />);
-    expect(screen.getByRole('link', { name: 'Watch on YouTube at 00:03 (opens in a new tab)' }))
-      .toHaveAttribute('rel', 'noopener noreferrer');
-    expect(screen.getByRole('link', { name: 'Watch on YouTube at 01:15 (opens in a new tab)' }))
-      .toHaveAttribute('href', 'https://www.youtube.com/watch?v=abcdef12345&t=75');
+    render(
+      <ResultsList matches={matches} keyword="hello" youtubeId="abcdef12345" onSeek={vi.fn()} />,
+    );
+    expect(
+      screen.getByRole('link', { name: 'Watch on YouTube at 00:03 (opens in a new tab)' }),
+    ).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(
+      screen.getByRole('link', { name: 'Watch on YouTube at 01:15 (opens in a new tab)' }),
+    ).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abcdef12345&t=75');
   });
 
   it('lets mixed-language snippets determine their own direction and keeps timestamps LTR', async () => {
     await act(async () => setLanguage('ar'));
-    const { container } = render(<ResultsList matches={matches} keyword="hello" onSeek={vi.fn()} />);
+    const { container } = render(
+      <ResultsList matches={matches} keyword="hello" onSeek={vi.fn()} />,
+    );
     for (const snippet of container.querySelectorAll('.match-card__snippet')) {
       expect(snippet).toHaveAttribute('dir', 'auto');
     }

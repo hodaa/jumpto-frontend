@@ -25,7 +25,14 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <main className="error-boundary" role="alert">
-          {i18n.t('error.boundary')}
+          <p>{i18n.t('error.boundary')}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-action px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
+          >
+            {i18n.t('actions.reload')}
+          </button>
         </main>
       );
     }

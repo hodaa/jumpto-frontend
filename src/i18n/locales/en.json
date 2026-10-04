@@ -11,6 +11,32 @@
     "ogLocale": "en_US",
     "ogLocaleAlternate": "ar_SA"
   },
+  "meta": {
+    "login": {
+      "title": "Sign in — Qfza",
+      "description": "Sign in to Qfza to reopen your saved YouTube video searches, revisit past matches and jump back to any moment you found."
+    },
+    "register": {
+      "title": "Create a Qfza account",
+      "description": "Create a free Qfza account to save your YouTube video searches and keep every moment you find, ready to revisit from any device."
+    },
+    "resetPassword": {
+      "title": "Reset your password — Qfza",
+      "description": "Choose a new password for your Qfza account using the secure link from your inbox."
+    },
+    "verifyEmail": {
+      "title": "Verify your email — Qfza",
+      "description": "Confirm your email address to finish setting up your Qfza account."
+    },
+    "history": {
+      "title": "Your saved searches — Qfza",
+      "description": "Every YouTube video you have searched on Qfza, with the matches each search found, ready to reopen."
+    },
+    "profile": {
+      "title": "Your account — Qfza",
+      "description": "Manage your Qfza account details and password."
+    }
+  },
   "nav": {
     "howItWorks": "How it works?",
     "whyQfza": "Why Qfza?",
@@ -44,16 +70,19 @@
     "note": "Qfza — Find the moments that matter",
     "rights": "© {{year}} Qfza. All rights reserved.",
     "contact": "Contact us",
+    "about": "About",
+    "terms": "Terms of Service",
     "links": "Site links",
     "facebook": "Facebook",
     "linkedin": "LinkedIn",
     "blog": "Blog",
+    "faq": "FAQ",
     "privacy": "Privacy"
   },
   "form": {
     "title": "Search a YouTube video for a word or phrase",
     "urlLabel": "YouTube URL",
-      "urlPlaceholder": "e.g. https://youtu.be/dQw4w9WgXcQ",
+    "urlPlaceholder": "e.g. https://youtu.be/dQw4w9WgXcQ",
     "keywordLabel": "Word or phrase",
     "keywordPlaceholder": "e.g. never gonna give you up",
     "paste": "Paste",
@@ -63,10 +92,10 @@
     "clearKeywordField": "Clear word or phrase",
     "helperAccepted": "Public YouTube videos (watch / youtu.be links).",
     "helperSpeed": "First search: a few minutes. Cached searches are usually faster.",
-    "helperPrivacy": "Nothing is stored beyond the session cache.",
+    "helperPrivacy": "If you sign in, your searches are saved to your account history.",
     "helperDetailsTrigger": "Privacy & how it works",
     "helperDetailsTitle": "Data & timing",
-    "helperDetails": "Qfza sends the link and phrase to our server to fetch the transcript and match it word for word. Transcripts are kept only in the session cache so repeat searches on the same video can reuse them, nothing is written to a database, and your search phrase is never stored.",
+    "helperDetails": "Qfza sends the link and phrase to our server to fetch the transcript and match it word for word. Transcripts are stored on our server in a database, so repeat searches on the same video are fast. If you sign in, your searches — the video, the phrase, and where it matched — are saved to your account history until you delete them. We do not sell your data.",
     "submit": "Jump to the moment",
     "searching": "Searching…",
     "clear": "Clear fields",
@@ -95,6 +124,7 @@
   },
   "results": {
     "title": "Matches for “<keyword>{{keyword}}</keyword>”",
+    "noKeywordTitle": "No matches in this video",
     "matchCount_one": "{{count}} match",
     "matchCount_other": "{{count}} matches",
     "hint": "Click a match to jump to that moment",
@@ -118,7 +148,6 @@
     "matchCount_zero": "0 matches",
     "showMore_one": "Show {{count}} more match",
     "showMore_other": "Show {{count}} more matches",
-    "copyStatus": "Copy status",
     "watchOnYouTube": "Watch on YouTube",
     "watchMoment": "Watch on YouTube at {{timestamp}} (opens in a new tab)",
     "share": "Share",
@@ -127,7 +156,8 @@
   "shared": {
     "title": "Shared moment at {{timestamp}}",
     "hint": "Add a word or phrase on the left to find every moment in this video.",
-    "searchCta": "Search this video"
+    "savedBadge": "Saved moment",
+    "momentListLabel": "The saved moment"
   },
   "error": {
     "validation": "Please enter a YouTube URL and a word or phrase.",
@@ -148,6 +178,7 @@
   },
   "actions": {
     "retry": "Try again",
+    "reload": "Reload page",
     "language": "العربية",
     "languageSelector": "Language",
     "newSearch": "New search",
@@ -155,10 +186,10 @@
     "skipToContent": "Skip to main content"
   },
   "announcements": {
-    "label": "Search status",
     "fetching": "Search started. Fetching the transcript.",
     "finding": "Finding matching timestamps.",
     "complete": "Search complete: {{summary}}.",
+    "noMatches": "This search found no matches in this video.",
     "failed": "The search couldn’t finish. Your inputs have been kept."
   },
   "contact": {
@@ -185,6 +216,159 @@
       "success": "Thank you! Your message has been sent.",
       "error": "Sorry, your message couldn't be sent. Please try again.",
       "sendAnother": "Send another message"
+    }
+  },
+  "auth": {
+    "nav": {
+      "signIn": "Sign in",
+      "signOut": "Sign out",
+      "account": "Account",
+      "accountMenu": "Account menu, signed in as {{name}}",
+      "history": "Your searches",
+      "profile": "Your account"
+    },
+    "fields": {
+      "email": "Email address",
+      "password": "Password",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password"
+    },
+    "working": "Working…",
+    "or": "or",
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Sign in to see the videos and phrases you have searched.",
+      "forgot": "Forgot your password?",
+      "submit": "Sign in",
+      "noAccount": "No account yet?",
+      "createOne": "Create one",
+      "googleHint": "Signed up with Google? Google accounts don't have a password — use the button below to sign in.",
+      "tryGoogle": "Try Google instead"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Your searches are saved privately to your account.",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "termsNote": "We store your email address and what you search. Nothing is shared, and you can delete it all at any time.",
+      "sentTitle": "Check your email",
+      "sentBody": "We sent a verification link to {{email}}.",
+      "sentCheck": "Open the link to finish setting up your account. It expires, so request a new one if it does.",
+      "backToLogin": "Back to sign in"
+    },
+    "reset": {
+      "requestTitle": "Reset your password",
+      "requestSubtitle": "Enter your email address and we will send you a link to set a new one.",
+      "sendLink": "Send reset link",
+      "sentBody": "If that address has a Qfza account, a reset link is on its way.",
+      "sentCheck": "Check your inbox, including the spam folder.",
+      "backToLogin": "Back to sign in",
+      "confirmTitle": "Choose a new password",
+      "confirmSubtitle": "This replaces your old password and signs you out everywhere.",
+      "setPassword": "Set new password",
+      "doneTitle": "Password updated",
+      "doneBody": "Sign in again with your new password."
+    },
+    "verify": {
+      "verifying": "Verifying your email…",
+      "doneTitle": "Email verified",
+      "doneBody": "Your account is ready. You can sign in now.",
+      "errorTitle": "That link did not work",
+      "failed": "The link may have expired or already been used. Request a new one and try again.",
+      "missingToken": "This link is missing its verification code.",
+      "backHome": "Back to Qfza",
+      "requestNew": "Send a new link"
+    },
+    "google": {
+      "disclaimer": "Google verifies your email. We never see your password.",
+      "unavailable": "Google sign-in could not be loaded. Use your email and password instead."
+    },
+    "password": {
+      "hint": "At least 10 characters. Longer is better.",
+      "none": "Too short",
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Strong"
+    },
+    "passwordError": {
+      "required": "Choose a password.",
+      "tooShort": "Use at least 10 characters.",
+      "mismatch": "The two passwords do not match."
+    },
+    "history": {
+      "title": "Your searches",
+      "loading": "Loading your searches…",
+      "signInRequired": "Sign in to see your searches.",
+      "signIn": "Sign in",
+      "empty": "No searches yet",
+      "emptyBody": "Anything you search while signed in shows up here.",
+      "startSearching": "Search a video",
+      "deleteEntry": "Delete the search for {{keyword}}",
+      "untitled": "Untitled video",
+      "clearAll": "Delete all",
+      "confirmClearAll": "Delete every saved search?",
+      "confirmDelete": "Delete this search?",
+      "confirmBody": "This cannot be undone.",
+      "confirmDeleteEverything": "Yes, delete everything",
+      "cancel": "Keep them",
+      "loadMore": "Load more",
+      "privacyNote": "Only you can see this list. Deleting is permanent.",
+      "replayAt": "Replay “{{keyword}}” at {{timestamp}} (opens in a new tab)",
+      "replayAtTitle": "Replay at {{timestamp}}",
+      "replayNoMatches": "Replay “{{keyword}}” — it found nothing",
+      "replayNoMatchesTitle": "Replay — found nothing",
+      "noMatchesBadge": "Found nothing",
+      "replayFromStart": "Replay “{{keyword}}” from the start (opens in a new tab)"
+    },
+    "errors": {
+      "INVALID_CREDENTIALS": "That email and password do not match an account.",
+      "WRONG_CURRENT_PASSWORD": "That is not your current password.",
+      "ACCOUNT_LOCKED": "This account is locked after too many failed attempts. Reset your password to get back in.",
+      "EMAIL_UNVERIFIED": "Confirm your email address first — check your inbox for the link.",
+      "CONFLICT": "That email address already has an account. Sign in instead.",
+      "TOO_MANY_ATTEMPTS": "Too many attempts. Wait a while, then try again.",
+      "CSRF_FAILED": "Your session expired. Reload the page and try again.",
+      "UNAUTHENTICATED": "Please sign in again.",
+      "INVALID_REQUEST": "That link is invalid or has expired. Request a new one and try again.",
+      "VALIDATION_ERROR": "Please check the details you entered.",
+      "VALIDATION": "Please check the details you entered.",
+      "NOT_FOUND": "We could not find that.",
+      "SERVICE_UNAVAILABLE": "Something is unavailable right now. Try again shortly.",
+      "EXTERNAL_SERVICE_ERROR": "A service we depend on is not responding. Try again shortly.",
+      "DOMAIN_ERROR": "Something went wrong. Try again.",
+      "NETWORK": "We could not reach the server. Check your connection and try again.",
+      "SERVER": "Something went wrong on our side. Try again shortly.",
+      "UNKNOWN": "Something went wrong. Try again."
+    },
+    "profile": {
+      "title": "Your account",
+      "subtitle": "Your sign-in details and what we keep for you.",
+      "loading": "Loading your account",
+      "email": "Email address",
+      "status": "Status",
+      "verified": "Verified",
+      "unverified": "Not verified yet",
+      "signInMethod": "Sign-in method",
+      "methodGoogle": "Google only — no password",
+      "methodPassword": "Google and password",
+      "memberSince": "Member since",
+      "setTitle": "Set a password",
+      "setBody": "You signed up with Google, so this account has no password yet. Add one and you will be able to sign in without Google.",
+      "setAction": "Email me a link to set my password",
+      "changeBody": "You already have a password. Changing it here keeps you signed in on this device and signs out every other one.",
+      "changeAction": "Email me a link to change my password",
+      "changeLink": "Change password",
+      "emailLinkInstead": "or email me a link",
+      "changeSubmit": "Change password",
+      "changeCancel": "Cancel",
+      "changedCheck": "Your password has been changed.",
+      "changedNote": "Every other device has been signed out. This browser is still signed in.",
+      "linkSent": "We sent a link to {{email}}. Open it to finish.",
+      "linkSentNote": "The link works once and expires. Opening it signs you out of every device, then you can sign in with the password you choose.",
+      "signedOutTitle": "You are not signed in",
+      "signedOutBody": "Sign in to see your account and manage your password."
     }
   }
 }

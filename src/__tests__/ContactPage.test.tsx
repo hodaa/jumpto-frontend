@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -17,7 +16,9 @@ describe('ContactPage', () => {
     render(<ContactPage />);
     expect(screen.getByRole('heading', { name: 'Contact us' })).toBeInTheDocument();
     const mail = screen.getByRole('link', { name: CONTACT_EMAIL });
-    expect(mail.getAttribute('href')).toBe(`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Email us')}`);
+    expect(mail.getAttribute('href')).toBe(
+      `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Email us')}`,
+    );
     expect(screen.getByRole('link', { name: 'Back to search' })).toHaveAttribute('href', '/');
   });
 
@@ -28,10 +29,9 @@ describe('ContactPage', () => {
     for (const file of ['src/config.ts', '.env.example']) {
       const raw = readFileSync(resolve(process.cwd(), file), 'utf8');
       for (const [, domain] of raw.matchAll(EMAIL_PATTERN)) {
-        expect(
-          ALLOWED_EMAIL_DOMAINS.has(domain),
-          `${file} contains an address on ${domain}`,
-        ).toBe(true);
+        expect(ALLOWED_EMAIL_DOMAINS.has(domain), `${file} contains an address on ${domain}`).toBe(
+          true,
+        );
       }
     }
 
@@ -42,12 +42,24 @@ describe('ContactPage', () => {
     expect(ALLOWED_EMAIL_DOMAINS.has(shown!)).toBe(true);
   });
 
-  it('navigates to the contact page from the footer and back home', async () => {
-    const user = userEvent.setup();
+  it('reaches the contact page from the footer by its own path', () => {
+    // Contact is a generated document as well as a client route, so the footer
+    // points at the real path instead of routing in-app. That is the whole point
+    // of the hybrid page: /contact/ has to be a URL a crawler and a visitor
+    // without JS can both open, which a hash route can never be.
     render(<App />);
     expect(screen.getByRole('heading', { name: /jump|moment/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('link', { name: 'Contact us' }));
+    expect(screen.getByRole('link', { name: 'Contact us' })).toHaveAttribute('href', '/contact/');
+  });
+
+  it('renders the contact view when loaded directly at /contact/', () => {
+    // Landing on it — a reload, a shared link, or the crawler's fetch — has to
+    // render the contact view rather than the homepage shell again. This is the
+    // path a visitor takes from the hybrid static document, so it is the one that
+    // decides whether the page works at all.
+    window.history.pushState(null, '', '/contact/');
+    render(<App />);
     expect(screen.getByRole('heading', { name: 'Contact us' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: CONTACT_EMAIL })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Jump to the moment' })).not.toBeInTheDocument();

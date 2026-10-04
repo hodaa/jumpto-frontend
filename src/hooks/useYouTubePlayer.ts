@@ -1,9 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+/** How a seek should land: start playing, or park the player on the frame. */
+export interface SeekOptions {
+  /**
+   * `false` cues the video without calling play, so it sits paused on the exact
+   * frame. Used when arriving on a saved moment, where the position itself is
+   * the point and autoplay would carry the viewer past it.
+   */
+  autoplay?: boolean;
+}
+
 /** Handle to control an embedded YouTube player. */
 export interface VideoPlayerHandle {
   /** Queue the latest seek while loading; request playback once ready. */
-  seekTo(seconds: number): void;
+  seekTo(seconds: number, options?: SeekOptions): void;
 }
 
 interface PlayerState {
@@ -70,7 +80,7 @@ export function useYouTubePlayer(
   onPlaybackChange?: (seconds: number | null) => void,
 ): [React.RefObject<HTMLDivElement | null>, VideoPlayerHandle, PlayerState] {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const requestSeekRef = useRef<(seconds: number) => void>(() => {});
+  const requestSeekRef = useRef<(seconds: number, options?: SeekOptions) => void>(() => {});
   const playbackChangeRef = useRef(onPlaybackChange);
   const [state, setState] = useState<PlayerState>({
     status: 'loading',
@@ -89,6 +99,7 @@ export function useYouTubePlayer(
     let ready = false;
     let failed = false;
     let requestedTimestamp: number | null = null;
+    let requestedAutoplay = true;
     let readyTimer: number | undefined;
 
     const destroy = () => {
@@ -113,15 +124,23 @@ export function useYouTubePlayer(
       if (!ready || !player || requestedTimestamp === null) return;
       try {
         player.seekTo(requestedTimestamp, true);
-        player.playVideo();
+        if (requestedAutoplay) {
+          player.playVideo();
+        } else {
+          // Parked, not playing: the player is nevertheless sitting on this
+          // moment, so report it as the current position. Without this the
+          // cue would read as "no position" and nothing would be marked active.
+          playbackChangeRef.current?.(requestedTimestamp);
+        }
       } catch {
         fail();
       }
     };
 
-    requestSeekRef.current = (seconds) => {
+    requestSeekRef.current = (seconds, options) => {
       if (controller.signal.aborted) return;
       requestedTimestamp = seconds;
+      requestedAutoplay = options?.autoplay ?? true;
       setState((current) => ({ ...current, requestedTimestamp: seconds, playbackBlocked: false }));
       // Selection is not proof of playback. Only the player's PLAYING event
       // activates the match; failures/blocked autoplay leave it unselected.
@@ -178,9 +197,9 @@ export function useYouTubePlayer(
     };
   }, [videoId]);
 
-  const seekTo = useCallback((seconds: number) => {
+  const seekTo = useCallback((seconds: number, options?: SeekOptions) => {
     if (!Number.isFinite(seconds) || seconds < 0) return;
-    requestSeekRef.current(seconds);
+    requestSeekRef.current(seconds, options);
   }, []);
 
   return [containerRef, { seekTo }, state];

@@ -19,28 +19,39 @@ describe('prerender shell', () => {
     expect(paths).toContain('/ar/blog/');
   });
 
-  it('leaves no page reachable only through the sitemap', () => {
-    // Every href must be a path that some other page in the build also uses.
-    const expected = ['/', '/blog/', '/ar/blog/', '/privacy/', '/ar/privacy/'];
+  it('leaves no page reachable only through the sitemap', async () => {
+    // Derived from the content tree rather than hand-listed, so this fails in both
+    // directions: a page that ships without being linked here, and a link here
+    // pointing at a page that was renamed out from under it. Both are silent
+    // otherwise — the sitemap still lists the URL either way.
+    const { loadAllPages } = await import('../../scripts/lib/legal.mjs');
+    const staticUrls = (await loadAllPages()).map((page) => page.url);
+    const expected = ['/', '/blog/', '/ar/blog/', ...staticUrls];
     const navigable = hrefs.filter((href) => href.startsWith('/'));
     for (const path of navigable) {
       expect(expected, `shell links to unmapped path ${path}`).toContain(path);
     }
+    // The assertion that matters: every generated page is one link away from the
+    // homepage. Auth routes are excluded — they are noindex and need a session.
+    for (const url of staticUrls) {
+      expect(navigable, `${url} is reachable only through the sitemap`).toContain(url);
+    }
   });
 
   it('declares the language on every cross-locale link', () => {
-    // The page is bilingual in one document, so each blog link must say which
-    // language it leads to — otherwise a crawler cannot pair the two.
-    const blogTags = [...SHELL.matchAll(/<a\b[^>]*>/g)]
-      .map((m) => m[0])
-      .filter((tag) => /href="\/([^"]*\/)?blog\/"/.test(tag));
+    // The page is bilingual in one document, so each link into the other set must
+    // say which language it leads to — otherwise a crawler cannot pair the two and
+    // the hreflang clusters on the destination pages have nothing to point back
+    // to. In-page anchors are exempt: they stay on this document.
+    const tags = [...SHELL.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
+    const crossLocale = tags.filter((tag) => /href="\//.test(tag));
     // Guard the guard: a regex that matches nothing makes this loop vacuous.
-    expect(blogTags, 'no blog <a> tags found to check').toHaveLength(2);
+    expect(crossLocale, 'no cross-locale <a> tags found to check').not.toHaveLength(0);
 
-    for (const tag of blogTags) {
+    for (const tag of crossLocale) {
       const locale = /href="\/ar\//.test(tag) ? 'ar' : 'en';
-      expect(tag, `missing hreflang on ${locale} blog link`).toContain(`hreflang="${locale}"`);
-      expect(tag, `missing lang on ${locale} blog link`).toContain(`lang="${locale}"`);
+      expect(tag, `missing hreflang on ${locale} link`).toContain(`hreflang="${locale}"`);
+      expect(tag, `missing lang on ${locale} link`).toContain(`lang="${locale}"`);
     }
   });
 
@@ -52,7 +63,7 @@ describe('prerender shell', () => {
   it('uses visible markup, not noscript, and keeps a single h1', () => {
     // Crawlers and SEO audit tools skip <noscript> entirely.
     expect(SHELL).not.toMatch(/<noscript/i);
-    expect((SHELL.match(/<h1[\s>]/g) ?? [])).toHaveLength(1);
+    expect(SHELL.match(/<h1[\s>]/g) ?? []).toHaveLength(1);
   });
 
   it('carries no content outside the two declared language blocks', () => {

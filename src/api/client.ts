@@ -61,6 +61,12 @@ async function request<T>(
       // The server expects JSON when a body is sent; plain GETs carry no body.
       headers: json !== undefined ? { 'Content-Type': 'application/json' } : undefined,
       body: json !== undefined ? JSON.stringify(json) : undefined,
+      // Required, and not redundant with authClient: the session lives in an
+      // HttpOnly cookie, and the API is a separate origin in development, where
+      // the default `same-origin` would drop it. Without the cookie the backend
+      // treats every search as anonymous and silently records no history, so a
+      // signed-in visitor searched and then saw an empty history page.
+      credentials: 'include',
       signal: controller.signal,
     });
   } catch (error) {

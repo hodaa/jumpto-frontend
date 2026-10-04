@@ -1,7 +1,6 @@
 ---
 title: Privacy Policy
 description: How Qfza handles the video links, search terms, and analytics data you give it.
-updated: 2026-09-29
 ---
 
 Qfza ("the app") searches the text of a YouTube video so you can jump to the moment a word or phrase was said. This policy explains what the app does with the information you provide.
@@ -25,7 +24,7 @@ We do not use browser storage to keep a record of what you searched for.
 
 ## What is stored on your device
 
-The app sets no cookies of its own. It saves one preference in your browser's local storage: your **language choice** (English or Arabic), under the key `jumpto.lang`. That value never leaves your browser and you can clear it at any time through your browser's settings.
+The app sets no cookies of its own. It saves one preference in your browser's local storage: your **language choice** (English or Arabic), under the key `qfza.lang`. That value never leaves your browser and you can clear it at any time through your browser's settings.
 
 ## Analytics
 
@@ -50,11 +49,11 @@ This means the **video ID and timestamp sit in your address bar**. Analytics ser
 
 ## Service providers and third parties
 
-| Provider | What it does | Where it runs |
-| --- | --- | --- |
-| YouTube / Google | Hosts the videos and the transcripts we read, and delivers embedded players | Worldwide |
-| Google | Provides Google Analytics 4 | Worldwide |
-| Umami Cloud | Provides Umami analytics | United States |
+| Provider         | What it does                                                                | Where it runs |
+| ---------------- | --------------------------------------------------------------------------- | ------------- |
+| YouTube / Google | Hosts the videos and the transcripts we read, and delivers embedded players | Worldwide     |
+| Google           | Provides Google Analytics 4                                                 | Worldwide     |
+| Umami Cloud      | Provides Umami analytics                                                    | United States |
 
 Links to YouTube take you to a third-party site governed by **Google's own privacy policy**, not this one.
 

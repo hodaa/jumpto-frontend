@@ -57,15 +57,17 @@ export function ResultsToolbar({
       </div>
       <p
         role="status"
-        aria-label={t('results.copyStatus')}
         aria-live="polite"
         aria-atomic="true"
-        className={copyFailed
-          ? 'w-full min-w-0 text-start text-sm font-medium text-danger [overflow-wrap:anywhere]'
-          : 'sr-only'}
+        className={
+          copyFailed
+            ? 'w-full min-w-0 text-start text-sm font-medium text-danger [overflow-wrap:anywhere]'
+            : 'sr-only'
+        }
       >
         {copyFailed ? t('results.copyFailed') : copied ? t('results.copied') : ''}
       </p>
+      {!hasMatches ? <p className="sr-only">{t('results.noMatchesTooltip')}</p> : null}
     </div>
   );
 }

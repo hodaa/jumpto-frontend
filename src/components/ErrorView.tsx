@@ -57,13 +57,15 @@ export function ErrorView({ message, onRetry, secondaryAction, retryHint }: Prop
       </span>
       <p className="max-w-md text-base text-slate-600">{t(message, { defaultValue: message })}</p>
       {retryHint ? (
-        <p id={hintId} className="max-w-md text-sm text-muted">{retryHint}</p>
+        <p id={hintId} className="max-w-md text-sm text-muted">
+          {retryHint}
+        </p>
       ) : null}
       <div className="flex flex-wrap items-center justify-center gap-3">
         {secondaryAction ? (
           <button
             type="button"
-            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
+            className="rounded-xl bg-action px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-action/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
             onClick={secondaryAction.onClick}
           >
             {secondaryAction.label}

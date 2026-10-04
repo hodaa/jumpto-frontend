@@ -14,10 +14,7 @@ describe('SiteFooter blog link', () => {
     i18n.changeLanguage('ar');
     try {
       render(<SiteFooter />);
-      expect(screen.getByRole('link', { name: 'المدونة' })).toHaveAttribute(
-        'href',
-        '/ar/blog/',
-      );
+      expect(screen.getByRole('link', { name: 'المدونة' })).toHaveAttribute('href', '/ar/blog/');
     } finally {
       i18n.changeLanguage(previous);
     }

@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useImperativeHandle, memo } from 'react';
 import type { ChangeEvent, FormEvent, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLanguage } from '../i18n';
+import { fieldStateClass } from '../utils/fieldStyles';
 import { inspectYouTubeUrl } from '../utils/youtube';
 import type { YouTubeUrlIssue } from '../utils/youtube';
 import {
@@ -103,12 +104,6 @@ function withTrailingPad(pe: string, extra = ''): string {
 }
 
 /** Danger border + tint for invalid fields, neutral border for valid ones. */
-function fieldStateClass(hasError: boolean): string {
-  return hasError
-    ? 'border-danger bg-danger-soft focus:border-danger focus:ring-danger'
-    : 'border-slate-200 bg-slate-50 focus:border-action focus:ring-action';
-}
-
 /**
  * Persistent paste-failure notice. The translated message contains a
  * `<strong>Ctrl/⌘+V</strong>` segment; we split on that marker so we can
@@ -138,7 +133,11 @@ function PasteFallbackNotice({ issue }: { issue: PasteIssue }) {
       </span>
       <span>
         {before}
-        {shortcut ? <strong className="font-bold"><bdi dir="ltr">{shortcut}</bdi></strong> : null}
+        {shortcut ? (
+          <strong className="font-bold">
+            <bdi dir="ltr">{shortcut}</bdi>
+          </strong>
+        ) : null}
         {after}
       </span>
     </div>
@@ -259,8 +258,9 @@ export const SearchForm = memo(function SearchForm({
     const belowSpace = Math.max(0, bottom - anchor.bottom - 16);
     const above = aboveSpace >= belowSpace;
     const maxHeight = Math.min(384, above ? aboveSpace : belowSpace);
-    setDetailsLayout((current) => current.above === above && current.maxHeight === maxHeight
-      ? current : { above, maxHeight });
+    setDetailsLayout((current) =>
+      current.above === above && current.maxHeight === maxHeight ? current : { above, maxHeight },
+    );
   };
 
   useEffect(() => {
@@ -455,8 +455,12 @@ export const SearchForm = memo(function SearchForm({
   // the label row so even a narrow field has room for the URL and error icon.
   const urlTrailing = urlError ? 'pe-22' : 'pe-14';
   const keywordTrailing = keywordError
-    ? hasKeyword && !disabled ? 'pe-22' : 'pe-10'
-    : hasKeyword && !disabled ? 'pe-14' : 'pe-4';
+    ? hasKeyword && !disabled
+      ? 'pe-22'
+      : 'pe-10'
+    : hasKeyword && !disabled
+      ? 'pe-14'
+      : 'pe-4';
 
   return (
     <form
@@ -476,7 +480,6 @@ export const SearchForm = memo(function SearchForm({
               type="button"
               onClick={handleClearUrl}
               aria-label={t('form.clearUrl')}
-              aria-controls="url"
               title={t('form.clearUrl')}
               className={`${RAIL_ICON_BUTTON} rounded-full`}
             >
@@ -487,7 +490,7 @@ export const SearchForm = memo(function SearchForm({
         {/* URL alignment follows the UI language, not the phrase's script.
             Logical padding and controls mirror together without changing the URL value. */}
         <div className="relative" dir={urlDir}>
-          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400">  
+          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-500">
             <IconVideo size={18} />
           </span>
           <input
@@ -499,11 +502,15 @@ export const SearchForm = memo(function SearchForm({
             value={url}
             onChange={handleUrlChange}
             placeholder={t('form.urlPlaceholder')}
-            aria-describedby={[
-              urlError ? 'url-error' : '',
-              pasteIssue ? 'url-paste-notice' : '',
-              disabled ? 'search-lock-hint' : '',
-            ].filter(Boolean).join(' ') || undefined}
+            aria-describedby={
+              [
+                urlError ? 'url-error' : '',
+                pasteIssue ? 'url-paste-notice' : '',
+                disabled ? 'search-lock-hint' : '',
+              ]
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
             aria-invalid={urlError ? true : undefined}
             className={`${withTrailingPad(
               urlTrailing,
@@ -555,7 +562,7 @@ export const SearchForm = memo(function SearchForm({
           {t('form.keywordLabel')}
         </label>
         <div className="relative" dir={keywordDir}>
-          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-400">
+          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 flex w-8 items-center justify-center text-slate-500">
             <IconSearch size={18} />
           </span>
           <input
@@ -567,7 +574,9 @@ export const SearchForm = memo(function SearchForm({
             value={keyword}
             onChange={handleKeywordChange}
             placeholder={t('form.keywordPlaceholder')}
-            aria-describedby={keywordError ? 'keyword-error' : disabled ? 'search-lock-hint' : undefined}
+            aria-describedby={
+              keywordError ? 'keyword-error' : disabled ? 'search-lock-hint' : undefined
+            }
             aria-invalid={keywordError ? true : undefined}
             className={`${withTrailingPad(
               keywordTrailing,

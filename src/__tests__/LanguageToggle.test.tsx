@@ -54,7 +54,12 @@ describe('language menu keyboard recovery', () => {
 
   it('closes on Tab without trapping focus inside the options', async () => {
     const user = userEvent.setup();
-    render(<><LanguageToggle /><button>After menu</button></>);
+    render(
+      <>
+        <LanguageToggle />
+        <button>After menu</button>
+      </>,
+    );
     await user.click(screen.getByRole('button', { name: 'Language' }));
     await user.tab();
     expect(screen.getByRole('button', { name: 'After menu' })).toHaveFocus();

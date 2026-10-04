@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 import { HEADER_CSS, renderHeader } from './header.mjs';
+import { FOOTER_CSS, renderFooter } from './footer.mjs';
 
 export const LOCALES = {
   en: { dir: 'ltr', prefix: '', ogLocale: 'en_US' },
@@ -19,21 +20,20 @@ function resolveRoot() {
     return process.cwd();
   }
 }
-  export const ROOT = resolveRoot();
-  export const CONTENT_DIR = resolve(ROOT, 'content/blog');
-  // Blog index intro copy lives outside CONTENT_DIR on purpose: loadPosts() reads
-  // every .md under content/blog/<locale>/ and would turn an index file into a
-  // post with no date. A sibling directory keeps post discovery unchanged.
-  export const INDEX_DIR = resolve(ROOT, 'content/blog-index');
+export const ROOT = resolveRoot();
+export const CONTENT_DIR = resolve(ROOT, 'content/blog');
+// Blog index intro copy lives outside CONTENT_DIR on purpose: loadPosts() reads
+// every .md under content/blog/<locale>/ and would turn an index file into a
+// post with no date. A sibling directory keeps post discovery unchanged.
+export const INDEX_DIR = resolve(ROOT, 'content/blog-index');
 
-  /** Intro copy for the /blog/ index, rendered above the post list. */
-  export async function loadIndexIntro(locale) {
-    const raw = await readFile(resolve(INDEX_DIR, `${locale}.md`), 'utf8').catch(() => null);
-    if (!raw) return '';
-    const { body } = parseFrontmatter(raw);
-    return marked.parse(body);
-  }
-
+/** Intro copy for the /blog/ index, rendered above the post list. */
+export async function loadIndexIntro(locale) {
+  const raw = await readFile(resolve(INDEX_DIR, `${locale}.md`), 'utf8').catch(() => null);
+  if (!raw) return '';
+  const { body } = parseFrontmatter(raw);
+  return marked.parse(body);
+}
 
 /** Split a `---` fenced YAML-ish frontmatter block off the top of a post. */
 export function parseFrontmatter(raw) {
@@ -118,8 +118,13 @@ const formatDate = (iso, locale) =>
 // Article typography. Tailwind utilities cannot express this cleanly, and the
 // same rules must serve both LTR and RTL, so it is scoped here rather than in
 // component JSX. Brand hexes mirror the sibling prerender shell styles.
-const ARTICLE_CSS = `
-.qlf-post{max-width:44rem;margin:0 auto;padding:3rem 1.25rem 4rem}
+export const ARTICLE_CSS = `
+.qlf-site-header{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 0}
+/* The header rides in a page-width wrapper mirroring .app (max-width 1200px,
+   padding 1.5rem), not inside the 44rem article column: inside it the header
+   box came out 664px against the homepage's 1152px. Its own margin-bottom
+   supplies the gap to the article, so the column no longer needs top padding. */
+.qlf-post{max-width:44rem;margin:0 auto;padding:0 1.25rem 4rem}
 .qlf-post-nav{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;align-items:center;justify-content:space-between;margin-bottom:2.5rem;padding-bottom:1.25rem;border-bottom:1px solid #e2e8f0}
 .qlf-post-nav a{color:#02275a;font-weight:600;text-decoration:none;font-size:.9rem}
 .qlf-post-nav a:hover{color:#ea580c}
@@ -163,8 +168,24 @@ const ARTICLE_CSS = `
 .qlf-foot a{color:#02275a;font-weight:600}
 `.trim();
 
-  /** Shell shared by every generated page: metadata, inlined CSS, and JSON-LD. */
-  export function document_({
+/** Shell shared by every generated page: metadata, inlined CSS, and JSON-LD. */
+/**
+ * Flags the document as scripted before <body> parses, which is what lets
+ * `CHROME_CSS` retire a hydrated page's static chrome without a flash of
+ * duplicate header. Absent this line a no-JS reader keeps the navigation.
+ */
+const JS_BOOTSTRAP = "document.documentElement.classList.add('js')";
+
+/**
+ * Hides a hydrated document's static header and footer only once JS is confirmed.
+ * Scoped under `html.js` rather than applied inline so the no-JS document — the
+ * one a crawler reads — still carries its navigation.
+ */
+const CHROME_CSS = `
+.js .qlf-site-header,.js .qlf-site-footer{display:none}
+`;
+
+export function document_({
   siteUrl,
   url,
   title,
@@ -175,6 +196,9 @@ const ARTICLE_CSS = `
   cssHref,
   jsonLd,
   body,
+  // The site header, kept out of `body` so it can sit in the page-width wrapper
+  // above the article column instead of inside it.
+  header = '',
   // A listing page is a `website`, not an `article`. Getting this wrong tells
   // Google a blog index is a post, which is what it was hardcoded to before.
   ogType = 'article',
@@ -182,17 +206,64 @@ const ARTICLE_CSS = `
   articleTimes = '',
   // Rendered verbatim after <link rel="canonical">. Used for hreflang clusters.
   headExtra = '',
+  /**
+   * Page-specific rules, appended after the shared article typography.
+   *
+   * Its own parameter rather than being concatenated onto `css` because dev links
+   * the stylesheet instead of inlining it, so anything folded into `css` would
+   * exist in the production build and silently vanish under `npm run dev` — the
+   * page would then be styled in one environment and not the other.
+   */
+  extraCss = '',
+  /**
+   * Make this document a mount point for the app.
+   *
+   * Contact is a generated page and a client route at once: the markdown ships as
+   * real markup so a crawler and a reader without JS both get something useful,
+   * then React replaces it with the live form. For that to work the body has to
+   * sit *inside* `#root` — React only ever replaces that element's contents, so
+   * copy placed beside it would survive the mount and end up printed under the
+   * form. React renders its own header and footer too, so `CHROME_CSS` retires
+   * the static pair once the document is known to be scripted — two headers on one
+   * page is not a subtle bug.
+   *
+   * The static pair is hidden from CSS at runtime rather than by a `hidden`
+   * attribute, because `hidden` is unconditional: it also hides the chrome from
+   * the no-JS reader and the crawler, leaving the contact page — the one hydrated
+   * page — with no navigation at all if the entry script ever fails.
+   */
+  hydrate = false,
 }) {
   const canonical = `${siteUrl}${url}`;
+  // Only a hydrated document gets React chrome to replace its own, so only that
+  // document may retire the static pair — the rule is scoped to `hydrate` rather
+  // than applied everywhere, or the markdown-only pages lose their navigation.
+  const chromeCss = hydrate ? CHROME_CSS : '';
   // Build inlines the app CSS; dev links it so HMR still applies.
   const styles = cssHref
-    ? `<link rel="stylesheet" href="${cssHref}">\n<style>${HEADER_CSS}${ARTICLE_CSS}</style>`
-    : `<style>${HEADER_CSS}${css}\n${ARTICLE_CSS}</style>`;
+    ? `<link rel="stylesheet" href="${cssHref}">\n<style>${HEADER_CSS}${ARTICLE_CSS}${FOOTER_CSS}${chromeCss}${extraCss}</style>`
+    : `<style>${HEADER_CSS}${css}\n${ARTICLE_CSS}${FOOTER_CSS}${chromeCss}${extraCss}</style>`;
+  // The static header and footer always ship *visible*. A hydrated document (the
+  // contact page) has React render its own chrome, so `CHROME_CSS` hides this pair
+  // once `JS_BOOTSTRAP` has flagged the document as scripted. Baking `hidden` into
+  // the markup instead — as this did — left the contact page with no navigation
+  // whatsoever whenever the entry script failed to load or execute, and it is the
+  // only page on the site that can lose its nav that way. Hiding from CSS at
+  // runtime keeps the no-JS document complete while still avoiding the duplicate
+  // chrome a hydrated page would otherwise show.
+  //
+  // No `hidden` attribute here, so this pair is what a crawler and a no-JS reader
+  // get; the flag is set before <body> parses, so the swap costs no visible flash.
+  //
+  // Both the flag and its rule are emitted only when `hydrate`, because they exist
+  // solely to retire this pair on a page React takes over. The markdown-only pages
+  // deliberately ship zero JavaScript, and a flag that can never change anything
+  // there would break that for nothing.
   return `<!doctype html>
 <html lang="${locale}" dir="${dir}">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+${hydrate ? `<script>${JS_BOOTSTRAP}</script>\n` : ''}<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${esc(canonical)}">
@@ -219,9 +290,23 @@ ${jsonLd}
 ${styles}
 </head>
 <body class="bg-white text-slate-800 antialiased">
-<main class="qlf-post">
-${body}
-</main>
+<div class="qlf-site-header">
+${header}
+</div>
+${hydrate
+      ? // `#root` takes the article column *inside* it rather than the other way
+        // round. It has to: React only replaces `#root`'s children, so the markdown
+        // has to sit within them to be replaced at all — but `.qlf-post` caps at
+        // 44rem, and when it wrapped `#root` it capped the whole app with it. The
+        // contact page then rendered its header, form and footer at 616px inside a
+        // 704px column against the homepage's 1152px, from the very same
+        // components. Nested the other way, the no-JS reader keeps the readable
+        // column and React's own `.app` (max-width 1200px) owns the live page.
+        `<div id="root"><main class="qlf-post">${body}</main></div>`
+      : `<main class="qlf-post">${body}</main>`}
+<div class="qlf-site-footer">
+${renderFooter(locale)}
+</div>
 </body>
 </html>
 `;
@@ -233,10 +318,10 @@ const alternates = (posts, current, siteUrl) => {
   return [
     `<link rel="alternate" hreflang="${twin.locale}" href="${esc(siteUrl + twin.url)}">`,
     `<link rel="alternate" hreflang="${current.locale}" href="${esc(siteUrl + current.url)}">`,
-    // Arabic is the source language for this blog, so x-default points at /ar/
-    // rather than the English translation. Mirrors indexAlternates below.
+    // English is the primary SEO target, so x-default points at /en/ rather
+    // than the Arabic translation. Mirrors indexAlternates below.
     '<link rel="alternate" hreflang="x-default" href="' +
-      esc(siteUrl + (current.locale === 'ar' ? current.url : twin.url)) +
+      esc(siteUrl + (current.locale === 'en' ? current.url : twin.url)) +
       '">',
   ].join('\n');
 };
@@ -249,7 +334,7 @@ const indexAlternates = (siteUrl) => {
   return [
     `<link rel="alternate" hreflang="en" href="${esc(en)}">`,
     `<link rel="alternate" hreflang="ar" href="${esc(ar)}">`,
-    `<link rel="alternate" hreflang="x-default" href="${esc(ar)}">`,
+    `<link rel="alternate" hreflang="x-default" href="${esc(en)}">`,
   ].join('\n');
 };
 
@@ -303,7 +388,12 @@ export function renderPost(post, ctx) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: post.locale === 'ar' ? 'الرئيسية' : 'Home', item: siteUrl },
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: post.locale === 'ar' ? 'الرئيسية' : 'Home',
+        item: siteUrl,
+      },
       {
         '@type': 'ListItem',
         position: 2,
@@ -331,9 +421,8 @@ export function renderPost(post, ctx) {
   const ctaBtn = post.locale === 'ar' ? 'جرّب قفزة' : 'Try Qfza';
   const backText = post.locale === 'ar' ? 'كل المقالات' : 'All articles';
 
-
-  const body = `${renderHeader(post.locale, post.url)}
-<article>
+  const header = renderHeader(post.locale, post.url);
+  const body = `<article>
 <p class="qlf-post-eyebrow">${esc(homeLabel)}</p>
 <h1>${esc(post.title)}</h1>
 <p class="qlf-post-meta"><time datetime="${esc(post.date)}">${esc(formatDate(post.date, post.locale))}</time></p>
@@ -371,11 +460,27 @@ ${post.html}
       `<meta property="article:published_time" content="${esc(post.date)}">`,
       `<meta property="article:modified_time" content="${esc(post.updated || post.date)}">`,
     ].join('\n'),
+    header,
     body,
   });
 }
 
-  export function renderIndex({ locale, posts, siteUrl, css, cssHref, intro = '' }) {
+/**
+ * A short sample of a post description for the index list.
+ *
+ * The index is a directory, not the article: it carries the clickable title
+ * plus just enough of the description to decide whether to open the post. Cut
+ * on a word boundary so the sample never ends mid-word.
+ */
+export function excerpt(text, limit = 120) {
+  const clean = String(text).trim().replace(/\s+/g, ' ');
+  if (clean.length <= limit) return clean;
+  const cut = clean.slice(0, limit);
+  const at = cut.lastIndexOf(' ');
+  return `${(at > 40 ? cut.slice(0, at) : cut).trimEnd()}…`;
+}
+
+export function renderIndex({ locale, posts, siteUrl, css, cssHref, intro = '' }) {
   const meta = LOCALES[locale];
   const mine = posts.filter((p) => p.locale === locale);
   const isAr = locale === 'ar';
@@ -396,24 +501,27 @@ ${post.html}
     .map(
       (p) => `<li>
   <h2><a href="${p.url}">${esc(p.title)}</a></h2>
-  <p>${esc(p.description)}</p>
+  <p>${esc(excerpt(p.description))}</p>
   <time datetime="${esc(p.date)}">${esc(formatDate(p.date, locale))}</time>
 </li>`,
     )
     .join('\n');
 
-  const body = `${renderHeader(locale, `${meta.prefix}/blog/`)}
-<p class="qlf-post-eyebrow">${isAr ? 'قفزة' : 'Qfza'}</p>
-<h1>${isAr ? 'مدونة قفزة' : 'Qfza blog'}</h1>
+  const header = renderHeader(locale, `${meta.prefix}/blog/`);
+  const body = `<h1>${isAr ? 'مدونة قفزة' : 'Qfza blog'}</h1>
 <p class="qlf-post-meta">${
     isAr
-        ? 'كيف تبحث داخل الفيديوهات وتصل إلى اللحظة التي تحتاجها.'
+      ? 'كيف تبحث داخل الفيديوهات وتصل إلى اللحظة التي تحتاجها.'
       : 'How to search inside YouTube videos and get to the exact moment you need.'
   }  </p>
-  ${intro ? `<div class="qlf-body">
+  ${
+    intro
+      ? `<div class="qlf-body">
   ${intro}
 </div>
-  <h2 class="qlf-index-heading">${isAr ? 'أحدث المقالات' : 'Latest articles'}</h2>` : ''}
+  <h2 class="qlf-index-heading">${isAr ? 'أحدث المقالات' : 'Latest articles'}</h2>`
+      : ''
+  }
 <ul class="qlf-index-list">
 ${items}
 </ul>`;
@@ -437,6 +545,7 @@ ${items}
     ogType: 'website',
     jsonLd: `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`,
     headExtra: indexAlternates(siteUrl),
+    header,
     body,
   });
 }
@@ -470,8 +579,12 @@ export function blogDevPlugin(siteUrl) {
           const ctx = { siteUrl, css: '', cssHref: '/src/index.css', posts };
           const html = slug
             ? renderPost(
-                posts.find((p) => p.locale === locale && p.slug === slug) ||
-                  { locale, ...LOCALES[locale], url, html: '<p>Not found.</p>' },
+                posts.find((p) => p.locale === locale && p.slug === slug) || {
+                  locale,
+                  ...LOCALES[locale],
+                  url,
+                  html: '<p>Not found.</p>',
+                },
                 { ...ctx, posts },
               )
             : renderIndex({ locale, ...ctx, intro });

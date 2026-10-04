@@ -16,20 +16,29 @@ describe('Landing sections', () => {
   it.each([
     { language: 'en' as const, heading: 'Why Qfza', nav: 'Why Qfza?' },
     { language: 'ar' as const, heading: 'لماذا قفزة؟', nav: 'لماذا قفزة؟' },
-  ])('uses the corrected brand spelling throughout the $language landing page', async ({ language, heading, nav }) => {
-    await act(async () => setLanguage(language));
-    render(<App />);
-    const brand = language === 'ar' ? 'قفزة' : 'Qfza';
-    expect(i18n.t('app.title')).toBe(brand);
-    expect(screen.getByAltText(language === 'ar' ? 'قفزة' : 'Qfza'))
-      .toHaveAttribute('src', language === 'ar' ? '/logo.svg' : '/logo-en.svg?v=icon-left');
-    expect(screen.getByRole('link', { name: language === 'ar' ? 'قفزة — الصفحة الرئيسية' : 'Qfza home' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: nav })).toBeInTheDocument();
-    expect(i18n.t('footer.note')).toContain(brand);
-    expect(i18n.t('footer.rights', { year: 2026 })).toContain(brand);
-    expect(i18n.t('form.helperDetails')).toContain(brand);
-  });
+  ])(
+    'uses the corrected brand spelling throughout the $language landing page',
+    async ({ language, heading, nav }) => {
+      await act(async () => setLanguage(language));
+      render(<App />);
+      const brand = language === 'ar' ? 'قفزة' : 'Qfza';
+      expect(i18n.t('app.title')).toBe(brand);
+      expect(screen.getByAltText(language === 'ar' ? 'قفزة' : 'Qfza')).toHaveAttribute(
+        'src',
+        language === 'ar' ? '/logo.svg' : '/logo-en.svg?v=icon-left',
+      );
+      expect(
+        screen.getByRole('link', {
+          name: language === 'ar' ? 'قفزة — الصفحة الرئيسية' : 'Qfza home',
+        }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: nav })).toBeInTheDocument();
+      expect(i18n.t('footer.note')).toContain(brand);
+      expect(i18n.t('footer.rights', { year: 2026 })).toContain(brand);
+      expect(i18n.t('form.helperDetails')).toContain(brand);
+    },
+  );
 
   it('uses only Qfza for brand references in the English messages', () => {
     expect(JSON.stringify(englishMessages)).not.toContain('قفزة');
@@ -39,6 +48,12 @@ describe('Landing sections', () => {
   });
 
   it('keeps browser-tab and description branding in sync with language selection', async () => {
+    // A real document ships exactly one description tag, and
+    // `applyDocumentLanguage` updates the first one it finds. Start from that
+    // state: if an earlier test left a description tag behind, the one appended
+    // here would sit behind it and never be the element that gets rewritten —
+    // the assertion would pass or fail for reasons unrelated to the language.
+    for (const stale of document.querySelectorAll('meta[name="description"]')) stale.remove();
     const description = document.createElement('meta');
     description.name = 'description';
     document.head.appendChild(description);
@@ -69,33 +84,33 @@ describe('Landing sections', () => {
     render(<SiteHeader />);
     expect(screen.getByAltText('Qfza')).toHaveAttribute('src', '/logo-en.svg?v=icon-left');
     expect(screen.getByRole('link', { name: 'Qfza home' })).toHaveAttribute('href', '/');
-      expect(screen.getByRole('link', { name: 'Why Qfza?' })).toHaveAttribute('href', '#why-qfza');
-      expect(screen.getByRole('link', { name: 'How it works?' })).toHaveAttribute(
-        'href',
-        '#how-it-works',
-      );
-      expect(screen.getByRole('button', { name: 'Language' })).toBeInTheDocument();
-    });
+    expect(screen.getByRole('link', { name: 'Why Qfza?' })).toHaveAttribute('href', '/#why-qfza');
+    expect(screen.getByRole('link', { name: 'How it works?' })).toHaveAttribute(
+      'href',
+      '/#how-it-works',
+    );
+    expect(screen.getByRole('button', { name: 'Language' })).toBeInTheDocument();
+  });
 
-    it('points every in-page nav link at a section that actually exists', () => {
-      // The href and the section id are declared in different files, so pinning
-      // each on its own still passes when only one of them is renamed — the
-      // link then silently scrolls nowhere. Assert the pairing instead.
-      // "#/contact" is a hash route, not a fragment, so skip it.
-      render(<App />);
-      const anchors = [...document.querySelectorAll('a[href^="#"]')].filter(
-        (anchor) => !anchor.getAttribute('href')!.startsWith('#/'),
-      );
-      expect(anchors.length).toBeGreaterThan(0);
-      for (const anchor of anchors) {
-        const href = anchor.getAttribute('href')!;
-        expect(href).not.toBe('#');
-        expect(
-          document.getElementById(href.slice(1)),
-          `nav link ${href} has no matching element id`,
-        ).not.toBeNull();
-      }
-    });
+  it('points every in-page nav link at a section that actually exists', () => {
+    // The href and the section id are declared in different files, so pinning
+    // each on its own still passes when only one of them is renamed — the
+    // link then silently scrolls nowhere. Assert the pairing instead.
+    // "#/contact" is a hash route, not a fragment, so skip it.
+    render(<App />);
+    const anchors = [...document.querySelectorAll('a[href^="#"]')].filter(
+      (anchor) => !anchor.getAttribute('href')!.startsWith('#/'),
+    );
+    expect(anchors.length).toBeGreaterThan(0);
+    for (const anchor of anchors) {
+      const href = anchor.getAttribute('href')!;
+      expect(href).not.toBe('#');
+      expect(
+        document.getElementById(href.slice(1)),
+        `nav link ${href} has no matching element id`,
+      ).not.toBeNull();
+    }
+  });
 
   it('switches between English and Arabic logo assets without changing their layout size', async () => {
     render(<SiteHeader />);
@@ -107,7 +122,10 @@ describe('Landing sections', () => {
     await act(async () => setLanguage('ar'));
     expect(screen.getByRole('img', { name: 'قفزة' })).toBe(logo);
     expect(logo).toHaveAttribute('src', '/logo.svg');
-    expect(screen.getByRole('link', { name: 'قفزة — الصفحة الرئيسية' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'قفزة — الصفحة الرئيسية' })).toHaveAttribute(
+      'href',
+      '/',
+    );
 
     await act(async () => setLanguage('en'));
     expect(screen.getByRole('img', { name: 'Qfza' })).toBe(logo);
@@ -235,5 +253,73 @@ describe('Landing sections', () => {
     expect(screen.getByRole('heading', { name: 'How it works' })).toBeInTheDocument();
     expect(screen.getByText('Paste a YouTube URL')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Jump to the moment' })).toBeInTheDocument();
+  });
+});
+
+describe('static document metadata ownership', () => {
+  /**
+   * The generated pages carry their own title, description and social card.
+   * `contact` is both a document and a client route, so the app boots there —
+   * and the i18n module that boots it stamps the homepage's branding on every
+   * one of those tags. The canonical survives (nothing touches it), which is
+   * what makes the damage easy to miss: the page ends up claiming to be
+   * /contact/ while calling itself the homepage.
+   */
+  /** Put a generated page's own head tags in place, as the static renderer would. */
+  function primeContactDocument(): () => void {
+    // A document has exactly one <title>, and `document.title` reports the first
+    // one in <head>. An earlier test's title would otherwise win and the
+    // assertion would read that instead of the page's own.
+    const previousTitles = [...document.querySelectorAll('title')];
+    for (const stale of previousTitles) stale.remove();
+    const previousMeta = [...document.querySelectorAll('meta[name="description"]')];
+    for (const stale of previousMeta) stale.remove();
+    // Same for the canonical: it is singular per document, and the hook writes
+    // the first one it finds.
+    const previousCanonicals = [...document.querySelectorAll('link[rel="canonical"]')];
+    for (const stale of previousCanonicals) stale.remove();
+    const title = document.createElement('title');
+    title.textContent = 'Contact Qfza';
+    document.head.appendChild(title);
+    const meta = document.createElement('meta');
+    meta.name = 'description';
+    meta.content = 'Email support@qfza.app';
+    document.head.appendChild(meta);
+    const canonical = document.createElement('link');
+    canonical.rel = 'canonical';
+    canonical.href = 'https://qfza.app/contact/';
+    document.head.appendChild(canonical);
+    return () => {
+      title.remove();
+      meta.remove();
+      canonical.remove();
+      for (const node of [...previousTitles, ...previousMeta, ...previousCanonicals]) {
+        document.head.appendChild(node);
+      }
+    };
+  }
+
+  it('leaves a generated page its own title and description on load', async () => {
+    window.history.replaceState(null, '', '/contact/');
+    const cleanup = primeContactDocument();
+    try {
+      await act(async () => setLanguage('ar'));
+      expect(document.title).toBe('Contact Qfza');
+      expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toBe(
+        'Email support@qfza.app',
+      );
+      expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+        'https://qfza.app/contact/',
+      );
+    } finally {
+      cleanup();
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
+  it('still re-brands the app views, which own their metadata', async () => {
+    window.history.replaceState(null, '', '/login');
+    await act(async () => setLanguage('en'));
+    expect(document.title).toBe('Qfza — Search Inside YouTube Videos & Jump to the Moment');
   });
 });

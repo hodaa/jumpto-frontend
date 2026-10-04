@@ -1,5 +1,35 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://jumpto-backend.vercel.app/api/:path*"
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/register",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/reset-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/verify-email",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/history",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/profile",
+      "destination": "/index.html"
+    }
+  ],
   "redirects": [
     {
       "source": "/blog/lose-place-lecture-video/",
@@ -28,6 +58,76 @@
     },
     {
       "source": "/ar/blog/why-youtube-search-fails/",
+      "destination": "/ar/blog/search-youtube-video/",
+      "statusCode": 301
+    },
+    {
+      "source": "/about",
+      "destination": "/about/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ar/about",
+      "destination": "/ar/about/",
+      "statusCode": 301
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ar/terms",
+      "destination": "/ar/terms/",
+      "statusCode": 301
+    },
+    {
+      "source": "/contact",
+      "destination": "/contact/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ar/contact",
+      "destination": "/ar/contact/",
+      "statusCode": 301
+    },
+    {
+      "source": "/faq",
+      "destination": "/faq/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ar/faq",
+      "destination": "/ar/faq/",
+      "statusCode": 301
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ar/privacy",
+      "destination": "/ar/privacy/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ar/blog",
+      "destination": "/ar/blog/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/search-youtube-video",
+      "destination": "/blog/search-youtube-video/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ar/blog/search-youtube-video",
       "destination": "/ar/blog/search-youtube-video/",
       "statusCode": 301
     }

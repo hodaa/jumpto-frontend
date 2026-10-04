@@ -50,8 +50,7 @@ describe('blog posts', () => {
 
   it('translates every EN post to AR, while allowing Arabic-only posts', async () => {
     const posts = await all();
-    const slugs = (locale: string) =>
-      posts.filter((p) => p.locale === locale).map((p) => p.slug);
+    const slugs = (locale: string) => posts.filter((p) => p.locale === locale).map((p) => p.slug);
     const en = slugs('en');
     const ar = slugs('ar');
     expect(en.length).toBeGreaterThan(0);
@@ -105,8 +104,8 @@ describe('blog page output', () => {
 
     expect(html).toContain('hreflang="ar"');
     expect(html).toContain('hreflang="en"');
-    // Arabic is the source language, so the fallback resolves to the Arabic page.
-    expect(html).toContain(`hreflang="x-default" href="${siteUrl}/ar/blog/search-youtube-video/"`);
+    // English is the primary SEO target, so the fallback resolves to the English page.
+    expect(html).toContain(`hreflang="x-default" href="${siteUrl}/blog/search-youtube-video/"`);
   });
 
   it('links contextually from the article body, not just the page chrome', async () => {
@@ -119,14 +118,20 @@ describe('blog page output', () => {
       const article = /<article[\s\S]*?<\/article>/i.exec(html)?.[0] ?? html;
       return [...article.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)].map((m) => ({
         href: m[1]!,
-        text: m[2]!.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
+        text: m[2]!
+          .replace(/<[^>]+>/g, '')
+          .replace(/\s+/g, ' ')
+          .trim(),
       }));
     };
 
     for (const post of posts) {
       const html = renderPost(post, { siteUrl, css: '', posts });
       const links = bodyLinks(html);
-      expect(links.length, `${post.locale}/${post.slug}: article body has no links`).toBeGreaterThan(0);
+      expect(
+        links.length,
+        `${post.locale}/${post.slug}: article body has no links`,
+      ).toBeGreaterThan(0);
     }
   });
 
@@ -136,7 +141,11 @@ describe('blog page output', () => {
       const html = renderPost(post, { siteUrl, css: '', posts });
       const article = /<article[\s\S]*?<\/article>/i.exec(html)?.[0] ?? html;
       const texts = [...article.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/gi)].map((m) =>
-        m[1]!.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().toLowerCase(),
+        m[1]!
+          .replace(/<[^>]+>/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLowerCase(),
       );
       for (const text of texts) {
         expect(
@@ -144,7 +153,10 @@ describe('blog page output', () => {
           `${post.locale}/${post.slug}: non-descriptive anchor text`,
         ).not.toContain(text);
         // An anchor that is just a word or two carries no topic signal.
-        expect(text.split(/\s+/).length, `${post.locale}/${post.slug}: anchor too terse`).toBeGreaterThan(0);
+        expect(
+          text.split(/\s+/).length,
+          `${post.locale}/${post.slug}: anchor too terse`,
+        ).toBeGreaterThan(0);
       }
     }
   });
@@ -327,7 +339,7 @@ describe('blog page output', () => {
       // otherwise the cluster is one-way and search engines ignore the pairing.
       expect(html, label).toContain(`hreflang="en" href="${siteUrl}/blog/"`);
       expect(html, label).toContain(`hreflang="ar" href="${siteUrl}/ar/blog/"`);
-      expect(html, label).toContain(`hreflang="x-default" href="${siteUrl}/ar/blog/"`);
+      expect(html, label).toContain(`hreflang="x-default" href="${siteUrl}/blog/"`);
     }
   });
 

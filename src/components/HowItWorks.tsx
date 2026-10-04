@@ -11,7 +11,12 @@ export const HowItWorks = memo(function HowItWorks() {
   ];
 
   return (
-    <section className="steps scroll-mt-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action" id="how-it-works" tabIndex={-1} aria-label={t('steps.title')}>
+    <section
+      className="steps scroll-mt-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action"
+      id="how-it-works"
+      tabIndex={-1}
+      aria-label={t('steps.title')}
+    >
       <h2 className="section-title animate-fade-in">{t('steps.title')}</h2>
       <ol className="steps-track">
         {steps.map((step, index) => (
@@ -20,7 +25,11 @@ export const HowItWorks = memo(function HowItWorks() {
             key={step.title}
             style={{ animationDelay: `${index * 0.15}s` }}
           >
-            <span className="step-badge bg-accent" role="img" aria-label={t('steps.stepLabel', { n: index + 1 })}>
+            <span
+              className="step-badge bg-accent"
+              role="img"
+              aria-label={t('steps.stepLabel', { n: index + 1 })}
+            >
               <span className="step-badge__number">{index + 1}</span>
             </span>
             <h3 className="text-center text-lg font-bold text-brand">{step.title}</h3>

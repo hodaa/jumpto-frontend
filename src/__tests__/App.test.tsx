@@ -77,7 +77,7 @@ describe('App', () => {
     mockVideoSearch.mockResolvedValue({ status: 'found', results: RESULTS });
 
     await fillAndSubmit();
-    expect(await screen.findByText('Exact match')).toBeInTheDocument();
+    expect(await screen.findAllByText('hello world')).not.toHaveLength(0);
     expect(mockVideoSearch).toHaveBeenCalledWith('vid-1', 'hello world', expect.any(AbortSignal));
   });
 
@@ -93,7 +93,9 @@ describe('App', () => {
     });
 
     await fillAndSubmit();
-    expect(await screen.findByText('Transcription failed: Assembly API quota exceeded')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Transcription failed: Assembly API quota exceeded'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
@@ -103,14 +105,18 @@ describe('App', () => {
 
     await fillAndSubmit();
     expect(
-      await screen.findByText('Could not connect. Check your internet connection and try again. If it continues, please try later.'),
+      await screen.findByText(
+        'Could not connect. Check your internet connection and try again. If it continues, please try later.',
+      ),
     ).toBeInTheDocument();
   });
 
   it('shows a validation error with retry', async () => {
     mockSubmit.mockRejectedValue(new ApiError('error.validation'));
     await fillAndSubmit();
-    expect(await screen.findByText('Please enter a YouTube URL and a word or phrase.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Please enter a YouTube URL and a word or phrase.'),
+    ).toBeInTheDocument();
     const user = userEvent.setup();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
@@ -270,10 +276,11 @@ describe('App', () => {
     });
 
     await user.click(screen.getByRole('button', { name: 'Copy all' }));
-    const status = await screen.findByRole('status', { name: 'Copy status' });
-    expect(status).toHaveTextContent(
+    const status = await screen.findByText(
       'Could not copy results to the clipboard. Please try again.',
     );
+    expect(status).toHaveAttribute('role', 'status');
+    expect(status).not.toHaveAttribute('aria-label');
     expect(screen.queryByRole('button', { name: 'Copied!' })).not.toBeInTheDocument();
   });
 
@@ -298,7 +305,10 @@ describe('App', () => {
       expect(screen.getByLabelText('YouTube URL')).toHaveValue(
         'https://www.youtube.com/watch?v=abcdef12345&t=0',
       );
-      expect(screen.getByRole('button', { name: 'Search this video' })).toBeInTheDocument();
+      // The replay banner no longer offers its own search button: the search
+      // form is already on screen, and a second way to start a search only
+      // competed with it.
+      expect(screen.queryByRole('button', { name: 'Search this video' })).toBeNull();
     } finally {
       window.history.replaceState({}, '', '/');
     }

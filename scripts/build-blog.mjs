@@ -76,16 +76,16 @@ const locales = Object.keys(LOCALES);
 
 function indexAlternates() {
   // The two indexes pair with each other, so both are listed outright rather
-  // than matched by slug. Arabic is the source language, so x-default is /ar/.
+  // than matched by slug. English is the primary SEO target, so x-default is /en/.
   return [
     ...locales.map((l) => ({ hreflang: l, href: `${siteUrl}${blogIndexUrl(l)}` })),
-    { hreflang: 'x-default', href: `${siteUrl}${blogIndexUrl('ar')}` },
+    { hreflang: 'x-default', href: `${siteUrl}${blogIndexUrl('en')}` },
   ];
 }
 
 function postAlternates(post) {
   const twin = posts.find((o) => o.slug === post.slug && o.locale !== post.locale);
-  const xDefault = post.locale === 'ar' ? post : (twin ?? post);
+  const xDefault = post.locale === 'en' ? post : (twin ?? post);
   return [
     { hreflang: post.locale, href: `${siteUrl}${post.url}` },
     ...(twin ? [{ hreflang: twin.locale, href: `${siteUrl}${twin.url}` }] : []),

@@ -11,6 +11,10 @@
  *    those pages are reachable only through sitemap.xml. The React header nav
  *    uses in-page fragments and the footer is client-rendered, so neither
  *    appears here — this nav is the only crawlable path out of the homepage.
+ *    That makes it load-bearing: a page missing from this list is one hop from
+ *    the sitemap but no hops from the homepage, which is the difference between
+ *    internally linked and orphaned. Auth routes are deliberately absent — they
+ *    are noindex, and a crawler cannot sign in.
  */
 export const SHELL = `
   <div lang="en" dir="ltr">
@@ -33,6 +37,10 @@ export const SHELL = `
     <p><a href="#main-content">Start searching on Qfza</a></p>
       <nav aria-label="Site pages">
         <a href="/blog/" hreflang="en" lang="en">Blog</a>
+        <a href="/faq/" hreflang="en" lang="en">FAQ</a>
+        <a href="/about/" hreflang="en" lang="en">About</a>
+        <a href="/contact/" hreflang="en" lang="en">Contact</a>
+        <a href="/terms/" hreflang="en" lang="en">Terms</a>
         <a href="/privacy/" hreflang="en" lang="en">Privacy</a>
       </nav>
   </div>
@@ -55,6 +63,10 @@ export const SHELL = `
     <p><a href="#main-content">ابدأ البحث على قفزة</a></p>
       <nav aria-label="صفحات الموقع">
         <a href="/ar/blog/" hreflang="ar" lang="ar">المدونة</a>
+        <a href="/ar/faq/" hreflang="ar" lang="ar">الأسئلة الشائعة</a>
+        <a href="/ar/about/" hreflang="ar" lang="ar">عن قفزة</a>
+        <a href="/ar/contact/" hreflang="ar" lang="ar">تواصل معنا</a>
+        <a href="/ar/terms/" hreflang="ar" lang="ar">شروط الخدمة</a>
         <a href="/ar/privacy/" hreflang="ar" lang="ar">الخصوصية</a>
       </nav>
   </div>

@@ -11,14 +11,24 @@ import type { SearchFormHandle } from './components/SearchForm';
 import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
 import { ContactPage } from './components/ContactPage';
-import { useHashRoute } from './hooks/useHashRoute';
+import { HistoryPage } from './components/auth/HistoryPage';
+import { ProfilePage } from './components/auth/ProfilePage';
+import { LoginPage } from './components/auth/LoginPage';
+import { RegisterPage } from './components/auth/RegisterPage';
+import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
+import { VerifyEmailPage } from './components/auth/VerifyEmailPage';
+import { navigate, useRoute } from './hooks/useRoute';
+import { useDocumentMeta } from './hooks/useDocumentMeta';
 import { useJobPolling } from './hooks/useJobPolling';
 import type { VideoPlayerHandle } from './hooks/useYouTubePlayer';
-import type { SearchMatch, StatusResponse } from './types';
+import type { HistoryEntry, SearchMatch, StatusResponse } from './types';
 import { csvCell } from './utils/csv';
+import { savedResultsOf } from './utils/savedResults';
 import { isReadingHelp } from './utils/focus';
-import { parseYouTubeId, parseShareUrl, buildWatchUrl } from './utils/youtube';
-import { getCachedResults, setCachedResults } from './utils/resultsCache';
+import { parseYouTubeId, parseShareUrl, buildMomentHref, buildWatchUrl } from './utils/youtube';
+import type { DeepLink } from './utils/youtube';
+import { clearResultsCache, getCachedResults, setCachedResults } from './utils/resultsCache';
+import { useAuth } from './auth/useAuth';
 import { trackEvent } from './utils/analytics';
 
 const PROGRESS_DONE_DELAY_MS = 350;
@@ -48,8 +58,8 @@ function safeFilenamePart(value: string): string {
   return cleaned.slice(0, 50) || 'results';
 }
 
-/** Read a shared-moment deep link (?v=<id>&t=<seconds>) once, on first render. */
-function readSharedLink(): { youtubeId: string; seconds: number } | null {
+/** Read a shared-moment deep link (?v=<id>&t=<seconds>[&empty=1]) once, on first render. */
+function readSharedLink(): DeepLink | null {
   try {
     return parseShareUrl(window.location.search);
   } catch {
@@ -60,9 +70,23 @@ function readSharedLink(): { youtubeId: string; seconds: number } | null {
 /** قفزة app: two-column split — search on the left, results on the right. */
 export default function App() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [sharedSeconds, setSharedSeconds] = useState<number | null>(
     () => readSharedLink()?.seconds ?? null,
   );
+  // The keyword a saved moment belongs to. Null for a bare ?v=&t= link, which
+  // carries no keyword and so has nothing to name.
+  const [sharedKeyword, setSharedKeyword] = useState<string | null>(null);
+  // Every result a saved search found, so reopening it lists the same matches
+  // the search produced. Null for a bare ?v=&t= link, which knows of one moment
+  // and nothing else.
+  const [sharedMatches, setSharedMatches] = useState<SearchMatch[] | null>(null);
+  // False when the search matched nothing. Kept apart from an empty
+  // `sharedMatches` because "found nothing" must read as an empty result, not as
+  // a moment whose results have not arrived yet. Seeded from the link so that
+  // reloading a fruitless search, or opening it in another tab, lands on the same
+  // empty result as clicking it — the URL is all that survives a reload.
+  const [sharedMatched, setSharedMatched] = useState(() => readSharedLink()?.foundNothing !== true);
   const [phase, setPhase] = useState<Phase>(() => (readSharedLink() ? 'done' : 'idle'));
   const [matches, setMatches] = useState<SearchMatch[]>([]);
   const [noSpeech, setNoSpeech] = useState(false);
@@ -86,6 +110,11 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const formRef = useRef<SearchFormHandle>(null);
+  // SearchForm seeds its inputs from `initialUrl`/`initialKeyword` on mount and
+  // then owns them, so changing those props afterwards cannot reach the fields.
+  // Bumping this remounts the form, which is how App asks for the inputs to be
+  // replaced — after a sign-out, or when a replay loads a different video.
+  const [formGeneration, setFormGeneration] = useState(0);
   const searchControllerRef = useRef<AbortController | null>(null);
   const [currentPlayingTimestamp, setCurrentPlayingTimestamp] = useState<number | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
@@ -132,17 +161,177 @@ export default function App() {
     }, COPY_NOTICE_MS);
   }, []);
 
-  const handleSeek = useCallback((seconds: number) => {
-    playerRef.current?.seekTo(seconds);
-  }, []);
+  // Clicking a result plays from that moment. Clicking inside a replayed moment
+  // does not: that view exists to sit on a frame, so re-selecting it parks the
+  // player again rather than starting playback.
+  const handleSeek = useCallback(
+    (seconds: number) => {
+      playerRef.current?.seekTo(seconds, sharedSeconds === null ? undefined : { autoplay: false });
+    },
+    [sharedSeconds],
+  );
+
+  // Declared up here rather than beside the other route helpers below: the seek
+  // effect depends on it, and a dependency array is read while rendering.
+  const route = useRoute();
+
+  // Each client view names and canonicals itself. Without this every route
+  // inherited the homepage's title, description and canonical — a duplicate
+  // -content signal that pointed every page at https://qfza.app/.
+  useDocumentMeta(route);
 
   // A shared-moment link (?v=&t=) opens straight into the done phase with the
   // player mounted. Queue the seek once the player ref is attached; the player
   // holds it until YouTube is ready, then seeks and plays.
+  //
+  // The route is a dependency because the player lives inside the home view, and
+  // replaying from history sets the phase and the moment before the hash change
+  // that mounts it has landed. Without it the seek ran against a ref that was
+  // still null, and the video loaded at 00:00 — the one thing the moment link
+  // exists to prevent.
   useEffect(() => {
+    if (route !== 'home') return;
     if (phase !== 'done' || sharedSeconds === null) return;
-    playerRef.current?.seekTo(sharedSeconds);
-  }, [phase, sharedSeconds]);
+    // autoplay: false — the request is "show me this moment", not "play from
+    // here". Autoplaying would run the viewer straight past the frame that the
+    // link exists to show.
+    playerRef.current?.seekTo(sharedSeconds, { autoplay: false });
+  }, [route, phase, sharedSeconds]);
+
+  // Put the search view back to how it looks before anyone typed anything.
+  //
+  // Signing out ends the session, but it does not un-type: the video URL, the
+  // keyword and the results all sit in this component and would otherwise still
+  // be on screen for whoever picks up the device next. It also drops the
+  // deep-link parameters from the address bar, since a reload would otherwise
+  // restore the moment the previous visitor was watching.
+  const resetSearchView = useCallback(() => {
+    searchControllerRef.current?.abort();
+    searchControllerRef.current = null;
+    clearPendingTransition();
+    setJob(null);
+    setMatches([]);
+    setNoSpeech(false);
+    setProgress(null);
+    setEstimatedWait(null);
+    setErrorText('');
+    setCopied(false);
+    setCopyFailed(false);
+    setCurrentPlayingTimestamp(null);
+    setEditedSinceSubmit(false);
+    setSharedSeconds(null);
+    setSharedKeyword(null);
+    setSharedMatches(null);
+    setSharedMatched(true);
+    setQuery({ url: '', keyword: '' });
+    setPhase('idle');
+    clearResultsCache();
+    setFormGeneration((generation) => generation + 1);
+    if (window.location.search) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.hash}`);
+    }
+  }, [clearPendingTransition]);
+
+  // Watch the session rather than the button: both logout controls (the account
+  // menu and the profile page) already navigate home, and a session that lapses
+  // elsewhere should reset the view for the same reason. Keyed on the transition,
+  // so a plain anonymous visit — or an anonymous deep link — is left alone.
+  const wasSignedIn = useRef(user !== null);
+  useEffect(() => {
+    const signedIn = user !== null;
+    if (wasSignedIn.current && !signedIn) resetSearchView();
+    wasSignedIn.current = signedIn;
+  }, [user, resetSearchView]);
+
+  // Land on the home view showing a search that has already happened: the video
+  // loaded, the player on the moment it resumes at, and whatever it found.
+  //
+  // Shared for both replay paths - a bare ?v=&t= link and a saved history entry -
+  // because both answer the same question, "show me this search again", and both
+  // set the state the first render reads out of the query string rather than
+  // inventing a second path to the same screen. The moment and the phase flip
+  // together, so the effect above performs the seek.
+  const showSavedSearch = useCallback(
+    ({
+      videoId,
+      seconds,
+      keyword,
+      matches,
+      matched,
+    }: {
+      videoId: string;
+      seconds: number;
+      keyword?: string;
+      matches: SearchMatch[] | null;
+      matched: boolean;
+    }) => {
+      const trimmedKeyword = keyword?.trim() ? keyword.trim() : '';
+      searchControllerRef.current?.abort();
+      searchControllerRef.current = null;
+      setJob(null);
+      setMatches([]);
+      setNoSpeech(false);
+      setProgress(null);
+      setEstimatedWait(null);
+      setErrorText('');
+      setCopied(false);
+      setCopyFailed(false);
+      setCurrentPlayingTimestamp(null);
+      setEditedSinceSubmit(false);
+      // Carry the phrase into the field: the visitor came here *from* a search for
+      // it, so the input should show what they searched rather than fall back to
+      // the placeholder and read as if nothing was searched for.
+      setQuery({ url: buildWatchUrl(videoId, 0), keyword: trimmedKeyword });
+
+      // Go home first, then write the moment into the URL: the route has already
+      // changed by the time replaceState lands, and the address stays a deep link
+      // a reload can replay. The search view only lives on the home route, so
+      // without this the player would be mounted under /history and never appear.
+      navigate('home');
+      window.history.replaceState(null, '', buildMomentHref(videoId, seconds));
+
+      setSharedSeconds(Math.max(0, Math.floor(seconds)));
+      setSharedKeyword(trimmedKeyword || null);
+      setSharedMatches(matches);
+      setSharedMatched(matched);
+      setPhase('done');
+      setFormGeneration((generation) => generation + 1);
+    },
+    [],
+  );
+
+  // Reopen a saved search from the history page.
+  //
+  // The entry carries what that search found, so reopening it reproduces the
+  // search rather than pointing the player at one second: every match is listed
+  // again and the first one is the moment it resumes at.
+  //
+  // An entry that matched nothing reopens as an empty result — the same view a
+  // live search returns when it finds nothing. Showing a single fabricated row
+  // at 00:00 instead would tell the visitor their phrase was found when it
+  // never was.
+  const replayHistoryEntry = useCallback(
+    (entry: HistoryEntry) => {
+      const saved = savedResultsOf(entry);
+      showSavedSearch({
+        videoId: entry.video_id,
+        seconds: entry.progress_seconds ?? saved.matches?.[0]?.progress_seconds ?? 0,
+        keyword: entry.keyword,
+        matches: saved.matches,
+        matched: saved.matched,
+      });
+    },
+    [showSavedSearch],
+  );
+
+  // Open a video from its history title. The video as a whole is not one
+  // search, so it carries no keyword and no results and starts at the top.
+  const openHistoryVideo = useCallback(
+    (videoId: string) => {
+      showSavedSearch({ videoId, seconds: 0, keyword: '', matches: null, matched: true });
+    },
+    [showSavedSearch],
+  );
 
   const handleSubmit = useCallback(
     async (url: string, keyword: string) => {
@@ -153,6 +342,9 @@ export default function App() {
       searchControllerRef.current = controller;
       // A real search supersedes any shared-moment view.
       setSharedSeconds(null);
+      setSharedKeyword(null);
+      setSharedMatches(null);
+      setSharedMatched(true);
       const youtubeId = parseYouTubeId(url) ?? '';
       const cached = youtubeId ? getCachedResults(youtubeId, keyword) : undefined;
       if (cached !== undefined) {
@@ -312,7 +504,7 @@ export default function App() {
   const handleCopyResults = useCallback(async () => {
     const signal = searchControllerRef.current?.signal;
     const text = matches
-      .map((m) => `${m.timestamp} — ${m.text_snippet ?? t('results.noSnippet')}`)
+      .map((m) => `${m.timestamp} — ${m.text_snippet ?? query.keyword}`)
       .join('\n');
     try {
       await navigator.clipboard.writeText(text);
@@ -325,7 +517,7 @@ export default function App() {
       setCopyFailed(true);
     }
     scheduleCopyNotice();
-  }, [matches, t, scheduleCopyNotice]);
+  }, [matches, query.keyword, scheduleCopyNotice]);
 
   const handleExportResults = useCallback(() => {
     const rows = matches.map((m) => `${csvCell(m.timestamp)},${csvCell(m.text_snippet ?? '')}`);
@@ -334,7 +526,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `jumpto-results-${safeFilenamePart(query.keyword)}.csv`;
+    a.download = `qfza-results-${safeFilenamePart(query.keyword)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }, [matches, query.keyword]);
@@ -345,6 +537,9 @@ export default function App() {
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
     setEditedSinceSubmit(false);
     setSharedSeconds(null);
+    setSharedKeyword(null);
+    setSharedMatches(null);
+    setSharedMatched(true);
     setPhase('idle');
     setMatches([]);
     setProgress(null);
@@ -396,10 +591,14 @@ export default function App() {
     ? 'lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]'
     : 'lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.85fr)]';
 
-  const route = useHashRoute();
-
-  // When returning to the home view, honour a hash anchor (e.g. clicking a
-  // header nav link while on the contact page) once the sections are mounted.
+  // On the home view, honour a fragment anchor (the header's "How it works" /
+  // "Why Qfza" links) once the sections are mounted.
+  //
+  // A fragment is a same-document anchor, not a route, so it survives the move to
+  // clean paths untouched — `/#how-it-works` is still the right way to reach that
+  // section from any page, and it is also what the static header emits. A legacy
+  // route fragment has already been rewritten away by the time this runs, and a
+  // fragment with no matching element is simply ignored below.
   useEffect(() => {
     if (route !== 'home') return;
     const hash = window.location.hash.replace(/^#/, '');
@@ -410,16 +609,63 @@ export default function App() {
     }
   }, [route]);
 
+  // Every route is a full page shell: header, one panel, footer. The auth and
+  // history pages have no search form, so mounting them here keeps the search
+  // tree (and its polling) completely unmounted rather than hidden — an
+  // in-flight job cannot keep ticking behind a login form.
   if (route === 'contact') {
     return (
-      <div className="app">
-        <a href="#main-content" className="skip-link">
-          {t('actions.skipToContent')}
-        </a>
-        <SiteHeader />
+      <PageShell>
         <ContactPage />
-        <SiteFooter />
-      </div>
+      </PageShell>
+    );
+  }
+
+  if (route === 'login') {
+    return (
+      <PageShell>
+        <LoginPage />
+      </PageShell>
+    );
+  }
+
+  if (route === 'register') {
+    return (
+      <PageShell>
+        <RegisterPage />
+      </PageShell>
+    );
+  }
+
+  if (route === 'reset-password') {
+    return (
+      <PageShell>
+        <ResetPasswordPage />
+      </PageShell>
+    );
+  }
+
+  if (route === 'verify-email') {
+    return (
+      <PageShell>
+        <VerifyEmailPage />
+      </PageShell>
+    );
+  }
+
+  if (route === 'history') {
+    return (
+      <PageShell>
+        <HistoryPage onReplay={replayHistoryEntry} onOpenVideo={openHistoryVideo} />
+      </PageShell>
+    );
+  }
+
+  if (route === 'profile') {
+    return (
+      <PageShell>
+        <ProfilePage />
+      </PageShell>
     );
   }
 
@@ -429,13 +675,14 @@ export default function App() {
         {t('actions.skipToContent')}
       </a>
       <SiteHeader />
-      <main className="app-main" id="main-content" tabIndex={-1}>
+      <main id="main-content" tabIndex={-1} className="focus:outline-none">
         <div className="mb-8 lg:mb-10">
           <Hero compact />
         </div>
         <div className={`grid grid-cols-1 items-stretch gap-8 ${gridCols} lg:gap-10`}>
           <section aria-labelledby="search-heading" className="min-w-0">
             <SearchForm
+              key={formGeneration}
               ref={formRef}
               onSubmit={handleSubmit}
               disabled={searching}
@@ -468,11 +715,31 @@ export default function App() {
               onCancel={searching ? handleCancelSearch : undefined}
               currentPlayingTimestamp={currentPlayingTimestamp}
               sharedSeconds={sharedSeconds}
+              sharedKeyword={sharedKeyword}
+              sharedMatches={sharedMatches}
+              sharedMatched={sharedMatched}
             />
           </section>
         </div>
         <HowItWorks />
         <Features />
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
+
+/** Header + one panel + footer, shared by every non-search route. */
+function PageShell({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <div className="app">
+      <a href="#main-content" className="skip-link">
+        {t('actions.skipToContent')}
+      </a>
+      <SiteHeader />
+      <main id="main-content" tabIndex={-1} className="focus:outline-none">
+        {children}
       </main>
       <SiteFooter />
     </div>
