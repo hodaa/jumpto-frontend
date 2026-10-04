@@ -66,16 +66,18 @@ export const HEADER_CSS = `
 /* order-1 flex shrink-0 items-center rounded-lg transition-transform duration-200 hover:scale-[1.04] sm:justify-self-start */
 .qlf-header-logo{order:1;display:inline-flex;flex-shrink:0;align-items:center;border-radius:.5rem;text-decoration:none;transition:transform .2s ease}
 .qlf-header-logo:hover{transform:scale(1.04)}
-.qlf-header-logo img{height:3rem;width:auto;display:block;object-fit:contain}
+/* h-10 w-auto object-contain sm:h-12 — a 48px wordmark dwarfs a phone
+   header, so it steps down to 40px under the sm breakpoint */
+.qlf-header-logo img{height:2.5rem;width:auto;display:block;object-fit:contain}
 /* order-3 flex w-full items-center justify-center gap-x-8 border-t border-slate-100 pt-3 sm:order-2 sm:w-auto sm:gap-x-6 sm:border-0 sm:pt-0 */
 .qlf-header-nav{order:3;display:flex;width:100%;align-items:center;justify-content:center;gap:2rem;border-top:1px solid #f1f5f9;padding-top:.75rem}
-/* rounded-md px-2.5 py-1.5 text-sm font-semibold whitespace-nowrap text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover */
-.qlf-header-nav a{border-radius:.375rem;padding:.375rem .625rem;color:#1e3a8a;font-size:.875rem;line-height:1.25rem;font-weight:600;white-space:nowrap;text-decoration:none;transition:color .2s,background-color .2s}
+/* inline-flex min-h-11 items-center rounded-md px-2.5 py-1.5 text-sm font-semibold whitespace-nowrap text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action sm:min-h-0 — 44px tap target on phones, back to the text line on sm+ */
+.qlf-header-nav a{display:inline-flex;align-items:center;min-height:44px;border-radius:.375rem;padding:.375rem .625rem;color:#1e3a8a;font-size:.875rem;line-height:1.25rem;font-weight:600;white-space:nowrap;text-decoration:none;transition:color .2s,background-color .2s}
 .qlf-header-nav a:hover{background-color:#f1f5f9;color:#172d6e}
 /* order-2 flex flex-1 items-center justify-end gap-3 sm:order-3 sm:flex-none sm:justify-self-end */
 .qlf-header-actions{order:2;display:flex;flex:1;align-items:center;justify-content:flex-end;gap:.75rem}
-/* LanguageToggle + AccountMenu pill shape: inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow */
-.qlf-pill{display:inline-flex;align-items:center;gap:.5rem;min-height:40px;border:1px solid #e2e8f0;border-radius:9999px;background:#fff;padding:.5rem 1rem;color:#334155;font-size:.875rem;line-height:1.25rem;font-weight:600;white-space:nowrap;text-decoration:none;box-shadow:0 1px 2px 0 rgb(0 0 0 / 5%);transition:all .2s ease}
+/* LanguageToggle + AccountMenu pill shape: inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow — min-h-11 is the 44px touch target the React pills carry */
+.qlf-pill{display:inline-flex;align-items:center;gap:.5rem;min-height:44px;border:1px solid #e2e8f0;border-radius:9999px;background:#fff;padding:.5rem 1rem;color:#334155;font-size:.875rem;line-height:1.25rem;font-weight:600;white-space:nowrap;text-decoration:none;box-shadow:0 1px 2px 0 rgb(0 0 0 / 5%);transition:all .2s ease}
 .qlf-pill:hover{border-color:#cbd5e1;box-shadow:0 1px 3px 0 rgb(0 0 0 / 10%)}
 /* text-primary on the pill (AccountMenu) */
 .qlf-pill-primary{color:#1e3a8a}
@@ -83,7 +85,9 @@ export const HEADER_CSS = `
 @media (min-width:640px){
   .qlf-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;row-gap:0;margin-bottom:2rem;padding-bottom:1rem}
   .qlf-header-logo{justify-self:start}
+  .qlf-header-logo img{height:3rem}
   .qlf-header-nav{order:2;width:auto;gap:1.5rem;border-top:0;padding-top:0}
+  .qlf-header-nav a{min-height:0}
   .qlf-header-actions{order:3;flex:none;justify-self:end}
 }
 `;

@@ -25,7 +25,7 @@ export const SiteFooter = memo(function SiteFooter() {
   const termsUrl = i18n.language.startsWith('ar') ? '/ar/terms/' : '/terms/';
 
   const dot = (
-    <span aria-hidden="true" className="text-slate-300">
+    <span aria-hidden="true" className="hidden text-slate-300 sm:inline">
       ·
     </span>
   );
@@ -37,7 +37,7 @@ export const SiteFooter = memo(function SiteFooter() {
       <p className="font-medium text-slate-600 mb-2">{t('footer.note')}</p>
       <nav
         aria-label={t('footer.links')}
-        className="mb-2 flex flex-wrap items-center justify-center gap-1"
+        className="mb-2 flex flex-wrap items-center justify-center gap-2 sm:gap-1"
       >
         <a
           className="inline-block rounded-md px-2.5 py-1.5 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action"

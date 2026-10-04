@@ -59,8 +59,9 @@ export const FOOTER_CSS = `
 @keyframes fade-in-up{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 /* font-medium text-slate-600 mb-2 */
 .qlf-footer-note{margin:0 0 .5rem;color:#475569;font-weight:500}
-/* mb-2 flex flex-wrap items-center justify-center gap-1 */
-.qlf-footer-links{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.25rem;margin:0 0 .5rem;padding:0}
+/* mb-2 flex flex-wrap items-center justify-center gap-2 sm:gap-1 — a wider
+   gap on phones keeps wrapped rows from crowding, dots are hidden there */
+.qlf-footer-links{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.5rem;margin:0 0 .5rem;padding:0}
 /* inline-flex min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action */
 .qlf-footer-links a{display:inline-flex;min-height:44px;align-items:center;gap:.375rem;border-radius:.375rem;padding:.375rem .625rem;color:#1e3a8a;font-size:.875rem;font-weight:600;text-decoration:none;transition:color .2s,background-color .2s}
 .qlf-footer-links a:hover{background-color:#f1f5f9;color:#172d6e}
@@ -75,8 +76,14 @@ export const FOOTER_CSS = `
    the rest keep the 44px target. */
 .qlf-footer-links a.qlf-footer-link-plain{display:inline-block;min-height:0}
 .qlf-footer-links svg{width:1rem;height:1rem;flex:none}
-/* the text-slate-300 separator between links */
-.qlf-footer-dot{color:#cbd5e1}
+/* the text-slate-300 separator between links — hidden sm:inline: a dot
+   dangling at a wrap point reads as a stray mark on a narrow screen, so
+   the separators only show once the row fits on one line */
+.qlf-footer-dot{color:#cbd5e1;display:none}
+@media (min-width:640px){
+  .qlf-footer-links{gap:.25rem}
+  .qlf-footer-dot{display:inline}
+}
 /* text-xs text-muted — --color-muted is #475569 (slate-600), not the inherited
    slate-500 the paragraph would otherwise take from .qlf-footer */
 .qlf-footer-rights{margin:0;color:#475569;font-size:.75rem;line-height:1rem}

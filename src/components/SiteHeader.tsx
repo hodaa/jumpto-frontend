@@ -6,7 +6,7 @@ import { RouteLink } from './RouteLink';
 import { getLanguage } from '../i18n';
 
 const NAV_LINK =
-  'rounded-md px-2.5 py-1.5 text-sm font-semibold whitespace-nowrap text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action';
+  'inline-flex min-h-11 items-center rounded-md px-2.5 py-1.5 text-sm font-semibold whitespace-nowrap text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action sm:min-h-0';
 
 function Logo() {
   const { t } = useTranslation();
@@ -17,7 +17,7 @@ function Logo() {
       aria-label={t('nav.home')}
     >
       <img
-        className="h-12 w-auto object-contain"
+        className="h-10 w-auto object-contain sm:h-12"
         src={getLanguage() === 'ar' ? '/logo.svg' : '/logo-en.svg?v=icon-left'}
         alt={t('app.logoAlt')}
         width="124"

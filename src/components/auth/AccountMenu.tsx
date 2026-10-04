@@ -74,14 +74,14 @@ export const AccountMenu = memo(function AccountMenu() {
   };
 
   if (loading) {
-    return <div className="h-10 w-24" aria-hidden="true" />;
+    return <div className="h-11 w-24" aria-hidden="true" />;
   }
 
   if (!user) {
     return (
       <RouteLink
         to="login"
-        className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
+        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
       >
         <IconLock size={16} />
         {t('auth.nav.signIn')}
@@ -124,7 +124,7 @@ export const AccountMenu = memo(function AccountMenu() {
             setOpen(true);
           }
         }}
-        className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-primary shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
+        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-primary shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
       >
         <IconUser size={16} />
         <span className="hidden max-w-[10rem] truncate sm:inline">{label}</span>
