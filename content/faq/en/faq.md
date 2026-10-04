@@ -5,6 +5,23 @@ description: What Qfza searches, why a search can come back empty, which videos 
 
 The short version: Qfza searches the **transcript** of a public YouTube video for an exact phrase, and gives you the timestamp where that phrase was actually said. The questions below cover how that behaves in practice.
 
+## Getting precise results?
+
+**Search the exact phrase first.** Transcript search matches whole words in order, so a multi-word phrase returns fewer, more relevant hits than a single common word. A three-word phrase will usually get you to the moment faster than a single keyword will.
+
+**Pick words the speaker would actually say.** Transcripts are generated from audio, so a term that only exists in a slide, a chart, or a URL shown on screen will not be in the transcript. Search for the _spoken_ version of what you are looking for.
+
+**Expect the odd token.** Auto-generated captions get numbers, names, and technical terms wrong more often than ordinary words. If a precise phrase returns nothing, try the nearest common phrasing before assuming the video does not cover it.
+
+**Read the surrounding hits.** Ten timestamps spread across a video usually means the topic is discussed repeatedly. Three hits clustered in one minute usually means that is the passage you are after.
+
+## When is a transcript the wrong tool?
+
+Two honest limits worth knowing before you rely on this:
+
+- **Videos without speech** — music, ambient footage, silent screencasts — have no transcript to search. [Qfza](/) reports this rather than returning an empty result set that looks like a failure.
+- **Words that are only displayed.** Text baked into the picture, slides, and on-screen graphics are not in the transcript, because the audio model never heard them.
+
 ## What exactly does Qfza search?
 
 The transcript — the automatically generated captions that come with every public YouTube video. Your phrase is matched against that text word by word and in order, with no fuzzy matching and no synonyms.
@@ -74,4 +91,4 @@ Yes — the layout adapts to small screens. The URL field also carries a Paste b
 
 ## Still stuck?
 
-Write to us — there is a [contact form](/contact/) on the app, and the [blog](/blog/) goes deeper into how transcript search behaves and how to phrase a query well.
+Write to us — there is a [contact form](/contact/) on the site, and the [blog](/blog/) goes deeper into how transcript search behaves and how to phrase a query well.

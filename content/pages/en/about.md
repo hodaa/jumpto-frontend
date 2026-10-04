@@ -35,7 +35,7 @@ That is the whole product. There is no account required to search, no AI rewriti
 - Creators checking how their own video was transcribed.
 - People who read faster than they can scrub.
 
-## Built as a small, honest tool
+## Built as a focused, transparent tool
 
 Qfza does one thing and shows its work: the timestamp, the matched line, and the link back to the video. If a search returns nothing, it says so rather than inventing a nearby match.
 

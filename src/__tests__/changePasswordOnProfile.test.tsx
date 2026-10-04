@@ -196,7 +196,7 @@ describe('changing a password on the profile page', () => {
 
     // Not the sign-in wording: this form has no address field, so "that email
     // and password do not match" would point at the wrong box.
-    expect(await screen.findAllByText(/not your current password/i)).not.toHaveLength(0);
+    expect(await screen.findAllByText(/isn't your current password/i)).not.toHaveLength(0);
     expect(screen.queryByText(/do not match an account/i)).toBeNull();
     expect(screen.getByLabelText(/^current password$/i)).toHaveAttribute('aria-invalid', 'true');
   });

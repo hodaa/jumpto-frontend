@@ -1,13 +1,14 @@
 ---
 title: Privacy Policy
 description: How Qfza handles the video links, search terms, and analytics data you give it.
+updated: 2026-09-29
 ---
 
-Qfza ("the app") searches the text of a YouTube video so you can jump to the moment a word or phrase was said. This policy explains what the app does with the information you provide.
+Qfza ("the site") searches the text of a YouTube video so you can jump to the moment a word or phrase was said. This policy explains what the site does with the information you provide.
 
 ## What you give us
 
-To run a search, the app sends two things to our server: **the YouTube video URL** you paste, and **the word or phrase you search for**. Our server uses them to retrieve the video's transcript and report where your phrase appears.
+To run a search, the site sends two things to our server: **the YouTube video URL** you paste, and **the word or phrase you search for**. Our server uses them to retrieve the video's transcript and report where your phrase appears.
 
 ## What we do with it
 
@@ -17,8 +18,7 @@ Results are cached in your browser's memory so that searching the same video aga
 
 - lives only in the tab you are using,
 - holds at most 20 recent searches,
-- is never written to disk, and
-- disappears when you close or refresh the page.
+- is never written to disk and disappears when you close or refresh the page.
 
 We do not use browser storage to keep a record of what you searched for.
 
@@ -28,7 +28,7 @@ The app sets no cookies of its own. It saves one preference in your browser's lo
 
 ## Analytics
 
-We use two analytics services to understand which parts of the app are used:
+We use two analytics services to understand which parts of the site are used:
 
 - **Google Analytics 4**, provided by Google, which may set the cookies `_ga` and `_ga_<property-id>`.
 - **Umami**, a privacy-focused analytics service, which is cookieless and uses your IP address only to derive an approximate country.
@@ -39,7 +39,7 @@ They record page views and the following interactions: a search was submitted (f
 
 ## Shared links and your address bar
 
-If you share a moment from a result, the app builds a link in this form:
+If you share a moment from a result, the site builds a link in this form:
 
 ```
 https://qfza.app/?v=<video-id>&t=<seconds>
@@ -76,7 +76,7 @@ Depending on where you live, you may have the right to:
 - receive it in a portable, machine-readable format, and
 - complain to your local data-protection authority.
 
-Because the app does not keep a profile of you, there is normally nothing for us to look up. The fastest way to exercise a right is to write to the address below. If your request relates to Google Analytics, Google also provides its own [data-privacy controls](https://myaccount.google.com/data-and-privacy).
+Because the site does not keep a profile of you, there is normally nothing for us to look up. The fastest way to exercise a right is to write to the address below. If your request relates to Google Analytics, Google also provides its own [data-privacy controls](https://myaccount.google.com/data-and-privacy).
 
 ## Children's privacy
 

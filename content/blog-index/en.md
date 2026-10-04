@@ -6,11 +6,9 @@ YouTube captions help, but only if you can read faster than the video plays, and
 
 If you just want the tool, [search inside any YouTube video on Qfza](/). The articles here go deeper on how it works and how to get better results from it.
 
-## How searching a video transcript actually works
+## Why transcript search changes everything
 
-Every public YouTube video has an automatically generated transcript. A transcript is ordinary text, which means it can be searched the same way a document can.
-
-The useful consequence is that a search can return **the position of a word, not just a list of matching videos**. When you search for a phrase and get back `47:12`, that is a real location in the video — not a recommendation, and not a "videos about this" list.
+Every public YouTube video has an automatically generated transcript. A transcript is ordinary text, which means it can be searched the same way a document can. The useful consequence is that a search can return **the position of a word, not just a list of matching videos**. When you search for a phrase and get back `47:12`, that is a real location in the video — not a recommendation, and not a "videos about this" list.
 
 This changes the shape of the question. Instead of "find a video that talks about X", you can ask "find the moment in this video where X is said" — which is usually the question you actually have.
 

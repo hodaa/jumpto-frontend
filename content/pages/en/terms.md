@@ -3,6 +3,7 @@ title: Terms of Service
 description: The terms that apply when you use Qfza, including the video links you search and the results we return.
 changefreq: yearly
 priority: '0.3'
+updated: 2026-09-29
 ---
 
 These terms cover your use of Qfza (قفزة), the transcript search tool at this site. By using it you agree to them. If you do not agree, please do not use the service.

@@ -17,6 +17,9 @@ const STORAGE_KEY = 'qfza.lang';
  */
 const DEFAULT_LANGUAGE: Language = 'ar';
 
+/** Old storage key used before the rebrand (JumpTo → Qfza). */
+const OLD_STORAGE_KEY = 'jumpto.lang';
+
 function savedLanguage(): string | null {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -24,7 +27,12 @@ function savedLanguage(): string | null {
     // A visitor who chose a language before the key was renamed keeps
     // that choice: copy it across once, then retire the old key so the
     // migration never runs twice.
-
+    const oldSaved = localStorage.getItem(OLD_STORAGE_KEY);
+    if (oldSaved === 'en' || oldSaved === 'ar') {
+      localStorage.setItem(STORAGE_KEY, oldSaved);
+      localStorage.removeItem(OLD_STORAGE_KEY);
+      return oldSaved;
+    }
     return null;
   } catch {
     // Storage throws in locked-down privacy modes. A browser-language default

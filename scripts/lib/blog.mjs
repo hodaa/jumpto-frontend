@@ -182,7 +182,7 @@ const JS_BOOTSTRAP = "document.documentElement.classList.add('js')";
  * one a crawler reads — still carries its navigation.
  */
 const CHROME_CSS = `
-.js .qlf-site-header,.js .qlf-site-footer{display:none}
+.js .qlf-site-header,.js .qlf-site-footer,.js .qlf-post{display:none}
 `;
 
 export function document_({

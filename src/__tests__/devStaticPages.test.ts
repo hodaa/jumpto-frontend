@@ -186,20 +186,18 @@ describe('legal dev server plugin', () => {
     }
   });
 
-  it('keeps the date and standfirst on dated markdown-only pages', async () => {
-    // Privacy is the one dated document left: its `updated` is a real revision
-    // date (2026-09-29), older than the rest of the site, which is exactly what
-    // makes it worth printing. About, FAQ and Terms are deliberately undated —
-    // see faqPages — so they are in the second list, not this one.
-    for (const path of ['/privacy/', '/ar/privacy/']) {
-      const { res } = await request(path);
-      expect(res.body, path).toMatch(/<p class="qlf-post-eyebrow">\d{4}-\d{2}-\d{2}<\/p>/);
-      expect(res.body, path).toContain('<p class="qlf-post-meta">');
-    }
-    // Undated pages lose the eyebrow and nothing else.
-    for (const path of ['/about/', '/faq/', '/terms/', '/ar/about/', '/ar/terms/']) {
+  it('omits date eyebrow on undated markdown pages', async () => {
+    // About, FAQ are deliberately undated. Privacy and Terms carry a real revision date.
+    for (const path of ['/about/', '/faq/', '/ar/about/', '/ar/faq/']) {
       const { res } = await request(path);
       expect(res.body, path).not.toContain('<p class="qlf-post-eyebrow">');
+      expect(res.body, path).toContain('<p class="qlf-post-meta">');
+      expect(res.body, path).toContain('<h1>');
+    }
+    // Privacy and Terms should have the date eyebrow
+    for (const path of ['/privacy/', '/ar/privacy/', '/terms/', '/ar/terms/']) {
+      const { res } = await request(path);
+      expect(res.body, path).toMatch(/<p class="qlf-post-eyebrow">\d{4}-\d{2}-\d{2}<\/p>/);
       expect(res.body, path).toContain('<p class="qlf-post-meta">');
       expect(res.body, path).toContain('<h1>');
     }

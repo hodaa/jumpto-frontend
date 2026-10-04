@@ -106,12 +106,12 @@ describe('language detection at startup', () => {
 
   it('migrates a preference saved under the pre-rebrand key', async () => {
     setBrowserLanguages(['en-US']);
-    localStorage.setItem('qfza.lang', 'ar');
+    localStorage.setItem('jumpto.lang', 'ar');
     expect(await startupLanguage()).toBe('ar');
     // The old key is copied across once and retired, so the
     // migration cannot run again.
     expect(localStorage.getItem('qfza.lang')).toBe('ar');
-    expect(localStorage.getItem('qfza.lang')).toBeNull();
+    expect(localStorage.getItem('jumpto.lang')).toBeNull();
   });
 
   it('reads the whole preference list, not just navigator.language', async () => {

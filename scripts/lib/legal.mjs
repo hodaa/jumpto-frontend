@@ -110,9 +110,90 @@ function headExtra(page, twin, siteUrl) {
  * meets the WCAG "large text" threshold (18pt) on size alone, so the 3:1 ratio
  * applies and this orange clears it on white; body copy would need the darker
  * `--color-accent-strong` instead.
+ *
+ * Accordion functionality: each h2 becomes a button that toggles its following
+ * sibling content. The script runs after DOMContentLoaded and progressively
+ * enhances the static HTML into an accordion.
  */
 const FAQ_CSS = `
 .qlf-body.qlf-faq h2{color:var(--color-accent)}
+
+.faq-accordion{
+  border:1px solid var(--color-border);
+  border-radius:.75rem;
+  background:var(--color-surface);
+  margin:.75rem 0;
+  overflow:hidden;
+  transition:box-shadow .2s ease, border-color .2s ease;
+}
+.faq-accordion:hover{
+  box-shadow:0 4px 12px -2px rgb(0 0 0 / .08);
+  border-color:var(--color-accent);
+}
+.faq-accordion[open]{
+  box-shadow:0 8px 24px -4px rgb(0 0 0 / .1);
+  border-color:var(--color-accent);
+}
+
+.faq-accordion summary{
+  cursor:pointer;
+  list-style:none;
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  padding:1rem 1.25rem;
+  font-weight:600;
+  font-size:1.05rem;
+  color:var(--color-text);
+  background:linear-gradient(90deg, transparent, var(--color-accent-bg));
+  user-select:none;
+  outline:none;
+}
+.faq-accordion summary::-webkit-details-marker{display:none}
+.faq-accordion summary::after{
+  content:'';
+  width:.6rem;height:.6rem;
+  border-right:2px solid var(--color-accent);
+  border-bottom:2px solid var(--color-accent);
+  transform:rotate(45deg);
+  transition:transform .25s cubic-bezier(.4,0,.2,1);
+  flex-shrink:0;
+  margin-left:auto;
+}
+.faq-accordion[open] summary::after{
+  transform:rotate(-135deg);
+}
+.faq-accordion summary:focus-visible{
+  outline:2px solid var(--color-accent);
+  outline-offset:-2px;
+  border-radius:.5rem;
+}
+
+.faq-accordion > *:not(summary){
+  padding:0 1.25rem 1.25rem;
+  animation:faq-slide .3s cubic-bezier(.4,0,.2,1);
+  line-height:1.7;
+  color:var(--color-text-muted);
+}
+.faq-accordion > *:not(summary) p:first-child{margin-top:.5rem}
+.faq-accordion > *:not(summary) p:last-child{margin-bottom:0}
+.faq-accordion > *:not(summary) ul{margin:.75rem 0;padding-inline-start:1.5rem}
+.faq-accordion > *:not(summary) li{margin:.35rem 0}
+.faq-accordion > *:not(summary) a{color:var(--color-accent);font-weight:500}
+.faq-accordion > *:not(summary) code{background:var(--color-accent-bg);padding:.1em .4em;border-radius:.25rem;font-size:.9em}
+
+@keyframes faq-slide{
+  from{opacity:0;transform:translateY(-.75rem)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* RTL support */
+[dir="rtl"] .faq-accordion summary::after{
+  transform:rotate(-135deg);
+}
+[dir="rtl"] .faq-accordion[open] summary::after{
+  transform:rotate(45deg);
+}
 `;
 
 export function renderPage(page, { siteUrl, css, cssHref, twin }) {
@@ -139,6 +220,49 @@ export function renderPage(page, { siteUrl, css, cssHref, twin }) {
     '</div>',
   ].join('\n  ');
 
+  // Progressive enhancement script for FAQ accordion
+  const faqScript = isFaq ? `
+<script>
+(function(){
+  function initFaqAccordion() {
+    try {
+      // Convert FAQ h2 headings into accordion details/summary
+      const faqBody = document.querySelector('.qlf-faq');
+      console.log('FAQ accordion init, faqBody:', faqBody);
+      if (!faqBody) return;
+      const headings = Array.from(faqBody.querySelectorAll('h2'));
+      console.log('Found headings:', headings.length);
+      headings.forEach(function(h2) {
+        // Collect all following siblings until next h2
+        var content = [];
+        var node = h2.nextElementSibling;
+        while (node && node.tagName !== 'H2') {
+          content.push(node);
+          node = node.nextElementSibling;
+        }
+        if (content.length === 0) return;
+        var details = document.createElement('details');
+        details.className = 'faq-accordion';
+        var summary = document.createElement('summary');
+        summary.textContent = h2.textContent;
+        details.appendChild(summary);
+        content.forEach(function(el) { details.appendChild(el); });
+        h2.replaceWith(details);
+      });
+      console.log('FAQ accordion init complete');
+    } catch (e) {
+      console.error('FAQ accordion init failed:', e);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFaqAccordion);
+  } else {
+    initFaqAccordion();
+  }
+})();
+</script>
+` : '';
+
   return document_({
     siteUrl,
     url: page.url,
@@ -155,7 +279,7 @@ export function renderPage(page, { siteUrl, css, cssHref, twin }) {
     jsonLd: '',
     headExtra: headExtra(page, twin, siteUrl),
     extraCss: isFaq ? FAQ_CSS : '',
-    body,
+    body: body + faqScript,
     // Contact asks to be a mount point for the app; see `document_`'s hydrate.
     // Every other page leaves this false and stays free of script tags.
     hydrate: page.hydrate === true,

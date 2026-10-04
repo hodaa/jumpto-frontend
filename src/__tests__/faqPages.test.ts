@@ -185,9 +185,16 @@ describe('built FAQ pages', () => {
     expect(existsSync(resolve(dist, 'ar/faq/index.html'))).toBe(true);
   });
 
-  it.runIf(built)('ships no script, so it works with JS disabled', () => {
+  it.runIf(built)('ships only the FAQ accordion script, so it works with JS disabled', () => {
     for (const p of ['faq/index.html', 'ar/faq/index.html']) {
-      expect(read(`../../dist/${p}`)).not.toContain('<script');
+      const html = read(`../../dist/${p}`);
+      // Only the FAQ accordion progressive-enhancement script is allowed.
+      // The page must still work with JS disabled (all answers visible).
+      const scripts = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]);
+      expect(scripts.length, `${p} should have exactly one script (accordion)`).toBe(1);
+      expect(scripts[0]).toContain('faq-accordion');
+      expect(scripts[0]).not.toContain('main.tsx');
+      expect(scripts[0]).not.toContain('module');
     }
   });
 

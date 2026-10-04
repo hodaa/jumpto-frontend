@@ -24,11 +24,17 @@ describe('legal page content', () => {
     }
   });
 
-  it('gives every page a title, description, and updated date', async () => {
+  it('gives every page a title and description; privacy and terms carry dates', async () => {
     for (const page of await pages()) {
       expect(page.title.trim(), `${page.url} title`).not.toBe('');
       expect(page.description.trim(), `${page.url} description`).not.toBe('');
-      expect(page.updated, `${page.url} updated`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      // Privacy and Terms carry real revision dates; About and FAQ are undated.
+      if (page.url.startsWith('/privacy/') || page.url.startsWith('/ar/privacy/') ||
+          page.url.startsWith('/terms/') || page.url.startsWith('/ar/terms/')) {
+        expect(page.updated, `${page.url} updated`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      } else {
+        expect(page.updated, `${page.url} should be undated`).toBeUndefined();
+      }
     }
   });
 
