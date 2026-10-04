@@ -77,7 +77,8 @@
     "linkedin": "LinkedIn",
     "blog": "Blog",
     "faq": "FAQ",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "opensInNewTab": "Opens in a new tab"
   },
   "form": {
     "title": "Search a YouTube video for a word or phrase",

@@ -151,7 +151,7 @@ export const AccountMenu = memo(function AccountMenu() {
             role="menuitem"
             onClick={goToProfile}
             onKeyDown={(event) => handleItemKeyDown(event, 0)}
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-sm font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action"
+            className="flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-sm font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action"
           >
             <IconUser size={16} />
             {t('auth.nav.profile')}
@@ -164,7 +164,7 @@ export const AccountMenu = memo(function AccountMenu() {
             role="menuitem"
             onClick={goToHistory}
             onKeyDown={(event) => handleItemKeyDown(event, 1)}
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-sm font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action"
+            className="flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-sm font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action"
           >
             <IconHistory size={16} />
             {t('auth.nav.history')}
@@ -180,7 +180,7 @@ export const AccountMenu = memo(function AccountMenu() {
             role="menuitem"
             onClick={() => void handleSignOut()}
             onKeyDown={(event) => handleItemKeyDown(event, 2)}
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-sm font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action"
+            className="flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-sm font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action"
           >
             <IconLock size={16} />
             {t('auth.nav.signOut')}

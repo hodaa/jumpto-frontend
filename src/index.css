@@ -155,7 +155,13 @@ body {
 .app {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1.5rem 1.5rem 3rem;
+  padding: 1rem 1rem 3rem;
+}
+
+@media (min-width: 640px) {
+  .app {
+    padding: 1.5rem 1.5rem 3rem;
+  }
 }
 
 /* ── Bidi isolation for dynamic (Arabic) content in LTR interface text ── */

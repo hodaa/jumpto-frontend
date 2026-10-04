@@ -196,16 +196,17 @@ describe('Landing sections', () => {
 
   it('links to the Facebook page in a new tab', () => {
     render(<SiteFooter />);
-    const link = screen.getByRole('link', { name: 'Facebook' });
+    // The accessible name carries the new-tab hint appended to the label.
+    const link = screen.getByRole('link', { name: 'Facebook Opens in a new tab' });
     expect(link).toHaveAttribute('href', 'https://www.facebook.com/qfzaa/');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   it.each([
-    { language: 'en' as const, name: 'LinkedIn' },
-    { language: 'ar' as const, name: 'لينكدإن' },
-  ])('links to the LinkedIn company page from the $language footer', async ({ language, name }) => {
+    { language: 'en' as const, name: 'LinkedIn Opens in a new tab', label: 'LinkedIn' },
+    { language: 'ar' as const, name: 'لينكدإن يفتح في تبويب جديد', label: 'لينكدإن' },
+  ])('links to the LinkedIn company page from the $language footer', async ({ language, name, label }) => {
     await act(async () => setLanguage(language));
     render(<SiteFooter />);
     const link = screen.getByRole('link', { name });
@@ -214,10 +215,13 @@ describe('Landing sections', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     // The 44px tap target is only meaningful if the label is still visible text;
     // an icon-only link would drop the accessible name entirely.
-    expect(link).toHaveTextContent(name);
+    expect(link).toHaveTextContent(label);
     expect(link.className).toMatch(/min-h-11/);
-    // The mark is decorative, so the accessible name comes from the label alone.
-    expect(link.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    // The brand mark and the new-tab cue are both decorative; the
+    // accessible name comes from the label plus the sr-only hint.
+    for (const svg of link.querySelectorAll('svg')) {
+      expect(svg).toHaveAttribute('aria-hidden', 'true');
+    }
   });
 
   it('names every social profile in the homepage sameAs set', () => {

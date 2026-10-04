@@ -31,6 +31,11 @@ const MESSAGES = {
 const FACEBOOK_URL = 'https://www.facebook.com/qfzaa/';
 const LINKEDIN_URL = 'https://www.linkedin.com/company/qfza';
 
+// Copied from IconExternalLink in src/components/icons.tsx — the
+// new-tab cue the React footer renders beside the social labels.
+const ICON_EXTERNAL_LINK =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M21 3l-9 9M10 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg>';
+
 // Copied from IconLinkedIn / IconFacebook in src/components/icons.tsx.
 const ICON_LINKEDIN =
   '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05a3.74 3.74 0 0 1 3.37-1.85c3.6 0 4.27 2.37 4.27 5.46zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13M7.12 20.45H3.55V9h3.57zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0"/></svg>';
@@ -48,8 +53,9 @@ const ICON_FACEBOOK =
 export const FOOTER_CSS = `
 /* Mirrors .app in src/index.css: the homepage footer sits inside that
    container, so the static one needs the same 1200px measure or its rule
-   and border-t span the whole viewport while the app's span 1152px. */
-.qlf-site-footer{max-width:1200px;margin:0 auto;padding:0 1.5rem 3rem}
+   and border-t span the whole viewport while the app's span 1152px.
+   Padding mirrors .app's responsive gutter: 1rem on phones, 1.5rem at sm+. */
+.qlf-site-footer{max-width:1200px;margin:0 auto;padding:0 1rem 3rem}
 /* mt-16 border-t border-slate-200 bg-gradient-to-b from-transparent to-slate-50/50 pt-8 pb-4 text-center text-sm text-slate-500 animate-fade-in-up + style={{ animationDelay: '0.4s' }} */
 .qlf-footer{margin-top:4rem;border-top:1px solid #e2e8f0;padding:2rem 0 1rem;background:linear-gradient(to bottom,transparent,rgb(248 250 252 / .5));color:#64748b;font-size:.875rem;line-height:1.25rem;text-align:center;animation:fade-in-up .6s ease-out;animation-delay:.4s}
 /* line-height is 1.25rem because text-sm sets it: the app's body line-height
@@ -80,9 +86,12 @@ export const FOOTER_CSS = `
    dangling at a wrap point reads as a stray mark on a narrow screen, so
    the separators only show once the row fits on one line */
 .qlf-footer-dot{color:#cbd5e1;display:none}
+/* sr-only, for the "opens in a new tab" hint on social links */
+.qlf-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 @media (min-width:640px){
   .qlf-footer-links{gap:.25rem}
   .qlf-footer-dot{display:inline}
+  .qlf-site-footer{padding:0 1.5rem 3rem}
 }
 /* text-xs text-muted — --color-muted is #475569 (slate-600), not the inherited
    slate-500 the paragraph would otherwise take from .qlf-footer */
@@ -111,9 +120,9 @@ ${dot}
 ${dot}
 <a href="${prefix}/privacy/">${t.footer.privacy}</a>
 ${dot}
-<a href="${LINKEDIN_URL}" target="_blank" rel="noopener noreferrer">${ICON_LINKEDIN}<span>${t.footer.linkedin}</span></a>
-${dot}
-<a href="${FACEBOOK_URL}" target="_blank" rel="noopener noreferrer">${ICON_FACEBOOK}<span>${t.footer.facebook}</span></a>
+ <a href="${LINKEDIN_URL}" target="_blank" rel="noopener noreferrer">${ICON_LINKEDIN}<span>${t.footer.linkedin}</span> ${ICON_EXTERNAL_LINK}<span class="qlf-sr-only">${t.footer.opensInNewTab}</span></a>
+ ${dot}
+ <a href="${FACEBOOK_URL}" target="_blank" rel="noopener noreferrer">${ICON_FACEBOOK}<span>${t.footer.facebook}</span> ${ICON_EXTERNAL_LINK}<span class="qlf-sr-only">${t.footer.opensInNewTab}</span></a>
 </nav>
 <p class="qlf-footer-rights">${t.footer.rights.replace('{{year}}', String(new Date().getFullYear()))}</p>
 </footer>`;

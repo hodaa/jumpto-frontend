@@ -14,7 +14,7 @@ export const Hero = memo(function Hero({ children, compact = false }: Props) {
     <section
       className={`flex flex-col items-center text-center animate-fade-in ${compact ? 'mb-5' : 'mb-16'}`}
     >
-      <h1 id="search-heading" className="section-title animate-fade-in">
+      <h1 id="search-heading" className="section-title">
         {t('hero.title')}
       </h1>
       {/* Subtitle uses the high-contrast `muted-strong` token (slate-700,

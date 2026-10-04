@@ -31,7 +31,7 @@ export const Features = memo(function Features() {
                 {item.icon}
               </span>
               <h3 className="text-base font-bold text-brand">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.desc}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{item.desc}</p>
             </article>
           ))}
         </div>

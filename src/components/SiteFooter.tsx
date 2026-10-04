@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconFacebook, IconLinkedIn } from './icons';
+import { IconExternalLink, IconFacebook, IconLinkedIn } from './icons';
 
 const FACEBOOK_URL = 'https://www.facebook.com/qfzaa/';
 const LINKEDIN_URL = 'https://www.linkedin.com/company/qfza';
@@ -68,12 +68,16 @@ export const SiteFooter = memo(function SiteFooter() {
         {dot}
         <a className={linkClass} href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer">
           <IconLinkedIn size={16} />
-          {t('footer.linkedin')}
+          {t('footer.linkedin')}{' '}
+          <IconExternalLink size={12} />
+          <span className="sr-only">{t('footer.opensInNewTab')}</span>
         </a>
         {dot}
         <a className={linkClass} href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer">
           <IconFacebook size={16} />
-          {t('footer.facebook')}
+          {t('footer.facebook')}{' '}
+          <IconExternalLink size={12} />
+          <span className="sr-only">{t('footer.opensInNewTab')}</span>
         </a>
       </nav>
       <p className="text-xs text-muted">{t('footer.rights', { year: new Date().getFullYear() })}</p>

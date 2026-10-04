@@ -465,7 +465,7 @@ export const SearchForm = memo(function SearchForm({
   return (
     <form
       ref={formRef}
-      className="@container/search-form scroll-mt-6 mx-auto grid w-full max-w-2xl gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl ring-1 ring-slate-900/5 hover:shadow-2xl transition-shadow sm:p-8 lg:p-9 animate-fade-in-up"
+      className="@container/search-form scroll-mt-6 mx-auto grid w-full max-w-2xl gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl ring-1 ring-slate-900/5 transition-shadow sm:p-8 lg:p-9 animate-fade-in-up"
       onSubmit={handleSubmit}
       aria-label={t('form.title')}
       noValidate

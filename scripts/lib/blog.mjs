@@ -119,7 +119,12 @@ const formatDate = (iso, locale) =>
 // same rules must serve both LTR and RTL, so it is scoped here rather than in
 // component JSX. Brand hexes mirror the sibling prerender shell styles.
 export const ARTICLE_CSS = `
-.qlf-site-header{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 0}
+/* .qlf-site-header mirrors .app's responsive gutter: 1rem on phones,
+   1.5rem at sm+ (see .app in src/index.css). */
+.qlf-site-header{max-width:1200px;margin:0 auto;padding:1rem 1rem 0}
+@media (min-width:640px){
+  .qlf-site-header{padding:1.5rem 1.5rem 0}
+}
 /* The header rides in a page-width wrapper mirroring .app (max-width 1200px,
    padding 1.5rem), not inside the 44rem article column: inside it the header
    box came out 664px against the homepage's 1152px. Its own margin-bottom

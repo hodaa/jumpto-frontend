@@ -33,7 +33,7 @@ export const HowItWorks = memo(function HowItWorks() {
               <span className="step-badge__number">{index + 1}</span>
             </span>
             <h3 className="text-center text-lg font-bold text-brand">{step.title}</h3>
-            <p className="mx-auto mt-2 max-w-[26ch] text-center text-sm leading-relaxed text-slate-600">
+            <p className="mx-auto mt-2 max-w-[26ch] text-center text-sm leading-relaxed text-muted">
               {step.desc}
             </p>
           </li>
