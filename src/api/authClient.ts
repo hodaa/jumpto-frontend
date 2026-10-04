@@ -147,6 +147,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 function codeForStatus(status: number): string {
   if (status === 401) return 'UNAUTHENTICATED';
   if (status === 403) return 'CSRF_FAILED';
+  if (status === 404) return 'NOT_FOUND';
   if (status === 409) return 'CONFLICT';
   if (status === 423) return 'ACCOUNT_LOCKED';
   if (status === 429) return 'TOO_MANY_ATTEMPTS';
