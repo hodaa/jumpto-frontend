@@ -165,7 +165,7 @@ describe('vercel.json rewrites', () => {
     const api = rewrites.filter((r) => r.source.startsWith('/api'));
     expect(api).toHaveLength(1);
     expect(api[0].source).toBe('/api/:path*');
-    expect(api[0].destination).toBe('https://jumpto-backend.vercel.app/api/:path*');
+    expect(api[0].destination).toBe('https://qfza-backend.vercel.app/api/:path*');
   });
 
   it('points the rewrite at the deployed backend, not a preview host', () => {

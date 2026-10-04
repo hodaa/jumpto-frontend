@@ -8,7 +8,6 @@ import { isStaticPath } from '../routes';
 export type Language = 'en' | 'ar';
 const STORAGE_KEY = 'qfza.lang';
 /** The key the preference was stored under before the rebrand. */
-const LEGACY_STORAGE_KEY = 'jumpto.lang';
 
 /**
  * Used when the visitor has saved nothing and their browser asks for neither
@@ -25,12 +24,7 @@ function savedLanguage(): string | null {
     // A visitor who chose a language before the key was renamed keeps
     // that choice: copy it across once, then retire the old key so the
     // migration never runs twice.
-    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (legacy === 'en' || legacy === 'ar') {
-      localStorage.setItem(STORAGE_KEY, legacy);
-      localStorage.removeItem(LEGACY_STORAGE_KEY);
-      return legacy;
-    }
+
     return null;
   } catch {
     // Storage throws in locked-down privacy modes. A browser-language default

@@ -4,16 +4,6 @@ import { describe, expect, it } from 'vitest';
 import englishMessages from '../i18n/locales/en.json';
 import arabicMessages from '../i18n/locales/ar.json';
 
-/**
- * A missing i18next key does not throw — it renders the key string itself.
- * "nav.whyQfza" ends up on screen as literal English punctuation in an Arabic
- * page, and nothing in the build, lint, or console complains.
- *
- * Renaming nav.whyJumpto -> nav.whyQfza hit exactly this: four call sites
- * across four files, and the failure mode is invisible unless a test happens
- * to render that key in that locale. So instead of relying on render coverage,
- * resolve every t('...') call site in the source against both locale files.
- */
 
 const root = process.cwd();
 
