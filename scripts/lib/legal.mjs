@@ -158,7 +158,7 @@ const FAQ_CSS = `
   transform:rotate(45deg);
   transition:transform .25s cubic-bezier(.4,0,.2,1);
   flex-shrink:0;
-  margin-left:auto;
+  margin-inline-start:auto;
 }
 .faq-accordion[open] summary::after{
   transform:rotate(-135deg);
