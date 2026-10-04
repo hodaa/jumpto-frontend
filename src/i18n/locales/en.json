@@ -94,17 +94,13 @@
     "helperAccepted": "Public YouTube videos (watch / youtu.be links).",
     "helperSpeed": "First search: a few minutes. Cached searches are usually faster.",
     "helperPrivacy": "If you sign in, your searches are saved to your account history.",
-    "helperDetailsTrigger": "Privacy & how it works",
-    "helperDetailsTitle": "Data & timing",
-    "helperDetails": "Qfza sends the link and phrase to our server to fetch the transcript and match it word for word. Transcripts are stored on our server in a database, so repeat searches on the same video are fast. If you sign in, your searches — the video, the phrase, and where it matched — are saved to your account history until you delete them. We do not sell your data.",
     "submit": "Jump to the moment",
     "searching": "Searching…",
     "clear": "Clear fields",
     "pasteEmpty": "Your clipboard is empty. Copy a YouTube URL first, then try Paste again.",
     "pasteManual": "On a phone, touch and hold the URL field and choose Paste. On a computer, press <strong>Ctrl/⌘+V</strong>.",
     "processingHint": "Search in progress. The URL and phrase are locked until the transcript is ready.",
-    "searchAgainHint": "Edit the URL or phrase to search again.",
-    "helperSources": "Use a public YouTube video, not a channel or playlist. Shorts, live and embed links need a watch/share link instead. Private or restricted videos may be unavailable."
+    "searchAgainHint": "Edit the URL or phrase to search again."
   },
   "status": {
     "title": "Transcribing video",

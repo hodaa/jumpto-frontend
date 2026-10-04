@@ -36,7 +36,6 @@ describe('Landing sections', () => {
       expect(screen.getByRole('link', { name: nav })).toBeInTheDocument();
       expect(i18n.t('footer.note')).toContain(brand);
       expect(i18n.t('footer.rights', { year: 2026 })).toContain(brand);
-      expect(i18n.t('form.helperDetails')).toContain(brand);
     },
   );
 
@@ -44,7 +43,6 @@ describe('Landing sections', () => {
     expect(JSON.stringify(englishMessages)).not.toContain('قفزة');
     expect(englishMessages.app.title).toBe('Qfza');
     expect(englishMessages.nav.whyQfza).toBe('Why Qfza?');
-    expect(englishMessages.form.helperDetails).toMatch(/^Qfza sends/);
   });
 
   it('keeps browser-tab and description branding in sync with language selection', async () => {

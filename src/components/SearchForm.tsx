@@ -8,7 +8,6 @@ import type { YouTubeUrlIssue } from '../utils/youtube';
 import {
   IconAlert,
   IconClipboard,
-  IconInfo,
   IconSearch,
   IconTarget,
   IconVideo,
@@ -185,12 +184,6 @@ export const SearchForm = memo(function SearchForm({
   const focusFrameRef = useRef<number | null>(null);
   const urlRef = useRef<HTMLInputElement>(null);
   const keywordRef = useRef<HTMLInputElement>(null);
-  // Disclosure for the detailed privacy/how-it-works copy kept out of the
-  // reading flow: a small popover anchored to a quiet text trigger.
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsLayout, setDetailsLayout] = useState({ above: true, maxHeight: 384 });
-  const detailsRef = useRef<HTMLDivElement | null>(null);
-  const detailsTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const cancelPendingFieldAction = () => {
     clipboardRequestRef.current += 1;
@@ -210,7 +203,6 @@ export const SearchForm = memo(function SearchForm({
           setKeyword('');
           setKeywordError(null);
         }
-        setDetailsOpen(false);
         if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
         // Wait for the idle layout and any field reset before restoring focus.
         focusFrameRef.current = requestAnimationFrame(() => {
@@ -243,56 +235,6 @@ export const SearchForm = memo(function SearchForm({
   useEffect(() => {
     if (disabled) cancelPendingFieldAction();
   }, [disabled]);
-
-  const positionDetails = () => {
-    const anchor = detailsTriggerRef.current?.getBoundingClientRect();
-    if (!anchor) return;
-    const viewport = window.visualViewport;
-    const top = viewport?.offsetTop ?? 0;
-    const bottom = top + (viewport?.height ?? window.innerHeight);
-    if (anchor.bottom < top || anchor.top > bottom) {
-      setDetailsOpen(false);
-      return;
-    }
-    const aboveSpace = Math.max(0, anchor.top - top - 16);
-    const belowSpace = Math.max(0, bottom - anchor.bottom - 16);
-    const above = aboveSpace >= belowSpace;
-    const maxHeight = Math.min(384, above ? aboveSpace : belowSpace);
-    setDetailsLayout((current) =>
-      current.above === above && current.maxHeight === maxHeight ? current : { above, maxHeight },
-    );
-  };
-
-  useEffect(() => {
-    if (!detailsOpen) return;
-    const onPointerDown = (event: MouseEvent | TouchEvent) => {
-      if (!detailsRef.current?.contains(event.target as Node)) {
-        setDetailsOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setDetailsOpen(false);
-        detailsTriggerRef.current?.focus();
-      }
-    };
-    window.addEventListener('resize', positionDetails);
-    window.addEventListener('scroll', positionDetails, true);
-    window.visualViewport?.addEventListener('resize', positionDetails);
-    window.visualViewport?.addEventListener('scroll', positionDetails);
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('touchstart', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.removeEventListener('resize', positionDetails);
-      window.removeEventListener('scroll', positionDetails, true);
-      window.visualViewport?.removeEventListener('resize', positionDetails);
-      window.visualViewport?.removeEventListener('scroll', positionDetails);
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('touchstart', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [detailsOpen]);
 
   // Clipboard API is available only in secure contexts (HTTPS / localhost) and
   // when granted permission; otherwise we fall back to selecting the URL field
@@ -667,9 +609,8 @@ export const SearchForm = memo(function SearchForm({
         ) : null}
       </div>
 
-      {/* Helper block: three scannable bullets replace the long paragraph; the
-          detailed privacy/how-it-works copy lives in a click-through popover
-          so the form itself stays quiet. */}
+      {/* Helper block: three scannable bullets; the full data-and-privacy
+          story lives on the dedicated privacy page. */}
       <div className="flex min-w-0 flex-col items-center gap-3.5 rounded-lg border border-slate-200/80 bg-slate-50 px-4 py-4">
         <ul className="flex w-full min-w-0 flex-col gap-2.5 text-sm leading-relaxed text-muted-strong [overflow-wrap:anywhere]">
           {HELPER_BULLETS.map((key) => (
@@ -682,43 +623,6 @@ export const SearchForm = memo(function SearchForm({
             </li>
           ))}
         </ul>
-        <div
-          ref={detailsRef}
-          className="relative flex w-full min-w-0 justify-center"
-          onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-              setDetailsOpen(false);
-            }
-          }}
-        >
-          <button
-            type="button"
-            ref={detailsTriggerRef}
-            onClick={() => {
-              positionDetails();
-              setDetailsOpen((value) => !value);
-            }}
-            aria-expanded={detailsOpen}
-            aria-controls="form-helper-details"
-            className="inline-flex max-w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-sm font-semibold text-muted-strong transition-colors duration-200 hover:text-action-hover hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
-          >
-            <IconInfo size={14} />
-            {t('form.helperDetailsTrigger')}
-          </button>
-          {detailsOpen ? (
-            <div
-              id="form-helper-details"
-              className={`animate-fade-in absolute end-0 z-20 w-full overflow-y-auto @min-[32rem]/search-form:w-80 rounded-xl border border-slate-200 bg-white p-3 text-start text-xs leading-relaxed text-muted-strong shadow-lg ${detailsLayout.above ? 'bottom-full mb-2' : 'top-full mt-2'}`}
-              style={{ maxHeight: detailsLayout.maxHeight }}
-              role="group"
-              aria-label={t('form.helperDetailsTitle')}
-            >
-              <p className="mb-1 text-xs font-bold text-brand">{t('form.helperDetailsTitle')}</p>
-              <p className="mb-2 rtl:text-right">{t('form.helperSources')}</p>
-              <p className="m-0 rtl:text-right">{t('form.helperDetails')}</p>
-            </div>
-          ) : null}
-        </div>
       </div>
     </form>
   );

@@ -307,8 +307,7 @@ describe('SearchForm', () => {
     expect(paste).toHaveAttribute('aria-keyshortcuts', 'Control+V Meta+V');
   });
 
-  it('condenses the helper microcopy into bullets with the detail behind a popover', async () => {
-    const user = userEvent.setup();
+  it('condenses the helper microcopy into scannable bullets', () => {
     render(<SearchForm onSubmit={onSubmit} />);
 
     const bullets = screen.getByRole('list');
@@ -324,14 +323,6 @@ describe('SearchForm', () => {
     expect(
       screen.queryByText(/Transcripts are stored on our server in a database/),
     ).not.toBeInTheDocument();
-
-    const trigger = screen.getByRole('button', { name: 'Privacy & how it works' });
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    await user.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(
-      screen.getByText(/Transcripts are stored on our server in a database/),
-    ).toBeInTheDocument();
   });
 
   it('never claims the app stores nothing, which stopped being true', () => {
@@ -347,60 +338,13 @@ describe('SearchForm', () => {
     expect(screen.queryByText(/nothing is written to a database/i)).not.toBeInTheDocument();
   });
 
-  it('flips and bounds the help popover when its trigger is near a viewport edge', async () => {
-    const user = userEvent.setup();
+  it('translates the helper bullets with the UI language', async () => {
     render(<SearchForm onSubmit={onSubmit} />);
-    const trigger = screen.getByRole('button', { name: 'Privacy & how it works' });
-    const bounds = vi.spyOn(trigger, 'getBoundingClientRect');
-    bounds.mockReturnValue(new DOMRect(10, 10, 240, 28));
-    await user.click(trigger);
-    expect(screen.getByRole('group', { name: 'Data & timing' })).toHaveClass('top-full');
-    bounds.mockReturnValue(new DOMRect(10, window.innerHeight - 40, 240, 28));
-    fireEvent(window, new Event('resize'));
-    expect(screen.getByRole('group', { name: 'Data & timing' })).toHaveClass('bottom-full');
-    expect(screen.getByRole('group', { name: 'Data & timing' })).toHaveStyle({
-      maxHeight: '384px',
-    });
-    bounds.mockReturnValue(new DOMRect(10, -100, 240, 28));
-    fireEvent(window, new Event('scroll'));
-    expect(screen.queryByRole('group', { name: 'Data & timing' })).not.toBeInTheDocument();
-  });
-
-  it('closes the helper popover on Escape and on an outside click', async () => {
-    const user = userEvent.setup();
-    render(<SearchForm onSubmit={onSubmit} />);
-    const trigger = screen.getByRole('button', { name: 'Privacy & how it works' });
-
-    await user.click(trigger);
-    expect(
-      screen.getByText(/Transcripts are stored on our server in a database/),
-    ).toBeInTheDocument();
-    await user.keyboard('{Escape}');
-    expect(
-      screen.queryByText(/Transcripts are stored on our server in a database/),
-    ).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
-
-    await user.click(trigger);
-    await user.click(document.body);
-    expect(
-      screen.queryByText(/Transcripts are stored on our server in a database/),
-    ).not.toBeInTheDocument();
-  });
-
-  it('translates the helper bullets and the popover trigger with the UI language', async () => {
-    const user = userEvent.setup();
-    render(<SearchForm onSubmit={onSubmit} />);
-    await user.click(screen.getByRole('button', { name: 'Privacy & how it works' }));
     expect(screen.getByText('Public YouTube videos (watch / youtu.be links).')).toBeInTheDocument();
 
     await act(async () => {
       setLanguage('ar');
     });
-    expect(screen.getByRole('button', { name: 'الخصوصية وطريقة العمل' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
     expect(
       screen.getByText('إذا سجّلت الدخول، تُحفظ عمليات بحثك في سجلّ حسابك.'),
     ).toBeInTheDocument();
