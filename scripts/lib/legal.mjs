@@ -158,10 +158,17 @@ const FAQ_CSS = `
   transform:rotate(45deg);
   transition:transform .25s cubic-bezier(.4,0,.2,1);
   flex-shrink:0;
-  margin-inline-start:auto;
+  margin-inline-end:auto;
 }
 .faq-accordion[open] summary::after{
   transform:rotate(-135deg);
+}
+[dir="rtl"] .faq-accordion summary::after{
+  margin-inline-start:auto;
+  margin-inline-end:0;
+}
+[dir="rtl"] .faq-accordion[open] summary::after{
+  transform:rotate(45deg);
 }
 .faq-accordion summary:focus-visible{
   outline:2px solid var(--color-accent);
