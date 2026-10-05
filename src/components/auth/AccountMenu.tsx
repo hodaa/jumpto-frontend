@@ -10,14 +10,15 @@ import { RouteLink } from '../RouteLink';
  * Header account control.
  *
  * Shows one of two things: a Sign in link, or the signed-in address with a
- * menu to reach history and sign out. The session check runs at the top of the
- * tree, so this never has to guess — while it is in flight nothing is rendered,
- * because flashing a "Sign in" link at someone who is signed in is a worse
- * artefact than a quarter-second of nothing.
+ * menu to reach history and sign out. The Sign in link paints with the rest
+ * of the header: the session check runs at the top of the tree and may swap
+ * the link for the account menu a moment later, because a signed-in visitor
+ * seeing "Sign in" for the milliseconds the check takes is less noticeable
+ * than the header arriving with its control missing.
  */
 export const AccountMenu = memo(function AccountMenu() {
   const { t } = useTranslation();
-  const { user, loading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -72,10 +73,6 @@ export const AccountMenu = memo(function AccountMenu() {
     event.preventDefault();
     itemRefs.current[next]?.focus();
   };
-
-  if (loading) {
-    return <div className="h-11 w-24" aria-hidden="true" />;
-  }
 
   if (!user) {
     return (
