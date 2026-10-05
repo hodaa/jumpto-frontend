@@ -203,6 +203,67 @@ const FAQ_CSS = `
 }
 `;
 
+/**
+ * Strip markup down to the text a schema.org `Answer` can carry.
+ *
+ * `acceptedAnswer.text` is plain text, not HTML, so the rendered markdown has to be
+ * flattened. Entities are decoded here rather than left escaped, because the JSON-LD
+ * consumer reads the result as a sentence — `&amp;` in an answer is a visible defect.
+ */
+function plainText(html) {
+  return String(html)
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * FAQPage structured data, built from the same `##` headings the accordion uses.
+ *
+ * The FAQ is the only section written as question-and-answer, and it is the section
+ * the sitemap ranks highest among the content pages (priority 0.7) precisely because
+ * it answers things people search for. FAQPage is the schema that matches that shape.
+ *
+ * Reading the questions off the rendered HTML rather than re-parsing the markdown means
+ * the schema cannot drift from the visible page: if a heading stops being an `h2` it
+ * stops being a question here too, rather than emitting markup for a question that is
+ * no longer on the page.
+ *
+ * The intro paragraph before the first `##` belongs to no question and is dropped —
+ * it is page framing, and attaching it to the first answer would state something the
+ * page does not.
+ */
+function faqJsonLd(page, siteUrl) {
+  const mainEntity = [];
+  const heading = /<h2[^>]*>([\s\S]*?)<\/h2>([\s\S]*?)(?=<h2|$)/g;
+  for (const [, question, answer] of page.html.matchAll(heading)) {
+    const name = plainText(question);
+    const text = plainText(answer);
+    // A heading with no body under it is a section label, not a question, and an
+    // empty acceptedAnswer is a false claim that the page answers it.
+    if (!name || !text) continue;
+    mainEntity.push({
+      '@type': 'Question',
+      name,
+      acceptedAnswer: { '@type': 'Answer', text },
+    });
+  }
+  if (!mainEntity.length) return '';
+  return `<script type="application/ld+json">${JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    inLanguage: page.locale,
+    url: `${siteUrl}${page.url}`,
+    mainEntity,
+  }).replace(/</g, '\\u003c')}</script>`;
+}
+
 export function renderPage(page, { siteUrl, css, cssHref, twin }) {
   const meta = LOCALES[page.locale];
   const header = renderHeader(page.locale, page.url);
@@ -282,8 +343,10 @@ export function renderPage(page, { siteUrl, css, cssHref, twin }) {
     cssHref,
     ogType: 'website',
     // A policy page has no author or publish date, so it must not claim to be a
-    // BlogPosting — that would be a false structured-data signal.
-    jsonLd: '',
+    // BlogPosting — that would be a false structured-data signal. The FAQ is the
+    // one section whose content genuinely is question-and-answer, so it is the only
+    // one that earns schema, and it earns FAQPage rather than a post type.
+    jsonLd: isFaq ? faqJsonLd(page, siteUrl) : '',
     headExtra: headExtra(page, twin, siteUrl),
     extraCss: isFaq ? FAQ_CSS : '',
     body: body + faqScript,

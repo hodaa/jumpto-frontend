@@ -33,6 +33,17 @@ const SPA_ROUTES = [
   '/profile',
 ];
 
+/**
+ * The same routes under the Arabic prefix.
+ *
+ * `routeFromPath` strips a leading `/ar` (src/routes.ts:160), so the app resolves
+ * these paths to the right view — but a host with no matching rewrite answers a
+ * direct hit with a 404, and a 404 is not a soft-navigation failure, it is a dead
+ * link. Held here as its own list so the rewrites below are pinned to exactly this
+ * set: adding a route to `src/routes.ts` without adding it to vercel.json fails.
+ */
+const AR_SPA_ROUTES = SPA_ROUTES.map((route) => `/ar${route}`);
+
 /** Every generated document, written the way the static tree spells it. */
 const DOCUMENTS = [
   '/about/',
@@ -183,8 +194,22 @@ describe('vercel.json rewrites', () => {
     // absent on purpose: it is a generated page, and rewriting it would serve
     // index.html over its markdown.
     const spa = rewrites.filter((r) => r.destination === '/index.html');
-    expect(spa.map((r) => r.source).sort()).toEqual([...SPA_ROUTES].sort());
+    expect(spa.map((r) => r.source).sort()).toEqual([...SPA_ROUTES, ...AR_SPA_ROUTES].sort());
     expect(spa.map((r) => r.source)).not.toContain('/contact/');
+  });
+
+  it('rewrites the Arabic spelling of every client route as well', () => {
+    // The app resolves `/ar/login` (routeFromPath strips the prefix), so the router
+    // believes these paths work. Without a rewrite the host answers 404 and the
+    // router never gets the chance to disagree — the failure is invisible in dev,
+    // which serves every path from the SPA fallback, and only appears on a hard
+    // load in production.
+    const spa = rewrites
+      .filter((r) => r.destination === '/index.html')
+      .map((r) => r.source);
+    for (const route of AR_SPA_ROUTES) {
+      expect(spa, `${route} has no rewrite and 404s on a direct hit`).toContain(route);
+    }
   });
 
   it('never rewrites a path to a page that is actually built', () => {
@@ -212,6 +237,72 @@ describe('vercel.json rewrites', () => {
     // Vercel applies rewrites in order and takes the first match. The API rule
     // must precede anything that could shadow it.
     expect(rewrites[0].source).toBe('/api/:path*');
+  });
+});
+
+describe('vercel.json headers', () => {
+  const live = JSON.parse(read('vercel.json'));
+  const rules = live.headers as Array<{
+    source: string;
+    headers: Array<{ key: string; value: string }>;
+  }>;
+
+  const robotRules = rules.filter((r) =>
+    r.headers.some((h) => h.key.toLowerCase() === 'x-robots-tag'),
+  );
+
+  /**
+   * A Vercel `source` is a path pattern, and the alternation groups used here are
+   * already valid regular expressions, so it can be matched directly.
+   */
+  const matches = (source: string, path: string) => new RegExp(`^${source}$`).test(path);
+
+  it('marks every client route noindex without needing JavaScript', () => {
+    // `useDocumentMeta` sets the same directive at runtime, but a rewrite serves
+    // index.html, whose initial HTML carries the *homepage's* title, description
+    // and canonical and no robots meta at all. A crawler that does not execute JS —
+    // or a render that fails — therefore sees indexable homepage content at /login.
+    // The header is the only half of the fix that does not depend on the app booting.
+    for (const route of [...SPA_ROUTES, ...AR_SPA_ROUTES]) {
+      expect(
+        robotRules.some((r) => matches(r.source, route)),
+        `${route} is served indexable when JS does not run`,
+      ).toBe(true);
+    }
+  });
+
+  it('never withholds the homepage or a generated document', () => {
+    // X-Robots-Tag overrides any meta robots and applies to the whole subtree, so a
+    // source that is one character too broad would deindex real content with no way
+    // to override it from the page.
+    for (const path of [
+      '/',
+      '/faq/',
+      '/ar/faq/',
+      '/about/',
+      '/ar/about/',
+      '/terms/',
+      '/contact/',
+      '/ar/contact/',
+      '/privacy/',
+      '/blog/',
+      '/ar/blog/',
+      '/blog/search-youtube-video/',
+    ]) {
+      for (const rule of robotRules) {
+        expect(matches(rule.source, path), `${rule.source} would deindex ${path}`).toBe(false);
+      }
+    }
+  });
+
+  it('says noindex, follow — the same pair the app writes as a meta tag', () => {
+    // `follow` keeps a crawler moving on to the header and footer links the route
+    // carries; `noindex` alone would make the whole branch a dead end.
+    for (const route of [...SPA_ROUTES, ...AR_SPA_ROUTES]) {
+      const rule = robotRules.find((r) => matches(r.source, route))!;
+      const tag = rule.headers.find((h) => h.key.toLowerCase() === 'x-robots-tag')!;
+      expect(tag.value, `${route} header`).toBe('noindex, follow');
+    }
   });
 });
 

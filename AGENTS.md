@@ -44,6 +44,15 @@
 - **Sitemap priority/changefreq per section** is defined in the `SITEMAP` map in `scripts/build-legal.mjs` (`legal` = 0.3/yearly, `faq` = 0.7/monthly, `pages` = 0.6/monthly). Frontmatter `changefreq`/`priority` overrides the section default.
 - **`x-default` hreflang points to English** (the primary SEO target). This is intentional — do not "fix" it to Arabic.
 
+### The homepage is ONE bilingual URL that ships Arabic — do not "fix" this
+
+An SEO audit will flag all three of these as bugs. They are one deliberate decision. Read this before changing any of them.
+
+- **The homepage is a single URL serving both languages**, with a client-side toggle. There is deliberately **no `/ar/` homepage** — `dist/ar/index.html` is intentionally absent. So the homepage is the only indexable page with no hreflang cluster, and **that is correct**: hreflang requires a distinct URL per language, and one URL cannot form a cluster. Every *static* page (`/faq/`, `/about/`, blog, policies) does have a full en + ar + x-default cluster, and the Arabic shell on the homepage links into them.
+- **`index.html` ships Arabic because a crawler sends no `Accept-Language`.** Arabic is the site's primary locale (`DEFAULT_LANGUAGE` in `src/i18n/index.ts`), and `prerenderLanguage.test.ts` pins the prerendered title, description, `og:title`, `og:image` and `og:locale` to Arabic. Do not flip the homepage to English to match the `x-default` policy: "English is the primary SEO target" refers to the **hreflang `x-default` choice on static pages**, not to the homepage's served locale.
+- **The runtime *does* follow the browser's language** (`applyDocumentLanguage` in `src/i18n/index.ts`), so an English-preferring visitor gets an English page while a crawler gets Arabic. That divergence is the design, not an inconsistency.
+- **The prerender shell stays `hidden`.** `prerenderShell.test.ts` asserts it, because making it visible reintroduces a flash of unstyled content on every refresh. The text is in the served HTML for crawlers either way — `hidden` does not hide it from them. "Only crawlable content lives in a hidden div" is also by design: deleting the shell would empty the homepage for search engines, which is exactly the outcome that test guards against.
+
 ## Progress Counting
 
 - Constants at the top of `src/App.tsx`: `PROGRESS_INITIAL=10`, `PROGRESS_TICK_STEP=10`, `PROGRESS_FALLBACK_TICK_MS=3000`, `PROGRESS_MIN_TICK_MS=1000`, `PROGRESS_TOTAL_STEPS=10`, `PROGRESS_MAX=90`. The counter is a self-rescheduling `setTimeout` in `App.tsx` that divides the estimated wait into 10 equal segments (one per 10% step): a 60s estimate advances the bar by 10 every 6 seconds. Preserve 10-step values and the `PROGRESS_MAX=90` cap (never 100 before results).

@@ -28,6 +28,50 @@
     {
       "source": "/profile",
       "destination": "/index.html"
+    },
+    {
+      "source": "/ar/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ar/register",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ar/reset-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ar/verify-email",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ar/history",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ar/profile",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(login|register|reset-password|verify-email|history|profile)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
+    },
+    {
+      "source": "/ar/(login|register|reset-password|verify-email|history|profile)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
     }
   ],
   "redirects": [
