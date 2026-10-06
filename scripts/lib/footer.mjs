@@ -28,8 +28,7 @@ const MESSAGES = {
   ar: JSON.parse(readFileSync(resolve(ROOT, 'src/i18n/locales/ar.json'), 'utf8')),
 };
 
-const FACEBOOK_URL = 'https://www.facebook.com/qfzaa/';
-const LINKEDIN_URL = 'https://www.linkedin.com/company/qfza';
+const SOCIAL = JSON.parse(readFileSync(resolve(ROOT, 'src/social.json'), 'utf8'));
 
 // Copied from IconExternalLink in src/components/icons.tsx — the
 // new-tab cue the React footer renders beside the social labels.
@@ -120,9 +119,9 @@ ${dot}
 ${dot}
 <a href="${prefix}/privacy/">${t.footer.privacy}</a>
 ${dot}
- <a href="${LINKEDIN_URL}" target="_blank" rel="noopener noreferrer">${ICON_LINKEDIN}<span>${t.footer.linkedin}</span> ${ICON_EXTERNAL_LINK}<span class="qlf-sr-only">${t.footer.opensInNewTab}</span></a>
+ <a href="${SOCIAL.linkedin}" target="_blank" rel="noopener noreferrer">${ICON_LINKEDIN}<span>${t.footer.linkedin}</span> ${ICON_EXTERNAL_LINK}<span class="qlf-sr-only">${t.footer.opensInNewTab}</span></a>
  ${dot}
- <a href="${FACEBOOK_URL}" target="_blank" rel="noopener noreferrer">${ICON_FACEBOOK}<span>${t.footer.facebook}</span> ${ICON_EXTERNAL_LINK}<span class="qlf-sr-only">${t.footer.opensInNewTab}</span></a>
+ <a href="${SOCIAL.facebook}" target="_blank" rel="noopener noreferrer">${ICON_FACEBOOK}<span>${t.footer.facebook}</span> ${ICON_EXTERNAL_LINK}<span class="qlf-sr-only">${t.footer.opensInNewTab}</span></a>
 </nav>
 <p class="qlf-footer-rights">${t.footer.rights.replace('{{year}}', String(new Date().getFullYear()))}</p>
 </footer>`;

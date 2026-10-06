@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 import { blogDevPlugin } from './scripts/lib/blog.mjs';
 import { legalDevPlugin } from './scripts/lib/legal.mjs';
 import { maintenanceDevPlugin, isMaintenanceOn } from './scripts/lib/maintenance.mjs';
+import social from './src/social.json';
 
 /** Inline the (small) emitted CSS into index.html so there is no render-blocking
     stylesheet fetch on the critical path. The bytes still ship — inside the
@@ -38,6 +39,21 @@ function inlineCssPlugin(): Plugin {
   };
 }
 
+/** Substitute the social-profile placeholders in index.html from the
+    shared src/social.json, so the JSON-LD sameAs list and both footers
+    (React and static) always name the same destinations. Runs in dev
+    and in the build, before anything reads the emitted HTML. */
+function socialLinksPlugin(): Plugin {
+  return {
+    name: 'social-links',
+    transformIndexHtml(html) {
+      return html
+        .replaceAll('%FACEBOOK_URL%', social.facebook)
+        .replaceAll('%LINKEDIN_URL%', social.linkedin);
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const apiBase = (env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8000';
@@ -56,6 +72,7 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       inlineCssPlugin(),
+      socialLinksPlugin(),
       // Both dev plugins must precede the SPA fallback so real static paths
       // (/blog/, /privacy/) render the static page instead of the app.
       ...(isMaintenanceOn(env.VITE_MAINTENANCE) ? [maintenanceDevPlugin(siteUrl)] : []),

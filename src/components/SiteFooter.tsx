@@ -1,9 +1,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconExternalLink, IconFacebook, IconLinkedIn } from './icons';
-
-const FACEBOOK_URL = 'https://www.facebook.com/qfzaa/';
-const LINKEDIN_URL = 'https://www.linkedin.com/company/qfza';
+import social from '../social.json';
 
 const linkClass =
   'inline-flex min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-slate-100 hover:text-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-action';
@@ -66,14 +64,14 @@ export const SiteFooter = memo(function SiteFooter() {
           {t('footer.privacy')}
         </a>
         {dot}
-        <a className={linkClass} href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer">
+        <a className={linkClass} href={social.linkedin} target="_blank" rel="noopener noreferrer">
           <IconLinkedIn size={16} />
           {t('footer.linkedin')}{' '}
           <IconExternalLink size={12} />
           <span className="sr-only">{t('footer.opensInNewTab')}</span>
         </a>
         {dot}
-        <a className={linkClass} href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer">
+        <a className={linkClass} href={social.facebook} target="_blank" rel="noopener noreferrer">
           <IconFacebook size={16} />
           {t('footer.facebook')}{' '}
           <IconExternalLink size={12} />

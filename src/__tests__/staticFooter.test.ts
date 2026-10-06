@@ -9,6 +9,11 @@ import { document_ } from '../../scripts/lib/blog.mjs';
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8');
 
+const SOCIAL = JSON.parse(read('src/social.json')) as {
+  facebook: string;
+  linkedin: string;
+};
+
 /** One page out of the shared builder, with the header rendered the way callers do. */
 const page = document_({
   siteUrl: 'https://qfza.app',
@@ -43,8 +48,8 @@ describe('static site footer', () => {
       '/blog/',
       '/faq/',
       '/privacy/',
-      'https://www.linkedin.com/company/qfza',
-      'https://www.facebook.com/qfzaa/',
+      SOCIAL.linkedin,
+      SOCIAL.facebook,
     ]);
   });
 
@@ -69,12 +74,12 @@ describe('static site footer', () => {
 
   it('opens social links in a new tab, without leaking the opener', () => {
     const html = renderFooter('en');
-    expect(html).toMatch(
-      /href="https:\/\/www\.linkedin\.com\/company\/qfza" target="_blank" rel="noopener noreferrer"/,
-    );
-    expect(html).toMatch(
-      /href="https:\/\/www\.facebook\.com\/qfzaa\/" target="_blank" rel="noopener noreferrer"/,
-    );
+      expect(html).toContain(
+        `href="${SOCIAL.linkedin}" target="_blank" rel="noopener noreferrer"`,
+      );
+      expect(html).toContain(
+        `href="${SOCIAL.facebook}" target="_blank" rel="noopener noreferrer"`,
+      );
   });
 
   it('renders in the page language', () => {
@@ -122,17 +127,14 @@ describe('static footer parity with SiteFooter', () => {
   });
 
   it('keeps the same social destinations', () => {
-    // Read the URLs out of the React file rather than substring-matching them: a
-    // changed constant that still contains the old text (…/qfza-new) would
-    // satisfy a `toContain` and hide the drift this is here to catch.
-    const linkedin = /const LINKEDIN_URL = '([^']+)'/.exec(react)?.[1];
-    const facebook = /const FACEBOOK_URL = '([^']+)'/.exec(react)?.[1];
-    expect(linkedin).toBeTruthy();
-    expect(facebook).toBeTruthy();
+    // Both footers read src/social.json, so the destinations cannot
+    // drift by construction; this pins that the React footer still
+    // imports the shared file rather than growing its own copy.
+    expect(react).toContain("from '../social.json'");
 
     const html = renderFooter('en');
-    expect(html).toContain(`href="${linkedin}"`);
-    expect(html).toContain(`href="${facebook}"`);
+    expect(html).toContain(`href="${SOCIAL.linkedin}"`);
+    expect(html).toContain(`href="${SOCIAL.facebook}"`);
   });
 
   it('uses the app colour tokens, not a hand-picked navy', () => {

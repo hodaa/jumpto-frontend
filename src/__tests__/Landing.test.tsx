@@ -11,6 +11,7 @@ import { Hero } from '../components/Hero';
 import { HowItWorks } from '../components/HowItWorks';
 import { SiteFooter } from '../components/SiteFooter';
 import { SiteHeader } from '../components/SiteHeader';
+import social from '../social.json';
 
 describe('Landing sections', () => {
   it.each([
@@ -196,7 +197,7 @@ describe('Landing sections', () => {
     render(<SiteFooter />);
     // The accessible name carries the new-tab hint appended to the label.
     const link = screen.getByRole('link', { name: 'Facebook Opens in a new tab' });
-    expect(link).toHaveAttribute('href', 'https://www.facebook.com/qfzaa/');
+    expect(link).toHaveAttribute('href', social.facebook);
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
@@ -208,7 +209,7 @@ describe('Landing sections', () => {
     await act(async () => setLanguage(language));
     render(<SiteFooter />);
     const link = screen.getByRole('link', { name });
-    expect(link).toHaveAttribute('href', 'https://www.linkedin.com/company/qfza');
+    expect(link).toHaveAttribute('href', social.linkedin);
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     // The 44px tap target is only meaningful if the label is still visible text;
@@ -227,15 +228,20 @@ describe('Landing sections', () => {
     // knowledge graph, so a footer link alone does not establish the link.
     // jsdom gives import.meta.url an http: scheme, so resolve from the project
     // root rather than trying to read it as a file URL.
-    const raw = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    // index.html carries %FACEBOOK_URL% / %LINKEDIN_URL% placeholders
+    // that the build substitutes from src/social.json; resolve them
+    // here the same way before parsing.
+    const raw = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
+      .replaceAll('%FACEBOOK_URL%', social.facebook)
+      .replaceAll('%LINKEDIN_URL%', social.linkedin);
     const block = /application\/ld\+json">([\s\S]*?)<\/script>/.exec(raw)![1];
     const parsed = JSON.parse(block) as { sameAs?: string[]; '@graph'?: { sameAs?: string[] }[] };
     // The document is a @graph now that the WebSite references a publisher, so
     // the profiles live on the WebSite node rather than at the top level.
     const nodes = parsed['@graph'] ?? [parsed];
     for (const node of nodes) {
-      expect(node.sameAs).toContain('https://www.facebook.com/qfzaa/');
-      expect(node.sameAs).toContain('https://www.linkedin.com/company/qfza');
+      expect(node.sameAs).toContain(social.facebook);
+      expect(node.sameAs).toContain(social.linkedin);
     }
   });
 

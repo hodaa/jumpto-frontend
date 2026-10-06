@@ -6,12 +6,21 @@ const dist = resolve(__dirname, '../../dist');
 const read = (p: string) => readFileSync(resolve(__dirname, p), 'utf8');
 const built = existsSync(resolve(dist, 'index.html'));
 
+const SOCIAL = JSON.parse(read('../../src/social.json')) as {
+  facebook: string;
+  linkedin: string;
+};
+
 describe('WebSite structured data', () => {
   const jsonLd = () =>
     JSON.parse(
-      read('../../index.html').match(
-        /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
-      )![1],
+      read('../../index.html')
+        // The social placeholders are substituted from
+        // src/social.json by the social-links plugin; resolve
+        // them here the same way before parsing.
+        .replaceAll('%FACEBOOK_URL%', SOCIAL.facebook)
+        .replaceAll('%LINKEDIN_URL%', SOCIAL.linkedin)
+        .match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1],
     );
 
   it('publishes an Organization and points the WebSite at it', () => {
@@ -46,14 +55,18 @@ describe('WebSite structured data', () => {
     const nodes = Array.isArray(data['@graph']) ? data['@graph'] : [data];
     for (const type of ['Organization', 'WebSite']) {
       const node = nodes.find((n) => n['@type'] === type);
-      expect(node.sameAs, `${type} lost sameAs`).toContain('https://www.linkedin.com/company/qfza');
+      expect(node.sameAs, `${type} lost sameAs`).toContain(SOCIAL.linkedin);
     }
   });
 
   it('leaves no unreplaced build placeholder in the source', () => {
-    // The placeholder is resolved by Vite at build time, so it is correct in
-    // index.html but must be gone from dist.
-    expect(read('../../index.html')).toContain('%VITE_SITE_URL%');
+    // The placeholders are resolved at build time — %VITE_SITE_URL% by
+    // Vite, the social ones by the social-links plugin — so they are
+    // correct in index.html but must be gone from dist.
+    const source = read('../../index.html');
+    expect(source).toContain('%VITE_SITE_URL%');
+    expect(source).toContain('%FACEBOOK_URL%');
+    expect(source).toContain('%LINKEDIN_URL%');
   });
 
   it.runIf(built)('is emitted as valid JSON against the deployed origin', () => {
@@ -63,6 +76,8 @@ describe('WebSite structured data', () => {
     const data = JSON.parse(raw);
     const serialized = JSON.stringify(data);
     expect(serialized).not.toContain('%VITE_SITE_URL%');
+    expect(serialized).not.toContain('%FACEBOOK_URL%');
+    expect(serialized).not.toContain('%LINKEDIN_URL%');
     expect(serialized).toContain('https://qfza.app/');
   });
 });
