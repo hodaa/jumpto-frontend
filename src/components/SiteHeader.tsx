@@ -31,7 +31,9 @@ function Logo() {
  * Site header.
  *
  * Mobile (< sm): logo and language switcher share the first row (the switcher
- * is pushed to the inline end), the marketing links wrap to a second row.
+ * is pushed to the inline end); when the row is too narrow for the account
+ * control to sit beside the switcher it wraps onto its own line rather than
+ * squeezing the two buttons, and the marketing links take a third row.
  * sm and up: a `1fr auto 1fr` grid — logo track, nav track, switcher track.
  * The two outer tracks are equal, so the nav sits dead centre with the same
  * breathing room on both sides. That replaces the old `ms-auto` +
@@ -56,7 +58,7 @@ export const SiteHeader = memo(function SiteHeader() {
           {t('nav.whyQfza')}
         </a>
       </nav>
-      <div className="order-2 flex flex-1 items-center justify-end gap-3 sm:order-3 sm:flex-none sm:justify-self-end">
+      <div className="order-2 flex flex-1 flex-wrap items-center justify-end gap-3 sm:order-3 sm:flex-none sm:justify-self-end">
         <LanguageToggle />
         <AccountMenu />
       </div>
