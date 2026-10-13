@@ -65,8 +65,32 @@ export function resolveLanguage(saved: string | null, preferred: readonly string
   return DEFAULT_LANGUAGE;
 }
 
+/**
+ * A `?lang=` in the URL is an explicit choice made on a static page:
+ * those pages ship no script, so their wordmark and nav links carry
+ * the page's locale to the app this way. It outranks every other
+ * signal, is persisted so the rest of the visit keeps it, and is
+ * dropped from the address bar — the canonical homepage is the bare `/`.
+ */
+function languageFromUrl(): Language | null {
+  if (typeof window === 'undefined') return null;
+  const lang = new URLSearchParams(window.location.search).get('lang');
+  if (lang !== 'en' && lang !== 'ar') return null;
+  try {
+    localStorage.setItem(STORAGE_KEY, lang);
+  } catch {
+    // An unpersistable choice still applies to this page load.
+  }
+  window.history.replaceState(
+    null,
+    '',
+    window.location.pathname + window.location.hash,
+  );
+  return lang;
+}
+
 function initialLanguage(): Language {
-  return resolveLanguage(savedLanguage(), browserPreferences());
+  return languageFromUrl() ?? resolveLanguage(savedLanguage(), browserPreferences());
 }
 
 function applyDocumentLanguage(lang: Language): void {

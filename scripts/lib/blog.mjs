@@ -415,8 +415,11 @@ export function renderPost(post, ctx) {
   };
 
   // The app is a hash-routed SPA whose language comes from localStorage, so
-  // there is no real /ar app path — link back to the root in both locales.
-  const home = '/';
+  // there is no real /ar app path — link back to the root in both locales,
+  // carrying the post's locale in ?lang= so the homepage opens in the
+  // language the reader just finished. The post ships no script, so the
+  // URL is the only way the choice can travel.
+  const home = `/?lang=${post.locale}`;
   const homeLabel = post.locale === 'ar' ? 'قفزة' : 'Qfza';
   const backLabel = post.locale === 'ar' ? 'العودة إلى قفزة' : 'Back to Qfza';
   const ctaText =

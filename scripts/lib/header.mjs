@@ -22,6 +22,11 @@ import { fileURLToPath } from 'node:url';
  *   navigates home from anywhere else, so one markup works in both places.
  * - The language pill is a real link to this page's counterpart rather than the
  *   app's JS dropdown.
+ * - The wordmark and nav links carry a `?lang=<locale>` parameter. These
+ *   pages ship no script, so the page's language cannot be remembered in
+ *   storage; the parameter is how the homepage knows which language to
+ *   open in. The app reads it once, persists it and strips it from the
+ *   address bar.
  * - The account control is always the signed-out "Sign in" pill linking to
  *   `/login`. It cannot show session state (no JS, no cookies read), so a
  *   signed-out link is the only honest rendering. `AccountMenu` intercepts the
@@ -118,10 +123,10 @@ export function renderHeader(locale, path, { language = true } = {}) {
   const signIn = `<a class="qlf-pill qlf-pill-primary" href="/login"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>${t.auth.nav.signIn}</span></a>`;
 
   return `<header class="qlf-header">
-<a class="qlf-header-logo" href="/" aria-label="${t.nav.home}"><img src="${logo}" alt="${t.app.logoAlt}" width="124" height="48"></a>
+<a class="qlf-header-logo" href="/?lang=${locale}" aria-label="${t.nav.home}"><img src="${logo}" alt="${t.app.logoAlt}" width="124" height="48"></a>
 <nav class="qlf-header-nav" aria-label="${t.nav.primary}">
-<a href="/#how-it-works">${t.nav.howItWorks}</a>
-<a href="/#why-qfza">${t.nav.whyQfza}</a>
+<a href="/?lang=${locale}#how-it-works">${t.nav.howItWorks}</a>
+<a href="/?lang=${locale}#why-qfza">${t.nav.whyQfza}</a>
 </nav>
 <div class="qlf-header-actions">
 ${langPill}

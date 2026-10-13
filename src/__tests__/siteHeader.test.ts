@@ -23,7 +23,7 @@ describe('counterpartPath', () => {
 describe('static site header', () => {
   it('links the wordmark home with a real accessible name', () => {
     const html = renderHeader('en', '/blog/');
-    expect(html).toMatch(/<a class="qlf-header-logo" href="\/" aria-label="Qfza home">/);
+    expect(html).toMatch(/<a class="qlf-header-logo" href="\/\?lang=en" aria-label="Qfza home">/);
   });
 
   it('uses the locale-correct wordmark, as the React Logo does', () => {
@@ -34,12 +34,14 @@ describe('static site header', () => {
   });
 
   it('prefixes nav anchors with / so they resolve off the homepage', () => {
-    // The app uses bare #how-it-works, which is a dead link on a static page
-    // because that anchor only exists on the homepage.
+    // The app uses bare #how-it-works, which is a dead link on a static
+    // page because that anchor only exists on the homepage. The ?lang=
+    // parameter carries the page's locale to the homepage, which ships
+    // no script of its own to remember it.
     for (const locale of ['en', 'ar'] as const) {
       const html = renderHeader(locale, '/blog/');
-      expect(html).toContain('href="/#how-it-works"');
-      expect(html).toContain('href="/#why-qfza"');
+      expect(html).toContain(`href="/?lang=${locale}#how-it-works"`);
+      expect(html).toContain(`href="/?lang=${locale}#why-qfza"`);
       expect(html).not.toMatch(/href="#(how-it-works|why-qfza)"/);
     }
   });
@@ -163,7 +165,16 @@ describe('header on built pages', () => {
     'dist/ar/privacy/index.html',
     'dist/404.html',
   ])('%s has a way back to the homepage', (path) => {
-    expect(read(path)).toMatch(/class="qlf-header-logo" href="\/"/);
+    // The 404 carries both locale blocks; every other page has one.
+    const locales = path.includes('404')
+      ? (['en', 'ar'] as const)
+      : ([path.includes('/ar/') ? 'ar' : 'en'] as const);
+    const html = read(path);
+    for (const locale of locales) {
+      expect(html).toMatch(
+        new RegExp(`class="qlf-header-logo" href="/\\?lang=${locale}"`),
+      );
+    }
   });
   it('gives each 404 locale block its own header', () => {
     // The 404 renders both locales in one document, so a substring check passes
@@ -180,6 +191,9 @@ describe('header on built pages', () => {
       expect(block, `no ${lang} block`)?.not.toBeNull();
       expect(block?.[0], `${lang} block has no header`).toContain('qlf-header-logo');
       expect(block?.[0], `${lang} block has the wrong wordmark`).toContain(logo);
+      expect(block?.[0], `${lang} block logo does not carry its locale`).toContain(
+        `href="/?lang=${lang}"`,
+      );
     }
   });
 });
