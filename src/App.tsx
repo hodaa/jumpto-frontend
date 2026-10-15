@@ -557,11 +557,6 @@ export default function App() {
     formRef.current?.focusKeyword(true);
   }, [resetSearch]);
 
-  const handleNewSearch = useCallback(() => {
-    resetSearch();
-    formRef.current?.focusKeyword();
-  }, [resetSearch]);
-
   const handleCancelSearch = useCallback(() => {
     trackEvent('search_cancel');
     resetSearch();
@@ -710,7 +705,6 @@ export default function App() {
               onSeek={handleSeek}
               onPlaybackChange={setCurrentPlayingTimestamp}
               onClear={handleClearKeyword}
-              onNewSearch={handleNewSearch}
               onRetry={handleRetry}
               onCancel={searching ? handleCancelSearch : undefined}
               currentPlayingTimestamp={currentPlayingTimestamp}

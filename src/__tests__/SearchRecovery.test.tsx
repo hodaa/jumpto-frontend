@@ -183,22 +183,6 @@ describe('returning to the form', () => {
     await waitFor(() => expect(phrase).toHaveFocus());
     expectIdle();
   });
-
-  it('selects the phrase for New search without losing an edited URL', async () => {
-    submit.mockResolvedValue({ status: 'found', results: MATCHES });
-    start();
-    await screen.findByText('old result');
-    const editedUrl = 'https://youtu.be/zyxwvut9876';
-    fireEvent.change(screen.getByLabelText('YouTube URL'), { target: { value: editedUrl } });
-    fireEvent.click(screen.getByRole('button', { name: 'New search' }));
-    const phrase = screen.getByLabelText<HTMLInputElement>('Word or phrase');
-    await waitFor(() => expect(phrase).toHaveFocus());
-    expect(phrase).toHaveValue('first phrase');
-    expect(phrase.selectionStart).toBe(0);
-    expect(phrase.selectionEnd).toBe(phrase.value.length);
-    expect(screen.getByLabelText('YouTube URL')).toHaveValue(editedUrl);
-    expectIdle();
-  });
 });
 
 describe('current-query retry and persistent help', () => {

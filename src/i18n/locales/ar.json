@@ -136,6 +136,7 @@
     "noSnippet": "تطابق تام",
     "copy": "نسخ الكل",
     "export": "تصدير CSV",
+    "downloadTranscript": "تنزيل النص الكامل (PDF)",
     "copied": "تم النسخ!",
     "copyFailed": "تعذّر نسخ النتائج إلى الحافظة. حاول مرة أخرى.",
     "noMatchesTooltip": "لا توجد نتائج للنسخ أو التصدير",
@@ -185,7 +186,6 @@
     "reload": "إعادة تحميل الصفحة",
     "language": "English",
     "languageSelector": "اللغة",
-    "newSearch": "بحث جديد",
     "cancelSearch": "إلغاء البحث",
     "skipToContent": "تخطي إلى المحتوى الرئيسي"
   },

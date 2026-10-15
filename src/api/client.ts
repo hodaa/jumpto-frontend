@@ -128,3 +128,14 @@ export function fetchVideoSearch(
     { signal },
   );
 }
+
+/**
+ * Absolute URL of a transcribed video's full transcript as a PDF.
+ *
+ * Returned for the browser to fetch rather than fetched here: the response is
+ * a file, so an ordinary navigation downloads it without the transcript ever
+ * passing through the app's JSON handling.
+ */
+export function transcriptPdfUrl(youtubeId: string): string {
+  return `${BASE_URL}/api/videos/${encodeURIComponent(youtubeId)}/transcript.pdf`;
+}

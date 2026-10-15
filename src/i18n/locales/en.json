@@ -136,6 +136,7 @@
     "noSnippet": "Exact match",
     "copy": "Copy all",
     "export": "Export CSV",
+    "downloadTranscript": "Download full transcript (PDF)",
     "copied": "Copied!",
     "copyFailed": "Could not copy results to the clipboard. Please try again.",
     "noMatchesTooltip": "No matches to copy or export",
@@ -178,7 +179,6 @@
     "reload": "Reload page",
     "language": "العربية",
     "languageSelector": "Language",
-    "newSearch": "New search",
     "cancelSearch": "Cancel search",
     "skipToContent": "Skip to main content"
   },

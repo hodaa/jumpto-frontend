@@ -6,6 +6,7 @@ import { ErrorView } from './ErrorView';
 import { IconPlay, IconTarget } from './icons';
 import { ResultsList } from './ResultsList';
 import { ResultsToolbar } from './ResultsToolbar';
+import { transcriptPdfUrl } from '../api/client';
 import { StatusCard } from './StatusCard';
 import { VideoPlayer } from './VideoPlayer';
 import type { VideoPlayerHandle } from '../hooks/useYouTubePlayer';
@@ -30,7 +31,6 @@ interface Props {
   onSeek: (seconds: number) => void;
   onPlaybackChange?: (seconds: number | null) => void;
   onClear: () => void;
-  onNewSearch?: () => void;
   onRetry: () => void;
   onCancel?: () => void;
   currentPlayingTimestamp?: number | null;
@@ -136,7 +136,6 @@ function ResultsPanelContent({
   onSeek,
   onPlaybackChange,
   onClear,
-  onNewSearch,
   onRetry,
   onCancel,
   currentPlayingTimestamp,
@@ -344,7 +343,7 @@ function ResultsPanelContent({
             onExport={onExport}
             copied={copied}
             copyFailed={copyFailed}
-            onNewSearch={onNewSearch}
+            transcriptUrl={youtubeId ? transcriptPdfUrl(youtubeId) : undefined}
             hasMatches={matches.length > 0}
           />
         </div>

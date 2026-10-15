@@ -61,6 +61,25 @@ describe('ResultsPanel', () => {
     expect(watch).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abcdef12345&t=5');
   });
 
+  it('offers the whole transcript as a PDF download for the searched video', () => {
+    render(<ResultsPanel {...baseProps} phase="done" />);
+
+    const link = screen.getByRole('link', { name: 'Download full transcript (PDF)' });
+    // The href carries whatever API origin the build was given, so assert the
+    // path that matters rather than pinning the prefix to a test constant.
+    const href = link.getAttribute('href') ?? '';
+    expect(href.slice(href.indexOf('/api'))).toBe('/api/videos/abcdef12345/transcript.pdf');
+    expect(link).toHaveAttribute('download');
+  });
+
+  it('omits the transcript download when no video is known', () => {
+    render(<ResultsPanel {...baseProps} phase="done" youtubeId={null} />);
+
+    expect(
+      screen.queryByRole('link', { name: 'Download full transcript (PDF)' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('renders the keyword inside the title without leaking [object Object]', () => {
     render(<ResultsPanel {...baseProps} phase="done" />);
     expect(screen.getByRole('heading', { name: 'Matches for “hello”' })).toBeInTheDocument();

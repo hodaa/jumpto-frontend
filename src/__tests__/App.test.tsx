@@ -284,17 +284,6 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: 'Copied!' })).not.toBeInTheDocument();
   });
 
-  it('starts a new search from the results toolbar', async () => {
-    mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
-
-    await fillAndSubmit();
-    await screen.findByText('00:05');
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'New search' }));
-    expect(await screen.findByText('Ready to find your moment')).toBeInTheDocument();
-  });
-
   it('opens a shared-moment link into the shared view with the video pre-filled', async () => {
     window.history.replaceState({}, '', '/?v=abcdef12345&t=62');
     try {
