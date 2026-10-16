@@ -132,8 +132,11 @@ export const ARTICLE_CSS = `
 .qlf-post{max-width:44rem;margin:0 auto;padding:0 1.25rem 4rem}
 .qlf-post-nav{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;align-items:center;justify-content:space-between;margin-bottom:2.5rem;padding-bottom:1.25rem;border-bottom:1px solid #e2e8f0}
 .qlf-post-nav a{color:#02275a;font-weight:600;text-decoration:none;font-size:.9rem}
-.qlf-post-nav a:hover{color:#ea580c}
-.qlf-post-eyebrow{margin:0 0 .5rem;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#ea580c}
+/* Text-sized accent uses the darker --color-accent-strong (4.95:1 on white):
+   #ea580c misses the 4.5:1 AA threshold below the "large text" sizes, so it
+   stays reserved for the display-sized h1. */
+.qlf-post-nav a:hover{color:var(--color-accent-strong)}
+.qlf-post-eyebrow{margin:0 0 .5rem;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--color-accent-strong)}
 .qlf-post h1{margin:0 0 .75rem;font-size:2.25rem;line-height:1.2;color:var(--color-accent)}
 .qlf-post-meta{margin:0 0 2rem;color:#64748b;font-size:.95rem}
 .qlf-body{font-size:1.15rem;line-height:1.8;color:#334155}
@@ -142,7 +145,7 @@ export const ARTICLE_CSS = `
 .qlf-body p{margin:0 0 1.1rem}
 .qlf-body ul,.qlf-body ol{margin:0 0 1.1rem;padding-inline-start:1.4rem}
 .qlf-body li{margin-bottom:.5rem}
-.qlf-body a{color:#ea580c;font-weight:600}
+.qlf-body a{color:var(--color-accent-strong);font-weight:600}
 .qlf-body strong{color:#02275a}
 .qlf-body blockquote{margin:1.5rem 0;padding:.75rem 1.25rem;border-inline-start:3px solid #ea580c;background:#fff7ed;border-radius:.5rem;color:#334155}
 .qlf-body code{background:#f1f5f9;padding:.15em .4em;border-radius:.3em;font-size:.9em;direction:ltr;unicode-bidi:embed;display:inline-block}
@@ -154,8 +157,10 @@ export const ARTICLE_CSS = `
 .qlf-body th{background:#f8fafc;color:#02275a}
 .qlf-cta{margin:2.5rem 0 0;padding:1.5rem;border-radius:.75rem;background:#02275a;color:#fff;text-align:center}
 .qlf-cta p{margin:0 0 1rem;font-size:1rem;color:#e2e8f0}
-.qlf-cta a{display:inline-block;background:#ea580c;color:#fff;font-weight:700;text-decoration:none;padding:.65rem 1.5rem;border-radius:.5rem;min-height:44px;line-height:2}
-.qlf-cta a:hover{background:#c2410c}
+/* The CTA label is normal-sized text on the fill, so the fill carries the
+   contrast: white on #ea580c is 3.56:1, white on the darker accent is 4.95:1. */
+.qlf-cta a{display:inline-block;background:var(--color-accent-strong);color:#fff;font-weight:700;text-decoration:none;padding:.65rem 1.5rem;border-radius:.5rem;min-height:44px;line-height:2}
+.qlf-cta a:hover{background:#9a3412}
 .qlf-index-list{list-style:none;padding:0;margin:0}
 /* Separates the intro copy from the post list below it. */
 .qlf-index-heading{margin:2.5rem 0 1.25rem;font-size:1.5rem;line-height:1.3;color:#02275a;border-top:1px solid #e2e8f0;padding-top:2rem}

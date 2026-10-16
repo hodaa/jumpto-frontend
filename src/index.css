@@ -275,7 +275,9 @@ body {
   border-radius: 50%;
   color: #fff;
   font-weight: 800;
-  font-size: 1.1rem;
+  /* 1.2rem (19.2px) keeps the number at the WCAG "large text" threshold (14pt
+     bold), where white on the bright accent clears AA at 3.56:1. */
+  font-size: 1.2rem;
   line-height: 1;
   box-shadow:
     0 0 0 4px rgba(255, 255, 255, 0.8),

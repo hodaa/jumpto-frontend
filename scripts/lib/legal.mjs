@@ -186,7 +186,7 @@ const FAQ_CSS = `
 .faq-accordion > *:not(summary) p:last-child{margin-bottom:0}
 .faq-accordion > *:not(summary) ul{margin:.75rem 0;padding-inline-start:1.5rem}
 .faq-accordion > *:not(summary) li{margin:.35rem 0}
-.faq-accordion > *:not(summary) a{color:var(--color-accent);font-weight:500}
+.faq-accordion > *:not(summary) a{color:var(--color-accent-strong);font-weight:500}
 .faq-accordion > *:not(summary) code{background:var(--color-accent-bg);padding:.1em .4em;border-radius:.25rem;font-size:.9em}
 
 @keyframes faq-slide{
@@ -296,10 +296,8 @@ export function renderPage(page, { siteUrl, css, cssHref, twin }) {
     try {
       // Convert FAQ h2 headings into accordion details/summary
       const faqBody = document.querySelector('.qlf-faq');
-      console.log('FAQ accordion init, faqBody:', faqBody);
       if (!faqBody) return;
       const headings = Array.from(faqBody.querySelectorAll('h2'));
-      console.log('Found headings:', headings.length);
       headings.forEach(function(h2) {
         // Collect all following siblings until next h2
         var content = [];
@@ -317,7 +315,6 @@ export function renderPage(page, { siteUrl, css, cssHref, twin }) {
         content.forEach(function(el) { details.appendChild(el); });
         h2.replaceWith(details);
       });
-      console.log('FAQ accordion init complete');
     } catch (e) {
       console.error('FAQ accordion init failed:', e);
     }

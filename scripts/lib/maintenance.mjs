@@ -26,7 +26,7 @@ export function renderMaintenance(siteUrl) {
   .mt-block + .mt-block{margin-top:2rem;padding-top:2rem;border-top:1px solid #f1f5f9}
   a{color:#02275a;font-weight:600}
   .mt-contact{font-size:.9rem;color:#475569}
-  .mt-contact a{color:#ea580c}
+  .mt-contact a{color:#c2410c}
   `;
 
   const block = (dir, logo, label, heading, body) => `
