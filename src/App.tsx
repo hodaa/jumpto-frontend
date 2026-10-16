@@ -32,7 +32,6 @@ import { useAuth } from './auth/useAuth';
 import { trackEvent } from './utils/analytics';
 
 const PROGRESS_DONE_DELAY_MS = 350;
-const COPY_NOTICE_MS = 2000;
 const MATCH_LIMIT = 50;
 const PROGRESS_INITIAL = 10; // shown the moment the user clicks Jump, before submit resolves
 const PROGRESS_TICK_STEP = 10;
@@ -102,8 +101,6 @@ export default function App() {
   const resultsRef = useRef<HTMLDivElement>(null);
   const startedAtRef = useRef<number | null>(null);
   const estimatedWaitRef = useRef<number | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [copyFailed, setCopyFailed] = useState(false);
   const formRef = useRef<SearchFormHandle>(null);
   // SearchForm seeds its inputs from `initialUrl`/`initialKeyword` on mount and
   // then owns them, so changing those props afterwards cannot reach the fields.
@@ -112,13 +109,11 @@ export default function App() {
   const [formGeneration, setFormGeneration] = useState(0);
   const searchControllerRef = useRef<AbortController | null>(null);
   const [currentPlayingTimestamp, setCurrentPlayingTimestamp] = useState<number | null>(null);
-  const noticeTimerRef = useRef<number | null>(null);
   const transitionTimerRef = useRef<number | null>(null);
 
   useEffect(
     () => () => {
       searchControllerRef.current?.abort();
-      if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
       if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current);
     },
     [],
@@ -146,14 +141,6 @@ export default function App() {
       window.clearTimeout(transitionTimerRef.current);
       transitionTimerRef.current = null;
     }
-  }, []);
-
-  const scheduleCopyNotice = useCallback(() => {
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = window.setTimeout(() => {
-      setCopied(false);
-      setCopyFailed(false);
-    }, COPY_NOTICE_MS);
   }, []);
 
   // Clicking a result plays from that moment. Clicking inside a replayed moment
@@ -210,8 +197,6 @@ export default function App() {
     setProgress(null);
     setEstimatedWait(null);
     setErrorText('');
-    setCopied(false);
-    setCopyFailed(false);
     setCurrentPlayingTimestamp(null);
     setEditedSinceSubmit(false);
     setSharedSeconds(null);
@@ -269,8 +254,6 @@ export default function App() {
       setProgress(null);
       setEstimatedWait(null);
       setErrorText('');
-      setCopied(false);
-      setCopyFailed(false);
       setCurrentPlayingTimestamp(null);
       setEditedSinceSubmit(false);
       // Carry the phrase into the field: the visitor came here *from* a search for
@@ -353,7 +336,6 @@ export default function App() {
         setJob(null);
         setMatches(cached.matches);
         setNoSpeech(cached.noSpeech);
-        setCopyFailed(false);
         setCurrentPlayingTimestamp(null);
         clearPendingTransition();
         setProgress(100);
@@ -367,7 +349,6 @@ export default function App() {
       setJob(null);
       setMatches([]);
       setNoSpeech(false);
-      setCopyFailed(false);
       setCurrentPlayingTimestamp(null);
       clearPendingTransition();
       // Start the progress count the moment the button is clicked, before the
@@ -496,28 +477,9 @@ export default function App() {
     };
   }, [phase]);
 
-  const handleCopyResults = useCallback(async () => {
-    const signal = searchControllerRef.current?.signal;
-    const text = matches
-      .map((m) => `${m.timestamp} — ${m.text_snippet ?? query.keyword}`)
-      .join('\n');
-    try {
-      await navigator.clipboard.writeText(text);
-      if (signal?.aborted) return;
-      setCopyFailed(false);
-      setCopied(true);
-    } catch {
-      if (signal?.aborted) return;
-      setCopied(false);
-      setCopyFailed(true);
-    }
-    scheduleCopyNotice();
-  }, [matches, query.keyword, scheduleCopyNotice]);
-
   const resetSearch = useCallback(() => {
     searchControllerRef.current?.abort();
     clearPendingTransition();
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
     setEditedSinceSubmit(false);
     setSharedSeconds(null);
     setSharedKeyword(null);
@@ -529,8 +491,6 @@ export default function App() {
     setEstimatedWait(null);
     setErrorText('');
     setJob(null);
-    setCopied(false);
-    setCopyFailed(false);
     setCurrentPlayingTimestamp(null);
   }, [clearPendingTransition]);
 
@@ -691,11 +651,8 @@ export default function App() {
               errorText={errorText}
               keyword={query.keyword}
               youtubeId={parseYouTubeId(query.url) ?? null}
-              copied={copied}
-              copyFailed={copyFailed}
               matchLimit={MATCH_LIMIT}
               playerRef={playerRef}
-              onCopy={() => void handleCopyResults()}
               onSeek={handleSeek}
               onPlaybackChange={setCurrentPlayingTimestamp}
               onClear={handleClearKeyword}

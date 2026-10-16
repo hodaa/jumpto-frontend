@@ -44,14 +44,12 @@ describe('App', () => {
     expect(screen.getAllByRole('button', { name: /Play at/ })).toHaveLength(RESULTS.length);
   });
 
-  it('disables toolbar actions and offers Clear keyword when there are no matches', async () => {
+  it('offers Clear keyword when there are no matches', async () => {
     mockSubmit.mockResolvedValue({ status: 'found', results: [] });
     await fillAndSubmit();
     expect(await screen.findByText(/No exact matches found/)).toBeInTheDocument();
 
     const user = userEvent.setup();
-    expect(screen.getByRole('button', { name: 'Copy all' })).toBeDisabled();
-
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
     expect(await screen.findByText('Ready to find your moment')).toBeInTheDocument();
   });
@@ -239,49 +237,6 @@ describe('App', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Cancel search' }));
     expect(await screen.findByText('Ready to find your moment')).toBeInTheDocument();
-  });
-
-  it('copies all results to the clipboard', async () => {
-    mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
-
-    await fillAndSubmit();
-    await screen.findByText('00:05');
-
-    const user = userEvent.setup();
-
-    // userEvent.setup() installs a navigator.clipboard getter stub, so we
-    // must define our mock AFTER setup has run.
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText },
-      configurable: true,
-    });
-
-    await user.click(screen.getByRole('button', { name: 'Copy all' }));
-    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
-    expect(await screen.findByRole('button', { name: 'Copied!' })).toBeInTheDocument();
-  });
-
-  it('reports a copy failure when the clipboard write rejects', async () => {
-    mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
-
-    await fillAndSubmit();
-    await screen.findByText('00:05');
-
-    const user = userEvent.setup();
-    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText },
-      configurable: true,
-    });
-
-    await user.click(screen.getByRole('button', { name: 'Copy all' }));
-    const status = await screen.findByText(
-      'Could not copy results to the clipboard. Please try again.',
-    );
-    expect(status).toHaveAttribute('role', 'status');
-    expect(status).not.toHaveAttribute('aria-label');
-    expect(screen.queryByRole('button', { name: 'Copied!' })).not.toBeInTheDocument();
   });
 
   it('opens a shared-moment link into the shared view with the video pre-filled', async () => {
