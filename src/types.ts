@@ -58,6 +58,25 @@ export interface VideoFormatsResponse {
   heights: number[];
 }
 
+/** Lifecycle states for an offloaded video download. */
+export type VideoDownloadState = 'pending' | 'processing' | 'ready' | 'failed' | 'consumed';
+
+/** Response shape for POST /api/videos/{youtube_id}/downloads. */
+export interface VideoDownloadCreated {
+  id: string;
+  status: VideoDownloadState;
+}
+
+/** Response shape for the download status and consume routes. */
+export interface VideoDownloadStatus extends VideoDownloadCreated {
+  /** Blob URL of the produced file; set only while ready. */
+  url: string | null;
+  /** User-safe failure message when failed. */
+  error: string | null;
+  /** Filename the client should save the file under. */
+  filename: string | null;
+}
+
 /* ── accounts and private search history ── */
 
 /** The signed-in user. Never carries a password hash. */

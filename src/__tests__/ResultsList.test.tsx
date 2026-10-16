@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ResultsList } from '../components/ResultsList';
 import { setLanguage } from '../i18n';
 import { formatYouTubeTime } from '../utils/youtube';
+import { saveDownload } from '../utils/download';
 import { fetchVideoFormats } from '../api/client';
 
 vi.mock('../api/client', async (importOriginal) => ({
@@ -11,12 +12,42 @@ vi.mock('../api/client', async (importOriginal) => ({
   fetchVideoFormats: vi.fn(),
 }));
 
+vi.mock('../utils/download', () => ({
+  downloadNameFor: vi.fn(() => 'video.mp4'),
+  saveDownload: vi.fn(),
+}));
+
 const formatsMock = vi.mocked(fetchVideoFormats);
+const saveDownloadMock = vi.mocked(saveDownload);
 
 beforeEach(() => {
   formatsMock.mockReset();
   formatsMock.mockResolvedValue([]);
+  saveDownloadMock.mockReset();
 });
+
+/** Control the mocked save flow: finish it, fail it, or observe cancellation. */
+function holdSave() {
+  let settle!: () => void;
+  let reject!: (error: unknown) => void;
+  let aborted = false;
+  const pending = new Promise<void>((resolve, failing) => {
+    settle = resolve;
+    reject = failing;
+  });
+  saveDownloadMock.mockImplementation((_url, signal) => {
+    signal?.addEventListener('abort', () => {
+      aborted = true;
+      reject(new DOMException('Aborted', 'AbortError'));
+    });
+    return pending;
+  });
+  return {
+    aborted: () => aborted,
+    finish: () => settle(),
+    fail: (error: unknown = new Error('download failed')) => reject(error),
+  };
+}
 
 const matches = [
   { timestamp: '00:03', progress_seconds: 3, text_snippet: 'hello world here' },
@@ -98,77 +129,47 @@ describe('ResultsList', () => {
 
   it('downloads the video from a match to the end when the dialog is submitted', async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      blob: () => Promise.resolve(new Blob(['bytes'], { type: 'video/mp4' })),
-    });
-    vi.stubGlobal('fetch', fetchMock);
+    const save = holdSave();
     render(
       <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
     );
 
-    const clicked: HTMLAnchorElement[] = [];
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
-      this: HTMLAnchorElement,
-    ) {
-      clicked.push(this);
-    });
-    try {
-      await user.click(
-        screen.getByRole('button', { name: 'Download from 01:15 to the end (MP4)' }),
-      );
-      await user.click(screen.getByRole('button', { name: 'Download' }));
-      await waitFor(() => expect(clicked).toHaveLength(1));
-    } finally {
-      clickSpy.mockRestore();
-    }
+    await user.click(screen.getByRole('button', { name: 'Download from 01:15 to the end (MP4)' }));
+    await user.click(screen.getByRole('button', { name: 'Download' }));
 
-    const url = String(fetchMock.mock.calls[0]?.[0]);
+    const url = String(saveDownloadMock.mock.calls[0]?.[0]);
     expect(url.slice(url.indexOf('/api'))).toBe('/api/videos/abc123/video.mp4?start=75');
-    expect(clicked[0]?.download).toBe('video-abc123-75-end.mp4');
-    expect(clicked[0]?.getAttribute('href')).toContain('blob:');
+    expect(screen.getByRole('button', { name: 'Cancel download' })).toBeInTheDocument();
+
+    await act(async () => {
+      save.finish();
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Download from 01:15 to the end (MP4)' }),
+    ).toBeInTheDocument();
   });
 
   it('caps a match download at a quality chosen in the dialog', async () => {
     const user = userEvent.setup();
     formatsMock.mockResolvedValue([1080, 720]);
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      blob: () => Promise.resolve(new Blob(['bytes'], { type: 'video/mp4' })),
-    });
-    vi.stubGlobal('fetch', fetchMock);
+    holdSave();
     render(
       <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
     );
 
-    const clicked: HTMLAnchorElement[] = [];
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
-      this: HTMLAnchorElement,
-    ) {
-      clicked.push(this);
-    });
-    try {
-      await user.click(
-        screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }),
-      );
-      await screen.findByRole('option', { name: '720p' });
-      await user.selectOptions(screen.getByLabelText('Quality'), '720');
-      await user.click(screen.getByRole('button', { name: 'Download' }));
-      await waitFor(() => expect(clicked).toHaveLength(1));
-    } finally {
-      clickSpy.mockRestore();
-    }
+    await user.click(screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }));
+    await screen.findByRole('option', { name: '720p' });
+    await user.selectOptions(screen.getByLabelText('Quality'), '720');
+    await user.click(screen.getByRole('button', { name: 'Download' }));
 
-    const url = String(fetchMock.mock.calls[0]?.[0]);
+    const url = String(saveDownloadMock.mock.calls[0]?.[0]);
     expect(url.slice(url.indexOf('/api'))).toBe('/api/videos/abc123/video.mp4?start=3&height=720');
-    expect(clicked[0]?.download).toBe('video-abc123-720p-3-end.mp4');
   });
 
   it('keeps a match download pending until the preparation window elapses', () => {
     vi.useFakeTimers();
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
+    holdSave();
     try {
       render(
         <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
@@ -194,15 +195,7 @@ describe('ResultsList', () => {
 
   it('cancels a pending match download when its button is clicked again', async () => {
     const user = userEvent.setup();
-    const abortableFetch = vi.fn(
-      (_url: string, init?: RequestInit) =>
-        new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener('abort', () =>
-            reject(new DOMException('Aborted', 'AbortError')),
-          );
-        }),
-    );
-    vi.stubGlobal('fetch', abortableFetch);
+    const save = holdSave();
     render(
       <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
     );
@@ -211,10 +204,11 @@ describe('ResultsList', () => {
     await user.click(screen.getByRole('button', { name: 'Download' }));
     await user.click(screen.getByRole('button', { name: 'Cancel download' }));
 
+    expect(save.aborted()).toBe(true);
     expect(
       screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }),
     ).toBeInTheDocument();
-    expect(abortableFetch).toHaveBeenCalledTimes(1);
+    expect(saveDownloadMock).toHaveBeenCalledTimes(1);
   });
 
   it('caps the visible matches and reveals more on demand', async () => {

@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
+  consumeVideoDownload,
+  createVideoDownload,
   fetchJobStatus,
+  fetchVideoDownloadStatus,
   fetchVideoFormats,
   fetchVideoSearch,
   submitSearch,
@@ -249,5 +252,65 @@ describe('fetchVideoFormats', () => {
 
     await expect(fetchVideoFormats('fmtretry')).resolves.toEqual([720]);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('video downloads', () => {
+  const fetchMock = vi.fn();
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockReset();
+  });
+
+  it('queues a download with the requested section and quality', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 'd-1', status: 'pending' }, 202));
+
+    const created = await createVideoDownload('abcdef12345', {
+      start: 30,
+      end: null,
+      height: 720,
+    });
+
+    const call = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(pathOf(call)).toBe('/api/videos/abcdef12345/downloads');
+    expect(call[1].method).toBe('POST');
+    expect(JSON.parse(call[1].body as string)).toEqual({
+      start: 30,
+      end: null,
+      height: 720,
+    });
+    expect(created).toEqual({ id: 'd-1', status: 'pending' });
+  });
+
+  it('fetches a download status and consumes it idempotently', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        id: 'd-1',
+        status: 'ready',
+        url: 'https://blob.test/x.mp4',
+        error: null,
+        filename: 'video-abcdef12345.mp4',
+      }),
+    );
+
+    const status = await fetchVideoDownloadStatus('abcdef12345', 'd-1');
+    expect(pathOf(fetchMock.mock.calls[0] as [string, RequestInit])).toBe(
+      '/api/videos/abcdef12345/downloads/d-1',
+    );
+    expect(status.url).toBe('https://blob.test/x.mp4');
+
+    await consumeVideoDownload('abcdef12345', 'd-1');
+    const call = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(pathOf(call)).toBe('/api/videos/abcdef12345/downloads/d-1/consume');
+    expect(call[1].method).toBe('POST');
+  });
+
+  it('sends credentials with the download calls', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 'd-1', status: 'pending' }, 202));
+
+    await createVideoDownload('abcdef12345', { start: null, end: null, height: null });
+
+    const call = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(call[1].credentials).toBe('include');
   });
 });

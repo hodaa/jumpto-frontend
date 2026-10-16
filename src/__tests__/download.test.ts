@@ -1,21 +1,65 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { consumeVideoDownload, createVideoDownload, fetchVideoDownloadStatus } from '../api/client';
+import type { VideoDownloadStatus } from '../types';
 import { downloadNameFor, saveDownload } from '../utils/download';
+
+vi.mock('../api/client', () => ({
+  createVideoDownload: vi.fn(),
+  fetchVideoDownloadStatus: vi.fn(),
+  consumeVideoDownload: vi.fn(),
+}));
+
+const VIDEO_URL = 'http://api.test/api/videos/abc123/video.mp4';
+const SECTION_URL = 'http://api.test/api/videos/abc123/video.mp4?start=30&height=720';
+
+const createMock = vi.mocked(createVideoDownload);
+const statusMock = vi.mocked(fetchVideoDownloadStatus);
+const consumeMock = vi.mocked(consumeVideoDownload);
+
+function downloadStatus(overrides: Partial<VideoDownloadStatus> = {}): VideoDownloadStatus {
+  return {
+    id: 'd-1',
+    status: 'ready',
+    url: 'https://blob.test/produced.mp4',
+    error: null,
+    filename: 'video-abc123-720p-30-end.mp4',
+    ...overrides,
+  };
+}
+
+/** Stub the blob fetch and return the mock for assertions. */
+function stubBlobFetch() {
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    blob: () => Promise.resolve(new Blob(['bytes'], { type: 'video/mp4' })),
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+/** Record link clicks through the prototype so removed links stay visible. */
+function spyClicks() {
+  const clicked: HTMLAnchorElement[] = [];
+  const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+    this: HTMLAnchorElement,
+  ) {
+    clicked.push(this);
+  });
+  return { clicked, clickSpy };
+}
 
 describe('downloadNameFor', () => {
   it('names a full video after its id', () => {
-    expect(downloadNameFor('http://api.test/api/videos/abc123/video.mp4')).toBe('video-abc123.mp4');
+    expect(downloadNameFor(VIDEO_URL)).toBe('video-abc123.mp4');
   });
 
   it('names a section after both bounds', () => {
-    expect(downloadNameFor('http://api.test/api/videos/abc123/video.mp4?start=30&end=75')).toBe(
-      'video-abc123-30-75.mp4',
-    );
+    expect(downloadNameFor(`${VIDEO_URL}?start=30&end=75`)).toBe('video-abc123-30-75.mp4');
   });
 
   it('marks a section that runs to the end', () => {
-    expect(downloadNameFor('http://api.test/api/videos/abc123/video.mp4?start=75')).toBe(
-      'video-abc123-75-end.mp4',
-    );
+    expect(downloadNameFor(`${VIDEO_URL}?start=75`)).toBe('video-abc123-75-end.mp4');
   });
 
   it('sanitizes unexpected characters in the id, like the server would', () => {
@@ -23,110 +67,130 @@ describe('downloadNameFor', () => {
   });
 
   it('marks the quality before the range, like the server would', () => {
-    expect(downloadNameFor('http://api.test/api/videos/abc123/video.mp4?height=720')).toBe(
-      'video-abc123-720p.mp4',
+    expect(downloadNameFor(`${VIDEO_URL}?height=720`)).toBe('video-abc123-720p.mp4');
+    expect(downloadNameFor(`${VIDEO_URL}?start=30&end=75&height=360`)).toBe(
+      'video-abc123-360p-30-75.mp4',
     );
-    expect(
-      downloadNameFor('http://api.test/api/videos/abc123/video.mp4?start=30&end=75&height=360'),
-    ).toBe('video-abc123-360p-30-75.mp4');
   });
 });
 
 describe('saveDownload', () => {
-  it('saves the fetched bytes through a same-origin blob link', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      blob: () => Promise.resolve(new Blob(['bytes'], { type: 'video/mp4' })),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-
-    const clicked: HTMLAnchorElement[] = [];
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
-      this: HTMLAnchorElement,
-    ) {
-      clicked.push(this);
-    });
-    try {
-      await saveDownload('http://api.test/api/videos/abc123/video.mp4?start=5');
-    } finally {
-      clickSpy.mockRestore();
-    }
-
-    expect(fetchMock).toHaveBeenCalledWith('http://api.test/api/videos/abc123/video.mp4?start=5', {
-      signal: undefined,
-    });
-    expect(clicked[0]?.download).toBe('video-abc123-5-end.mp4');
-    expect(clicked[0]?.getAttribute('href')).toContain('blob:');
-    expect(clicked[0]?.isConnected).toBe(false);
+  beforeEach(() => {
+    createMock.mockReset();
+    statusMock.mockReset();
+    consumeMock.mockReset();
+    createMock.mockResolvedValue({ id: 'd-1', status: 'pending' });
+    statusMock.mockResolvedValue(downloadStatus());
+    consumeMock.mockResolvedValue(downloadStatus({ status: 'consumed', url: null }));
   });
 
-  it('hands the abort signal to the fetch so a cancel can stop the wait', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      blob: () => Promise.resolve(new Blob(['bytes'], { type: 'video/mp4' })),
+  it('queues, polls, saves the produced file, and consumes it', async () => {
+    statusMock
+      .mockResolvedValueOnce(downloadStatus({ status: 'processing', url: null }))
+      .mockResolvedValueOnce(downloadStatus());
+    const fetchMock = stubBlobFetch();
+    const { clicked } = spyClicks();
+
+    vi.useFakeTimers();
+    const pending = saveDownload(VIDEO_URL);
+    await vi.advanceTimersByTimeAsync(2000);
+    await pending;
+
+    expect(createMock).toHaveBeenCalledWith(
+      'abc123',
+      { start: null, end: null, height: null },
+      undefined,
+    );
+    expect(fetchMock).toHaveBeenCalledWith('https://blob.test/produced.mp4', {
+      signal: undefined,
     });
-    vi.stubGlobal('fetch', fetchMock);
+    expect(clicked[0]?.download).toBe('video-abc123-720p-30-end.mp4');
+    expect(clicked[0]?.getAttribute('href')).toContain('blob:');
+    expect(clicked[0]?.isConnected).toBe(false);
+    expect(consumeMock).toHaveBeenCalledWith('abc123', 'd-1', undefined);
+  });
 
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  it('forwards the section and quality the URL names', async () => {
+    const fetchMock = stubBlobFetch();
+    spyClicks();
     const controller = new AbortController();
-    try {
-      await saveDownload('http://api.test/api/videos/abc123/video.mp4', controller.signal);
-    } finally {
-      clickSpy.mockRestore();
-    }
 
-    expect(fetchMock).toHaveBeenCalledWith('http://api.test/api/videos/abc123/video.mp4', {
+    await saveDownload(SECTION_URL, controller.signal);
+
+    expect(createMock).toHaveBeenCalledWith(
+      'abc123',
+      { start: 30, end: null, height: 720 },
+      controller.signal,
+    );
+    expect(fetchMock).toHaveBeenCalledWith('https://blob.test/produced.mp4', {
       signal: controller.signal,
     });
   });
 
-  it('rejects and never clicks when the wait is aborted mid-flight', async () => {
-    const fetchMock = vi.fn(
-      (_url: string, init?: RequestInit) =>
-        new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener('abort', () =>
-            reject(new DOMException('Aborted', 'AbortError')),
-          );
-        }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
+  it('falls back to the derived name when the server sends none', async () => {
+    statusMock.mockResolvedValue(downloadStatus({ filename: null }));
+    stubBlobFetch();
+    const { clicked } = spyClicks();
 
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    await saveDownload(`${VIDEO_URL}?start=5`);
+
+    expect(clicked[0]?.download).toBe('video-abc123-5-end.mp4');
+  });
+
+  it('rejects with the server message when production failed and never clicks', async () => {
+    const message = 'Could not prepare the video download. Please try again later.';
+    statusMock.mockResolvedValue(downloadStatus({ status: 'failed', url: null, error: message }));
+    stubBlobFetch();
+    const { clickSpy } = spyClicks();
+
+    await expect(saveDownload(VIDEO_URL)).rejects.toThrow(message);
+
+    expect(clickSpy).not.toHaveBeenCalled();
+    expect(consumeMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects and never clicks when the wait is aborted while polling', async () => {
+    statusMock.mockResolvedValue(downloadStatus({ status: 'processing', url: null }));
+    const { clickSpy } = spyClicks();
     const controller = new AbortController();
-    try {
-      const pending = saveDownload(
-        'http://api.test/api/videos/abc123/video.mp4',
-        controller.signal,
-      );
-      controller.abort();
 
-      await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
-    } finally {
-      clickSpy.mockRestore();
-    }
+    vi.useFakeTimers();
+    const pending = saveDownload(VIDEO_URL, controller.signal);
+    await vi.advanceTimersByTimeAsync(0);
+    controller.abort();
 
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
     expect(clickSpy).not.toHaveBeenCalled();
   });
 
-  it('rejects when the server cannot prepare the file and never clicks', async () => {
+  it('rejects when the server refuses to queue the download', async () => {
+    createMock.mockRejectedValue(new Error('error.jobGone'));
+    const { clickSpy } = spyClicks();
+
+    await expect(saveDownload(VIDEO_URL)).rejects.toThrow('error.jobGone');
+    expect(clickSpy).not.toHaveBeenCalled();
+  });
+
+  it('rejects when the produced file cannot be fetched and never clicks', async () => {
     vi.stubGlobal(
       'fetch',
       vi
         .fn()
         .mockResolvedValue({ ok: false, status: 502, blob: () => Promise.resolve(new Blob()) }),
     );
+    const { clickSpy } = spyClicks();
 
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-    try {
-      await expect(saveDownload('http://api.test/api/videos/abc123/video.mp4')).rejects.toThrow(
-        '502',
-      );
-    } finally {
-      clickSpy.mockRestore();
-    }
-
+    await expect(saveDownload(VIDEO_URL)).rejects.toThrow('502');
     expect(clickSpy).not.toHaveBeenCalled();
+  });
+
+  it('still saves when the consume cleanup fails', async () => {
+    consumeMock.mockRejectedValue(new Error('backend down'));
+    stubBlobFetch();
+    const { clicked } = spyClicks();
+
+    await saveDownload(VIDEO_URL);
+
+    expect(clicked).toHaveLength(1);
   });
 });

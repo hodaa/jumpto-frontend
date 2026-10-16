@@ -1,6 +1,8 @@
 import type {
   SearchResponse,
   StatusResponse,
+  VideoDownloadCreated,
+  VideoDownloadStatus,
   VideoFormatsResponse,
   VideoSearchResponse,
 } from '../types';
@@ -146,14 +148,15 @@ export function transcriptPdfUrl(youtubeId: string): string {
 }
 
 /**
- * Absolute URL of a video's media file as an MP4 download.
+ * Absolute URL identifying one video download request.
  *
- * Like the transcript PDF, this is handed to the browser to fetch, but unlike
- * it the server has real work to do first: yt-dlp downloads and merges the
- * streams before the response begins, so the browser waits before the file
- * arrives. With `startSeconds`, only that section is downloaded, up to
- * `endSeconds` or to the video's end when it is omitted. With `height`, the
- * file is capped at that H.264 quality.
+ * URL-shaped so a call site can pass it around as one value (the filename
+ * still derives from it), but the URL no longer carries the bytes itself:
+ * `saveDownload` parses it, queues the download on the backend, polls until
+ * the worker has produced the file, then fetches the blob it points at. With
+ * `startSeconds`, only that section is produced, up to `endSeconds` or to the
+ * video's end when it is omitted. With `height`, the file is capped at that
+ * H.264 quality.
  */
 export function videoDownloadUrl(
   youtubeId: string,
@@ -176,14 +179,58 @@ export function videoDownloadUrl(
   return query ? `${base}?${query}` : base;
 }
 
+/** The section and quality a video download request asks for. */
+export interface VideoDownloadRequest {
+  start: number | null;
+  end: number | null;
+  height: number | null;
+}
+
+/** Queue a video download; the worker produces it and reports a blob URL. */
+export function createVideoDownload(
+  youtubeId: string,
+  download: VideoDownloadRequest,
+  signal?: AbortSignal,
+): Promise<VideoDownloadCreated> {
+  return request<VideoDownloadCreated>(`/api/videos/${encodeURIComponent(youtubeId)}/downloads`, {
+    json: download,
+    signal,
+  });
+}
+
+/** Fetch a queued download's state, its blob URL once ready, and filename. */
+export function fetchVideoDownloadStatus(
+  youtubeId: string,
+  downloadId: string,
+  signal?: AbortSignal,
+): Promise<VideoDownloadStatus> {
+  return request<VideoDownloadStatus>(
+    `/api/videos/${encodeURIComponent(youtubeId)}/downloads/${encodeURIComponent(downloadId)}`,
+    { signal },
+  );
+}
+
+/** Tell the server the file was received, so its stored blob can be deleted. */
+export function consumeVideoDownload(
+  youtubeId: string,
+  downloadId: string,
+  signal?: AbortSignal,
+): Promise<VideoDownloadStatus> {
+  return request<VideoDownloadStatus>(
+    `/api/videos/${encodeURIComponent(youtubeId)}/downloads/${encodeURIComponent(downloadId)}/consume`,
+    { method: 'POST', signal },
+  );
+}
+
 // The qualities of a video change rarely; one probe per session is plenty.
 const formatsCache = new Map<string, Promise<number[]>>();
 
 /**
  * List a video's downloadable heights, tallest first.
  *
- * The server probes YouTube once per call, so the result is cached per video
- * for the session. A failed probe is not cached, so the next dialog can try
+ * The server caches the ladder, probing YouTube in the background when it has
+ * none yet (and occasionally refreshing a stale one), so most calls answer
+ * from the cache. A failed call is not cached, so the next dialog can try
  * again, and callers treat a rejection as "no choice to offer".
  */
 export function fetchVideoFormats(youtubeId: string): Promise<number[]> {

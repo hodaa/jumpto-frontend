@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import type { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { videoDownloadUrl } from '../api/client';
 import { usePreparingDownload } from '../hooks/usePreparingDownload';
@@ -11,8 +10,13 @@ interface Props {
   videoYoutubeId?: string;
 }
 
-const BUTTON =
-  'inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-100 @max-[36rem]/toolbar:w-full';
+const BUTTON_BASE =
+  'inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold transition-all duration-200 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-100 @max-[36rem]/toolbar:w-full';
+
+const BUTTON = `${BUTTON_BASE} text-slate-700`;
+
+/** Pending download reads as a destructive action: the same click cancels it. */
+const BUTTON_PENDING = `${BUTTON_BASE} text-danger`;
 
 const SPINNER =
   'h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700';
@@ -26,13 +30,11 @@ export function ResultsToolbar({ transcriptUrl, videoYoutubeId }: Props) {
     beginDownload,
     cancelDownload: cancelVideoDownload,
   } = usePreparingDownload(videoYoutubeId);
-  const videoUrl = videoYoutubeId ? videoDownloadUrl(videoYoutubeId) : undefined;
 
-  const handleVideoClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    // Always the dialog, never a direct download: the button carries the full
-    // video's href for right-click "save as", but a left click asks first.
-    // While a download is being prepared the same click cancels it instead.
-    event.preventDefault();
+  const handleVideoClick = () => {
+    // Always the dialog, never a direct download: a click opens the quality
+    // and section choices. While a download is being prepared the same click
+    // cancels it instead.
     if (preparingVideo) {
       cancelVideoDownload();
       return;
@@ -61,11 +63,10 @@ export function ResultsToolbar({ transcriptUrl, videoYoutubeId }: Props) {
             {t('results.downloadTranscript')}
           </a>
         ) : null}
-        {videoUrl ? (
-          <a
-            className={BUTTON}
-            href={videoUrl}
-            download
+        {videoYoutubeId ? (
+          <button
+            type="button"
+            className={preparingVideo ? BUTTON_PENDING : BUTTON}
             aria-busy={preparingVideo || undefined}
             onClick={handleVideoClick}
           >
@@ -75,7 +76,7 @@ export function ResultsToolbar({ transcriptUrl, videoYoutubeId }: Props) {
               <IconVideo size={16} />
             )}
             {preparingVideo ? t('results.cancelDownload') : t('results.downloadVideo')}
-          </a>
+          </button>
         ) : null}
       </div>
       {preparingVideo ? (
