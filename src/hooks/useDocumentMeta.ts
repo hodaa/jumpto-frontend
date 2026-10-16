@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SITE_URL } from '../config';
 import { NOINDEX_ROUTES, ROUTE_PATH, SPA_OWNED_METADATA, isStaticPath } from '../routes';
-import type { Route } from '../routes';
+import type { ClientView, Route } from '../routes';
 
 /**
  * Per-route `<head>` management for the client-rendered views.
@@ -82,6 +82,19 @@ const meta = (name: string, value: string, kind: 'name' | 'property' = 'name'): 
   keyValue: name,
 });
 
+/**
+ * Remove a head tag if it is there.
+ *
+ * The not-found view is the only writer that removes instead of rewrites: a 404
+ * has no URL to claim as canonical, and index.html ships the homepage's. Left
+ * in place it would ask a crawler to index the homepage at the mistyped
+ * address; rewritten to the mistyped path it would ask for that address to be
+ * indexed instead. Deleting the tag is the only correct statement.
+ */
+function removeTag(selector: string): void {
+  document.querySelector(selector)?.remove();
+}
+
 /** Create (once) a <meta name="robots"> and return it, or null if unavailable. */
 function robotsMeta(): HTMLMetaElement | null {
   const existing = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
@@ -93,20 +106,41 @@ function robotsMeta(): HTMLMetaElement | null {
   return created;
 }
 
-export function useDocumentMeta(route: Route): void {
+export function useDocumentMeta(route: ClientView): void {
   const { t, i18n } = useTranslation();
 
   // i18n.language is a dependency because a language switch must retranslate the
   // title and description, exactly as it retranslates the page.
   useEffect(() => {
-    if (!SPA_OWNED_METADATA.has(route)) return;
-    // Belt and braces with the exclusion list above. `useRoute` answers `home` for
-    // any path it does not recognise, so a generated page that is hydrated but not
-    // in `SPA_OWNED_METADATA` would be handed the *homepage's* title, description
-    // and canonical — a page claiming to be /ar/contact/ while calling itself the
-    // homepage. Asking the router what kind of path this is cannot go stale when
-    // a page is added.
+    // A URL under a static prefix belongs to a generated document, whatever the
+    // router makes of it: /contact/ is both a view and a file, and the file's
+    // head is written at build time. Rewriting it would stamp the app's title,
+    // description and canonical over a page that already has its own — the
+    // duplicate-content bug this hook exists to remove. Asking what kind of path
+    // this is cannot go stale when a page is added.
     if (isStaticPath(window.location.pathname)) return;
+
+    if (route === 'not-found') {
+      // Production never renders this view — the host answers an unmatched path
+      // with the static 404 document (scripts/lib/notfound.mjs) before the app
+      // boots — but the dev server falls back to the app for every path, so the
+      // head mirrors that document here: its copy, `noindex, follow`, and no
+      // canonical at all, because a 404 has no URL to claim.
+      const title = t('meta.notFound.title');
+      const description = t('meta.notFound.description');
+      document.title = title;
+      setTag(meta('description', description));
+      setTag(meta('og:title', title, 'property'));
+      setTag(meta('og:description', description, 'property'));
+      setTag(meta('twitter:title', title));
+      setTag(meta('twitter:description', description));
+      removeTag('link[rel="canonical"]');
+      removeTag('meta[property="og:url"]');
+      robotsMeta()?.setAttribute('content', 'noindex, follow');
+      return;
+    }
+
+    if (!SPA_OWNED_METADATA.has(route)) return;
 
     const key = META_KEY[route];
     // Home already has copy in `app.*` that index.html ships with; reusing it

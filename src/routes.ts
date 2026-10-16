@@ -35,6 +35,17 @@ export type Route =
   | 'history'
   | 'profile';
 
+/**
+ * What the app can be rendering: one of its own routes, or the not-found view
+ * for a path it does not own.
+ *
+ * Not-found stays outside `Route` deliberately. A `Route` has a canonical path
+ * in `ROUTE_PATH`, a metadata entry and a Vercel rewrite; an unknown path has
+ * none of those, and giving it a path of its own would make it linkable,
+ * canonicalisable and indistinguishable from a real page.
+ */
+export type ClientView = Route | 'not-found';
+
 /** Canonical clean path for each SPA route. No hash, ever. */
 export const ROUTE_PATH: Record<Route, string> = {
   home: '/',

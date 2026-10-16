@@ -11,6 +11,7 @@ import type { SearchFormHandle } from './components/SearchForm';
 import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
 import { ContactPage } from './components/ContactPage';
+import { NotFoundPage } from './components/NotFoundPage';
 import { HistoryPage } from './components/auth/HistoryPage';
 import { ProfilePage } from './components/auth/ProfilePage';
 import { LoginPage } from './components/auth/LoginPage';
@@ -590,6 +591,18 @@ export default function App() {
   // history pages have no search form, so mounting them here keeps the search
   // tree (and its polling) completely unmounted rather than hidden — an
   // in-flight job cannot keep ticking behind a login form.
+  //
+  // An unknown path is one of these views, not the homepage: see the fallback
+  // in `useRoute` and scripts/lib/notfound.mjs for the document production
+  // serves at the same URLs.
+  if (route === 'not-found') {
+    return (
+      <PageShell>
+        <NotFoundPage />
+      </PageShell>
+    );
+  }
+
   if (route === 'contact') {
     return (
       <PageShell>

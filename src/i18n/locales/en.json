@@ -35,6 +35,10 @@
     "profile": {
       "title": "Your account — Qfza",
       "description": "Manage your Qfza account details and password."
+    },
+    "notFound": {
+      "title": "Page not found — Qfza",
+      "description": "This page does not exist. Search inside any YouTube video on Qfza."
     }
   },
   "nav": {
@@ -102,7 +106,8 @@
     "pasteEmpty": "Your clipboard is empty. Copy a YouTube URL first, then try Paste again.",
     "pasteManual": "On a phone, touch and hold the URL field and choose Paste. On a computer, press <strong>Ctrl/⌘+V</strong>.",
     "processingHint": "Search in progress. The URL and phrase are locked until the transcript is ready.",
-    "searchAgainHint": "Edit the URL or phrase to search again."
+    "searchAgainHint": "Search again",
+    "searchAgainNote": "Edit the URL or phrase to search again."
   },
   "status": {
     "title": "Transcribing video",
@@ -186,7 +191,7 @@
     "failed": "Transcription failed: {{message}}",
     "noTranscript": "No transcript available: {{message}}",
     "network": "Could not connect. Check your internet connection and try again. If it continues, please try later.",
-    "timeout": "This is taking longer than expected. Please try again later.",
+    "timeout": "This is taking longer than expected. Your inputs have been kept — please try again later.",
     "title": "Search error",
     "unsupportedSource": "Only YouTube is supported. Paste a public YouTube watch link or a youtu.be share link.",
     "unsupportedFormat": "Open the video’s watch page and copy its youtube.com/watch?v=… link, or use a youtu.be share link.",
@@ -206,6 +211,11 @@
     "complete": "Search complete: {{summary}}.",
     "noMatches": "This search found no matches in this video.",
     "failed": "The search couldn’t finish. Your inputs have been kept."
+  },
+  "notFound": {
+    "heading": "We could not find that page",
+    "body": "The link may be broken, or the page may have moved. If you were looking for a video moment, you can search inside any YouTube video instead.",
+    "backHome": "Back to the search"
   },
   "contact": {
     "title": "Contact us",

@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { ROUTE_PATH, legacyHashRoute, routeFromPath } from '../routes';
-import type { Route } from '../routes';
+import type { ClientView, Route } from '../routes';
 
 /**
  * Path router for the client-rendered views.
@@ -32,14 +32,18 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-/** The route for the current URL, or home when the host owns the path. */
 function getPathname(): string {
   return window.location.pathname;
 }
 
-export function useRoute(): Route {
+export function useRoute(): ClientView {
   const pathname = useSyncExternalStore(subscribe, getPathname, getPathname);
-  const route = routeFromPath(pathname) ?? 'home';
+  // A path the table does not own is an unknown URL, not the homepage. The host
+  // answers those with the static 404 document (scripts/lib/notfound.mjs); the
+  // dev server falls back to the app for every path, so resolving to `home`
+  // here rendered the landing page at a stranger's address in dev — a soft 404
+  // that invites a crawler to index the wrong page.
+  const route: ClientView = routeFromPath(pathname) ?? 'not-found';
 
   // Heal a legacy `/#/login` link into the clean path it now lives at.
   //

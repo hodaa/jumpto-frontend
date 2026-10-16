@@ -83,9 +83,12 @@ describe('an emailed link opens its own page', () => {
     expect(renderHook(() => useRoute()).result.current).toBe('reset-password');
   });
 
-  it('falls back to home for an unknown path with no hash', () => {
+  it('resolves an unknown path to the not-found view, not home', () => {
+    // It must not become `home`: production answers this URL with a real 404
+    // document, and the homepage at a stranger's address is a soft 404 — a 200
+    // that invites a crawler to index the wrong page.
     setLocation('/some/unknown/page');
-    expect(renderHook(() => useRoute()).result.current).toBe('home');
+    expect(renderHook(() => useRoute()).result.current).toBe('not-found');
   });
 
   it('still resolves a legacy hash link, so an old bookmarked link works', () => {
