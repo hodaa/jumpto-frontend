@@ -165,12 +165,32 @@ describe('Landing sections', () => {
     expect(nav.parentElement?.firstElementChild?.className).toContain('order-1');
   });
 
-  it('renders the three feature cards', () => {
+  it.each([
+    {
+      language: 'en' as const,
+      heading: 'Why Qfza',
+      cards: [
+        'Exact phrase matching',
+        'Faster repeat searches',
+        'Watch at the right second',
+        'Download what you find',
+      ],
+    },
+    {
+      language: 'ar' as const,
+      heading: 'لماذا قفزة؟',
+      cards: [
+        'مطابقة تامة للعبارة',
+        'بحث أسرع عند التكرار',
+        'شاهد في الثانية الصحيحة',
+        'حمل المقاطع',
+      ],
+    },
+  ])('renders the four feature cards in $language', async ({ language, heading, cards }) => {
+    await act(async () => setLanguage(language));
     render(<Features />);
-    expect(screen.getByText('Why Qfza')).toBeInTheDocument();
-    expect(screen.getByText('Exact phrase matching')).toBeInTheDocument();
-    expect(screen.getByText('Faster repeat searches')).toBeInTheDocument();
-    expect(screen.getByText('Watch at the right second')).toBeInTheDocument();
+    expect(screen.getByText(heading)).toBeInTheDocument();
+    for (const title of cards) expect(screen.getByText(title)).toBeInTheDocument();
   });
 
   it('renders the three-step how it works strip', () => {

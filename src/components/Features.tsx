@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconBolt, IconPlay, IconTarget } from './icons';
+import { IconBolt, IconDownload, IconPlay, IconTarget } from './icons';
 
 /** Value-proposition cards shown on the landing page. */
 export const Features = memo(function Features() {
@@ -9,6 +9,11 @@ export const Features = memo(function Features() {
     { icon: <IconTarget />, title: t('features.exactTitle'), desc: t('features.exactDesc') },
     { icon: <IconBolt />, title: t('features.fastTitle'), desc: t('features.fastDesc') },
     { icon: <IconPlay />, title: t('features.jumpTitle'), desc: t('features.jumpDesc') },
+    {
+      icon: <IconDownload size={22} />,
+      title: t('features.downloadTitle'),
+      desc: t('features.downloadDesc'),
+    },
   ];
 
   return (
@@ -20,7 +25,7 @@ export const Features = memo(function Features() {
     >
       <div className="features__inner">
         <h2 className="section-title animate-fade-in">{t('features.title')}</h2>
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((item, index) => (
             <article
               className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-xl hover:bg-gradient-to-br hover:from-white hover:to-accent/5 animate-fade-in-up group"

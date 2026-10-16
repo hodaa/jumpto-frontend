@@ -27,7 +27,6 @@ interface Props {
   matchLimit?: number;
   playerRef: React.Ref<VideoPlayerHandle>;
   onCopy: () => void;
-  onExport: () => void;
   onSeek: (seconds: number) => void;
   onPlaybackChange?: (seconds: number | null) => void;
   onClear: () => void;
@@ -132,7 +131,6 @@ function ResultsPanelContent({
   matchLimit,
   playerRef,
   onCopy,
-  onExport,
   onSeek,
   onPlaybackChange,
   onClear,
@@ -340,10 +338,10 @@ function ResultsPanelContent({
           </h2>
           <ResultsToolbar
             onCopy={onCopy}
-            onExport={onExport}
             copied={copied}
             copyFailed={copyFailed}
             transcriptUrl={youtubeId ? transcriptPdfUrl(youtubeId) : undefined}
+            videoYoutubeId={youtubeId ?? undefined}
             hasMatches={matches.length > 0}
           />
         </div>

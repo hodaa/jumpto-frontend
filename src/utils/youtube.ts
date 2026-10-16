@@ -135,6 +135,26 @@ export function parseShareUrl(search: string): DeepLink | null {
 }
 
 /**
+ * Read a `MM:SS` or `HH:MM:SS` time back into seconds - the inverse of
+ * `formatYouTubeTime`, for the segment-download fields. A bare number is read
+ * as seconds, and `null` means the field was left empty rather than wrong;
+ * anything unparseable comes back as `NaN` so callers can tell the two apart.
+ */
+export function parseYouTubeTime(value: string): number | null {
+  const trimmed = value.trim();
+  if (trimmed === '') {
+    return null;
+  }
+  if (!/^\d+(?::\d{1,2}){0,2}$/.test(trimmed)) {
+    return Number.NaN;
+  }
+  return trimmed
+    .split(':')
+    .map(Number)
+    .reduce((total, part) => total * 60 + part, 0);
+}
+
+/**
  * Format a timestamp the way the YouTube player controls do:
  * `MM:SS`, or `HH:MM:SS` once the duration reaches an hour.
  * Non-finite or negative input falls back to `00:00`.

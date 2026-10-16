@@ -1,9 +1,12 @@
 import { memo, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { videoDownloadUrl } from '../api/client';
+import { usePreparingDownload } from '../hooks/usePreparingDownload';
 import type { SearchMatch } from '../types';
 import { buildShareUrl, buildWatchUrl, formatYouTubeTime } from '../utils/youtube';
-import { IconCheck, IconSearch, IconShare, IconYouTube } from './icons';
+import { IconCheck, IconDownload, IconSearch, IconShare, IconYouTube } from './icons';
+import { VideoDownloadDialog } from './VideoDownloadDialog';
 
 const DEFAULT_MATCH_LIMIT = 50;
 
@@ -65,6 +68,75 @@ interface MatchRowProps {
 }
 
 const SHARE_COPIED_MS = 2000;
+
+const DOWNLOAD_SPINNER =
+  'h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700';
+
+interface SegmentDownloadButtonProps {
+  youtubeId: string;
+  timestamp: string;
+}
+
+/**
+ * Download the video from this moment onward. The click opens the download
+ * dialog with the start time pre-filled; while the fetch runs the same button
+ * turns into a cancel control, and clicking it stops waiting for the file.
+ */
+function SegmentDownloadButton({ youtubeId, timestamp }: SegmentDownloadButtonProps) {
+  const { t } = useTranslation();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { preparing, beginDownload, cancelDownload } = usePreparingDownload(timestamp);
+  const label = preparing
+    ? t('results.cancelDownload')
+    : t('results.downloadMoment', { timestamp });
+  const handleDownload = (
+    startSeconds: number | null,
+    endSeconds: number | null,
+    height: number | null,
+  ) => {
+    setDialogOpen(false);
+    beginDownload(videoDownloadUrl(youtubeId, startSeconds, endSeconds, height));
+  };
+  const handleClick = () => {
+    if (preparing) {
+      cancelDownload();
+      return;
+    }
+    setDialogOpen(true);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={handleClick}
+        aria-busy={preparing || undefined}
+        aria-label={label}
+        title={label}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-action ${
+          preparing
+            ? 'cursor-pointer text-slate-400 hover:border-slate-300 hover:bg-white hover:text-danger'
+            : 'text-slate-500 hover:border-slate-300 hover:bg-white hover:text-primary'
+        }`}
+      >
+        {preparing ? (
+          <span aria-hidden="true" className={DOWNLOAD_SPINNER} />
+        ) : (
+          <IconDownload size={16} />
+        )}
+      </button>
+      {dialogOpen ? (
+        <VideoDownloadDialog
+          key={`${youtubeId}-${timestamp}`}
+          youtubeId={youtubeId}
+          initialStart={timestamp}
+          onClose={() => setDialogOpen(false)}
+          onDownload={handleDownload}
+        />
+      ) : null}
+    </>
+  );
+}
 
 interface ShareButtonProps {
   youtubeId: string;
@@ -185,6 +257,7 @@ export const MatchRow = memo(function MatchRow({
         </button>
         {youtubeId ? (
           <div className="flex shrink-0 items-center gap-1.5 self-stretch p-2 max-sm:w-full max-sm:justify-end max-sm:border-t max-sm:border-slate-100 @min-[36rem]/matches:items-center @min-[36rem]/matches:border-s @min-[36rem]/matches:border-slate-100">
+            <SegmentDownloadButton youtubeId={youtubeId} timestamp={timestamp} />
             <ShareButton
               youtubeId={youtubeId}
               seconds={match.progress_seconds}
@@ -196,7 +269,7 @@ export const MatchRow = memo(function MatchRow({
               rel="noopener noreferrer"
               aria-label={t('results.watchMoment', { timestamp })}
               title={t('results.watchOnYouTube')}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-200 bg-red-50 text-youtube transition-colors duration-200 hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-action"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-200 bg-red-50 text-youtube transition-colors duration-200 hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-action"
             >
               <IconYouTube size={18} />
             </a>

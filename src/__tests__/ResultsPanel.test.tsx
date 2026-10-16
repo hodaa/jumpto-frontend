@@ -1,10 +1,56 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ResultsPanel } from '../components/ResultsPanel';
+import { fetchVideoFormats } from '../api/client';
 import type { SearchMatch } from '../types';
 
+// The dialog probes the server for qualities on open; those requests would
+// otherwise hit the global fetch the tests stub for the download itself.
+vi.mock('../api/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../api/client')>()),
+  fetchVideoFormats: vi.fn(),
+}));
+
+const formatsMock = vi.mocked(fetchVideoFormats);
+
+beforeEach(() => {
+  formatsMock.mockReset();
+  formatsMock.mockResolvedValue([]);
+});
+
 const RESULTS: SearchMatch[] = [{ timestamp: '00:05', progress_seconds: 5, text_snippet: null }];
+
+interface DownloadResponse {
+  ok: boolean;
+  status: number;
+  blob: () => Promise<Blob>;
+}
+
+/** Hold the download request open until the test finishes, fails, or cancels it. */
+function holdDownload() {
+  let settle!: (response: DownloadResponse) => void;
+  let abort!: (reason?: unknown) => void;
+  const response = new Promise<DownloadResponse>((resolve, reject) => {
+    settle = resolve;
+    abort = reject;
+  });
+  const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+    init?.signal?.addEventListener('abort', () => abort(new DOMException('Aborted', 'AbortError')));
+    return response;
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  const saved: DownloadResponse = {
+    ok: true,
+    status: 200,
+    blob: () => Promise.resolve(new Blob(['bytes'], { type: 'video/mp4' })),
+  };
+  return {
+    fetchMock,
+    finish: () => settle(saved),
+    fail: (status = 502) => settle({ ok: false, status, blob: () => Promise.resolve(new Blob()) }),
+  };
+}
 
 const baseProps = {
   progress: 40,
@@ -15,7 +61,6 @@ const baseProps = {
   copied: false,
   playerRef: { current: null },
   onCopy: vi.fn(),
-  onExport: vi.fn(),
   onSeek: vi.fn(),
   onClear: vi.fn(),
   onRetry: vi.fn(),
@@ -78,6 +123,178 @@ describe('ResultsPanel', () => {
     expect(
       screen.queryByRole('link', { name: 'Download full transcript (PDF)' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('offers the video itself as an MP4 download for the searched video', () => {
+    render(<ResultsPanel {...baseProps} phase="done" />);
+
+    const link = screen.getByRole('link', { name: 'Download video (MP4)' });
+    // As with the transcript, assert the path rather than the build's origin.
+    const href = link.getAttribute('href') ?? '';
+    expect(href.slice(href.indexOf('/api'))).toBe('/api/videos/abcdef12345/video.mp4');
+    expect(link).toHaveAttribute('download');
+  });
+
+  it('omits the video download when no video is known', () => {
+    render(<ResultsPanel {...baseProps} phase="done" youtubeId={null} />);
+
+    expect(screen.queryByRole('link', { name: 'Download video (MP4)' })).not.toBeInTheDocument();
+  });
+
+  it('asks where the download should start and end before fetching', async () => {
+    const user = userEvent.setup();
+    render(<ResultsPanel {...baseProps} phase="done" />);
+
+    await user.click(screen.getByRole('link', { name: 'Download video (MP4)' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText('Start (mm:ss)')).toBeInTheDocument();
+    expect(screen.getByLabelText('End (mm:ss)')).toBeInTheDocument();
+  });
+
+  it('turns the video download into a cancel control once a download starts', async () => {
+    const user = userEvent.setup();
+    const { fetchMock } = holdDownload();
+    render(<ResultsPanel {...baseProps} phase="done" />);
+
+    await user.click(screen.getByRole('link', { name: 'Download video (MP4)' }));
+    const dialog = screen.getByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Download' }));
+
+    const url = String(fetchMock.mock.calls[0]?.[0]);
+    expect(url.slice(url.indexOf('/api'))).toBe('/api/videos/abcdef12345/video.mp4');
+    const pending = screen.getByRole('link', { name: 'Cancel download' });
+    expect(pending).toHaveAttribute('aria-busy', 'true');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'The download will start automatically when the video is ready. Long videos can take several minutes. Click the button again to cancel.',
+      ),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops waiting when the pending video download is cancelled', async () => {
+    const user = userEvent.setup();
+    const { fetchMock } = holdDownload();
+    render(<ResultsPanel {...baseProps} phase="done" />);
+    await user.click(screen.getByRole('link', { name: 'Download video (MP4)' }));
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+
+    await user.click(screen.getByRole('link', { name: 'Cancel download' }));
+
+    expect(screen.getByRole('link', { name: 'Download video (MP4)' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Cancel download' })).not.toBeInTheDocument();
+    // Cancelling must not ask the server for a second download.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('downloads the entered range and keeps the pending state', async () => {
+    const user = userEvent.setup();
+    const { fetchMock } = holdDownload();
+    render(<ResultsPanel {...baseProps} phase="done" />);
+    await user.click(screen.getByRole('link', { name: 'Download video (MP4)' }));
+    await user.type(screen.getByLabelText('Start (mm:ss)'), '0:30');
+    await user.type(screen.getByLabelText('End (mm:ss)'), '1:15');
+
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+
+    const url = String(fetchMock.mock.calls[0]?.[0]);
+    expect(url.slice(url.indexOf('/api'))).toBe(
+      '/api/videos/abcdef12345/video.mp4?start=30&end=75',
+    );
+    expect(screen.getByRole('link', { name: 'Cancel download' })).toBeInTheDocument();
+  });
+
+  it('sends the quality chosen in the dialog with the download', async () => {
+    const user = userEvent.setup();
+    formatsMock.mockResolvedValue([1080, 720]);
+    const { fetchMock } = holdDownload();
+    render(<ResultsPanel {...baseProps} phase="done" />);
+    await user.click(screen.getByRole('link', { name: 'Download video (MP4)' }));
+    await screen.findByRole('option', { name: '720p' });
+    await user.selectOptions(screen.getByLabelText('Quality'), '720');
+
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+
+    const url = String(fetchMock.mock.calls[0]?.[0]);
+    expect(url.slice(url.indexOf('/api'))).toBe('/api/videos/abcdef12345/video.mp4?height=720');
+  });
+
+  it('saves the prepared file and re-arms the button', async () => {
+    const user = userEvent.setup();
+    const { finish } = holdDownload();
+    render(<ResultsPanel {...baseProps} phase="done" />);
+    await user.click(screen.getByRole('link', { name: 'Download video (MP4)' }));
+
+    const clicked: HTMLAnchorElement[] = [];
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      clicked.push(this);
+    });
+    try {
+      await user.click(screen.getByRole('button', { name: 'Download' }));
+      expect(screen.getByRole('link', { name: 'Cancel download' })).toBeInTheDocument();
+
+      await act(async () => {
+        finish();
+      });
+    } finally {
+      clickSpy.mockRestore();
+    }
+
+    expect(clicked[0]?.download).toBe('video-abcdef12345.mp4');
+    expect(clicked[0]?.getAttribute('href')).toContain('blob:');
+    expect(screen.getByRole('link', { name: 'Download video (MP4)' })).toBeInTheDocument();
+  });
+
+  it('re-arms the video download when the server cannot prepare the file', async () => {
+    const user = userEvent.setup();
+    const { fail } = holdDownload();
+    render(<ResultsPanel {...baseProps} phase="done" />);
+    await user.click(screen.getByRole('link', { name: 'Download video (MP4)' }));
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+    expect(screen.getByRole('link', { name: 'Cancel download' })).toBeInTheDocument();
+
+    await act(async () => {
+      fail(502);
+    });
+
+    expect(screen.getByRole('link', { name: 'Download video (MP4)' })).toBeInTheDocument();
+  });
+
+  it('re-arms the video download after the preparation window elapses', () => {
+    vi.useFakeTimers();
+    holdDownload();
+    try {
+      render(<ResultsPanel {...baseProps} phase="done" />);
+      fireEvent.click(screen.getByRole('link', { name: 'Download video (MP4)' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Download' }));
+      expect(screen.getByRole('link', { name: 'Cancel download' })).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(11 * 60 * 1000);
+      });
+
+      expect(screen.getByRole('link', { name: 'Download video (MP4)' })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('re-arms the video download when the searched video changes', () => {
+    holdDownload();
+    const { rerender } = render(<ResultsPanel {...baseProps} phase="done" />);
+    fireEvent.click(screen.getByRole('link', { name: 'Download video (MP4)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
+    expect(screen.getByRole('link', { name: 'Cancel download' })).toBeInTheDocument();
+
+    rerender(<ResultsPanel {...baseProps} phase="done" youtubeId="othervid123" />);
+
+    const link = screen.getByRole('link', { name: 'Download video (MP4)' });
+    const href = link.getAttribute('href') ?? '';
+    expect(href.slice(href.indexOf('/api'))).toBe('/api/videos/othervid123/video.mp4');
   });
 
   it('renders the keyword inside the title without leaking [object Object]', () => {
@@ -143,6 +360,17 @@ describe('accessible results and announcements', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toHaveAccessibleDescription(
       'Try again uses the URL and phrase currently shown in the form.',
     );
+  });
+
+  it('keeps the timeout card’s reassurance the same as the live region’s', () => {
+    // The announcement tells a screen reader nothing was lost. The card is what
+    // a sighted user reads, so it has to say the same thing — otherwise the
+    // promise only exists for one audience.
+    render(<ResultsPanel {...baseProps} phase="error" errorText="error.timeout" />);
+    expect(screen.getByText(/This is taking longer than expected/)).toHaveTextContent(
+      'Your inputs have been kept',
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Your inputs have been kept');
   });
 });
 

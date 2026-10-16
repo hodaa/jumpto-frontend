@@ -52,6 +52,12 @@ export interface StatusResponse {
 /** Response shape for GET /api/video/{video_id}/search. */
 export type VideoSearchResponse = SearchFoundResponse | SearchNotFoundResponse;
 
+/** Response shape for GET /api/videos/{youtube_id}/formats. */
+export interface VideoFormatsResponse {
+  /** Downloadable H.264 heights in pixels, tallest first. */
+  heights: number[];
+}
+
 /* ── accounts and private search history ── */
 
 /** The signed-in user. Never carries a password hash. */

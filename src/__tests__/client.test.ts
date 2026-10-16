@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, fetchJobStatus, fetchVideoSearch, submitSearch } from '../api/client';
+import {
+  ApiError,
+  fetchJobStatus,
+  fetchVideoFormats,
+  fetchVideoSearch,
+  submitSearch,
+  videoDownloadUrl,
+} from '../api/client';
 
 function jsonResponse(data: unknown, status = 200, ok = true): Response {
   return {
@@ -158,5 +165,89 @@ describe('api client', () => {
     const err = new ApiError('error.server', 'server said no');
     expect(err.messageKey).toBe('error.server');
     expect(err.serverMessage).toBe('server said no');
+  });
+});
+
+describe('videoDownloadUrl', () => {
+  const path = (url: string) => url.slice(url.indexOf('/api'));
+
+  it('leaves a full download untouched', () => {
+    expect(path(videoDownloadUrl('abcdef12345'))).toBe('/api/videos/abcdef12345/video.mp4');
+  });
+
+  it('appends a start-only range', () => {
+    expect(path(videoDownloadUrl('abcdef12345', 30))).toBe(
+      '/api/videos/abcdef12345/video.mp4?start=30',
+    );
+  });
+
+  it('appends both bounds', () => {
+    expect(path(videoDownloadUrl('abcdef12345', 30, 90))).toBe(
+      '/api/videos/abcdef12345/video.mp4?start=30&end=90',
+    );
+  });
+
+  it('ignores an end without a start, like the server would', () => {
+    expect(path(videoDownloadUrl('abcdef12345', null, 90))).toBe(
+      '/api/videos/abcdef12345/video.mp4',
+    );
+  });
+
+  it('floors fractional match timestamps to whole seconds', () => {
+    expect(path(videoDownloadUrl('abcdef12345', 17.533))).toBe(
+      '/api/videos/abcdef12345/video.mp4?start=17',
+    );
+    expect(path(videoDownloadUrl('abcdef12345', 30.9, 90.4))).toBe(
+      '/api/videos/abcdef12345/video.mp4?start=30&end=90',
+    );
+  });
+
+  it('appends a quality without a range', () => {
+    expect(path(videoDownloadUrl('abcdef12345', null, null, 720))).toBe(
+      '/api/videos/abcdef12345/video.mp4?height=720',
+    );
+  });
+
+  it('orders the quality after the range bounds', () => {
+    expect(path(videoDownloadUrl('abcdef12345', 30, 90, 360))).toBe(
+      '/api/videos/abcdef12345/video.mp4?start=30&end=90&height=360',
+    );
+  });
+});
+
+describe('fetchVideoFormats', () => {
+  const fetchMock = vi.fn();
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockReset();
+  });
+
+  it("fetches and returns the video's heights", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ heights: [1080, 720] }));
+
+    await expect(fetchVideoFormats('fmtbasic')).resolves.toEqual([1080, 720]);
+    expect(pathOf(fetchMock.mock.calls[0] as [string, RequestInit])).toBe(
+      '/api/videos/fmtbasic/formats',
+    );
+  });
+
+  it('probes only once per video per session', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ heights: [720] }));
+
+    await fetchVideoFormats('fmtcached');
+    await fetchVideoFormats('fmtcached');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not cache a failed probe', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({}, 502, false));
+    await expect(fetchVideoFormats('fmtretry')).rejects.toMatchObject({
+      messageKey: 'error.server',
+    });
+    fetchMock.mockResolvedValue(jsonResponse({ heights: [720] }));
+
+    await expect(fetchVideoFormats('fmtretry')).resolves.toEqual([720]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

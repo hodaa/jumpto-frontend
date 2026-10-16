@@ -1,4 +1,9 @@
-import type { SearchResponse, StatusResponse, VideoSearchResponse } from '../types';
+import type {
+  SearchResponse,
+  StatusResponse,
+  VideoFormatsResponse,
+  VideoSearchResponse,
+} from '../types';
 
 /** Error whose message can be shown to the user. */
 export class ApiError extends Error {
@@ -138,4 +143,62 @@ export function fetchVideoSearch(
  */
 export function transcriptPdfUrl(youtubeId: string): string {
   return `${BASE_URL}/api/videos/${encodeURIComponent(youtubeId)}/transcript.pdf`;
+}
+
+/**
+ * Absolute URL of a video's media file as an MP4 download.
+ *
+ * Like the transcript PDF, this is handed to the browser to fetch, but unlike
+ * it the server has real work to do first: yt-dlp downloads and merges the
+ * streams before the response begins, so the browser waits before the file
+ * arrives. With `startSeconds`, only that section is downloaded, up to
+ * `endSeconds` or to the video's end when it is omitted. With `height`, the
+ * file is capped at that H.264 quality.
+ */
+export function videoDownloadUrl(
+  youtubeId: string,
+  startSeconds?: number | null,
+  endSeconds?: number | null,
+  height?: number | null,
+): string {
+  const base = `${BASE_URL}/api/videos/${encodeURIComponent(youtubeId)}/video.mp4`;
+  const params = new URLSearchParams();
+  if (startSeconds != null) {
+    params.set('start', String(Math.floor(startSeconds)));
+    if (endSeconds != null) {
+      params.set('end', String(Math.floor(endSeconds)));
+    }
+  }
+  if (height != null) {
+    params.set('height', String(height));
+  }
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
+}
+
+// The qualities of a video change rarely; one probe per session is plenty.
+const formatsCache = new Map<string, Promise<number[]>>();
+
+/**
+ * List a video's downloadable heights, tallest first.
+ *
+ * The server probes YouTube once per call, so the result is cached per video
+ * for the session. A failed probe is not cached, so the next dialog can try
+ * again, and callers treat a rejection as "no choice to offer".
+ */
+export function fetchVideoFormats(youtubeId: string): Promise<number[]> {
+  const cached = formatsCache.get(youtubeId);
+  if (cached) {
+    return cached;
+  }
+  const pending = request<VideoFormatsResponse>(
+    `/api/videos/${encodeURIComponent(youtubeId)}/formats`,
+  )
+    .then((data) => data.heights)
+    .catch((error: unknown) => {
+      formatsCache.delete(youtubeId);
+      throw error;
+    });
+  formatsCache.set(youtubeId, pending);
+  return pending;
 }

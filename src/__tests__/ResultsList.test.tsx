@@ -1,9 +1,22 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ResultsList } from '../components/ResultsList';
 import { setLanguage } from '../i18n';
 import { formatYouTubeTime } from '../utils/youtube';
+import { fetchVideoFormats } from '../api/client';
+
+vi.mock('../api/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../api/client')>()),
+  fetchVideoFormats: vi.fn(),
+}));
+
+const formatsMock = vi.mocked(fetchVideoFormats);
+
+beforeEach(() => {
+  formatsMock.mockReset();
+  formatsMock.mockResolvedValue([]);
+});
 
 const matches = [
   { timestamp: '00:03', progress_seconds: 3, text_snippet: 'hello world here' },
@@ -69,6 +82,139 @@ describe('ResultsList', () => {
     expect(watch[0]).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc123&t=3');
     expect(watch[0]).toHaveAttribute('target', '_blank');
     expect(watch[1]).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc123&t=75');
+  });
+
+  it('opens the download dialog from a match with the start pre-filled', async () => {
+    const user = userEvent.setup();
+    render(
+      <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Download from 01:15 to the end (MP4)' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByLabelText('Start (mm:ss)')).toHaveValue('01:15');
+  });
+
+  it('downloads the video from a match to the end when the dialog is submitted', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: () => Promise.resolve(new Blob(['bytes'], { type: 'video/mp4' })),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+    );
+
+    const clicked: HTMLAnchorElement[] = [];
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      clicked.push(this);
+    });
+    try {
+      await user.click(
+        screen.getByRole('button', { name: 'Download from 01:15 to the end (MP4)' }),
+      );
+      await user.click(screen.getByRole('button', { name: 'Download' }));
+      await waitFor(() => expect(clicked).toHaveLength(1));
+    } finally {
+      clickSpy.mockRestore();
+    }
+
+    const url = String(fetchMock.mock.calls[0]?.[0]);
+    expect(url.slice(url.indexOf('/api'))).toBe('/api/videos/abc123/video.mp4?start=75');
+    expect(clicked[0]?.download).toBe('video-abc123-75-end.mp4');
+    expect(clicked[0]?.getAttribute('href')).toContain('blob:');
+  });
+
+  it('caps a match download at a quality chosen in the dialog', async () => {
+    const user = userEvent.setup();
+    formatsMock.mockResolvedValue([1080, 720]);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: () => Promise.resolve(new Blob(['bytes'], { type: 'video/mp4' })),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+    );
+
+    const clicked: HTMLAnchorElement[] = [];
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      clicked.push(this);
+    });
+    try {
+      await user.click(
+        screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }),
+      );
+      await screen.findByRole('option', { name: '720p' });
+      await user.selectOptions(screen.getByLabelText('Quality'), '720');
+      await user.click(screen.getByRole('button', { name: 'Download' }));
+      await waitFor(() => expect(clicked).toHaveLength(1));
+    } finally {
+      clickSpy.mockRestore();
+    }
+
+    const url = String(fetchMock.mock.calls[0]?.[0]);
+    expect(url.slice(url.indexOf('/api'))).toBe('/api/videos/abc123/video.mp4?start=3&height=720');
+    expect(clicked[0]?.download).toBe('video-abc123-720p-3-end.mp4');
+  });
+
+  it('keeps a match download pending until the preparation window elapses', () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
+    try {
+      render(
+        <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Download' }));
+
+      const pending = screen.getByRole('button', { name: 'Cancel download' });
+      expect(pending).toHaveAttribute('aria-busy', 'true');
+      expect(pending).toBeEnabled();
+
+      act(() => {
+        vi.advanceTimersByTime(11 * 60 * 1000);
+      });
+
+      expect(
+        screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cancels a pending match download when its button is clicked again', async () => {
+    const user = userEvent.setup();
+    const abortableFetch = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError')),
+          );
+        }),
+    );
+    vi.stubGlobal('fetch', abortableFetch);
+    render(
+      <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }));
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel download' }));
+
+    expect(
+      screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }),
+    ).toBeInTheDocument();
+    expect(abortableFetch).toHaveBeenCalledTimes(1);
   });
 
   it('caps the visible matches and reveals more on demand', async () => {

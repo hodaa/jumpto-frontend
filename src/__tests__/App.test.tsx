@@ -51,7 +51,6 @@ describe('App', () => {
 
     const user = userEvent.setup();
     expect(screen.getByRole('button', { name: 'Copy all' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Export CSV' })).toBeDisabled();
 
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
     expect(await screen.findByText('Ready to find your moment')).toBeInTheDocument();

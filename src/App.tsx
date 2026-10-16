@@ -22,7 +22,6 @@ import { useDocumentMeta } from './hooks/useDocumentMeta';
 import { useJobPolling } from './hooks/useJobPolling';
 import type { VideoPlayerHandle } from './hooks/useYouTubePlayer';
 import type { HistoryEntry, SearchMatch, StatusResponse } from './types';
-import { csvCell } from './utils/csv';
 import { savedResultsOf } from './utils/savedResults';
 import { isReadingHelp } from './utils/focus';
 import { parseYouTubeId, parseShareUrl, buildMomentHref, buildWatchUrl } from './utils/youtube';
@@ -51,11 +50,6 @@ interface ActiveJob {
 interface Query {
   url: string;
   keyword: string;
-}
-
-function safeFilenamePart(value: string): string {
-  const cleaned = value.replace(/[^\w\u0600-\u06FF-]+/g, '_').replace(/^_|_$/g, '');
-  return cleaned.slice(0, 50) || 'results';
 }
 
 /** Read a shared-moment deep link (?v=<id>&t=<seconds>[&empty=1]) once, on first render. */
@@ -519,18 +513,6 @@ export default function App() {
     scheduleCopyNotice();
   }, [matches, query.keyword, scheduleCopyNotice]);
 
-  const handleExportResults = useCallback(() => {
-    const rows = matches.map((m) => `${csvCell(m.timestamp)},${csvCell(m.text_snippet ?? '')}`);
-    const csv = ['timestamp,text_snippet', ...rows];
-    const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `qfza-results-${safeFilenamePart(query.keyword)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [matches, query.keyword]);
-
   const resetSearch = useCallback(() => {
     searchControllerRef.current?.abort();
     clearPendingTransition();
@@ -701,7 +683,6 @@ export default function App() {
               matchLimit={MATCH_LIMIT}
               playerRef={playerRef}
               onCopy={() => void handleCopyResults()}
-              onExport={handleExportResults}
               onSeek={handleSeek}
               onPlaybackChange={setCurrentPlayingTimestamp}
               onClear={handleClearKeyword}
