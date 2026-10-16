@@ -80,10 +80,21 @@ export function HistoryPage({ onReplay, onOpenVideo }: HistoryPageProps) {
     dialog.focus();
   }, [pendingClear]);
 
+  // A row in history is a way back to an answer, so a search that is still in
+  // flight is left out entirely: the live progress belongs to the home status
+  // card, and when the job lands the entry flips to found/not_found and appears
+  // here on its own. It also keeps the empty state honest — a visitor whose only
+  // searches are still running sees "nothing yet", not a row with nothing
+  // behind it.
+  const visibleEntries = useMemo(
+    () => entries.filter((entry) => entry.status !== 'processing'),
+    [entries],
+  );
+
   // One card per video rather than one per search. Recomputed from the whole
   // loaded list, so a video split across two pages of the cursor merges into a
   // single group on its own — no bookkeeping at the page boundary.
-  const groups = useMemo(() => groupHistoryByVideo(entries), [entries]);
+  const groups = useMemo(() => groupHistoryByVideo(visibleEntries), [visibleEntries]);
 
   // First page only. Runs once the session check has settled: loading history
   // before then would fire a request with no cookie yet and report a spurious
@@ -205,7 +216,7 @@ export function HistoryPage({ onReplay, onOpenVideo }: HistoryPageProps) {
           <div>
             <h1 className="section-title">{t('auth.history.title')}</h1>
           </div>
-          {entries.length > 0 ? (
+          {visibleEntries.length > 0 ? (
             <button
               type="button"
               onClick={() => setPendingClear({ kind: 'all' })}
@@ -274,7 +285,7 @@ export function HistoryPage({ onReplay, onOpenVideo }: HistoryPageProps) {
             </ul>
           ) : null}
 
-          {state === 'ready' && entries.length === 0 ? (
+          {state === 'ready' && visibleEntries.length === 0 ? (
             <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-surface-soft px-6 py-14 text-center animate-fade-in">
               <IconHistory size={28} />
               <p className="font-semibold text-muted-strong">{t('auth.history.empty')}</p>
@@ -285,7 +296,7 @@ export function HistoryPage({ onReplay, onOpenVideo }: HistoryPageProps) {
             </div>
           ) : null}
 
-          {entries.length > 0 ? (
+          {visibleEntries.length > 0 ? (
             <ul className="space-y-3">
               {groups.map((group) => (
                 <li

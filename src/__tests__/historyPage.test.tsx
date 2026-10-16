@@ -106,6 +106,16 @@ const SECONDS_ONLY: HistoryEntry = {
   match_timestamps: [90, 240, 600],
 } as HistoryEntry;
 
+/** A search that is still running: it has no answer to come back to yet. */
+const PROCESSING: HistoryEntry = {
+  ...ENTRY,
+  id: 'e8',
+  keyword: 'still transcribing',
+  status: 'processing',
+  progress_seconds: null,
+  match_results: undefined,
+} as HistoryEntry;
+
 /**
  * Render the page the way App does, with a spy standing in for the handoff that
  * opens the moment on the home view.
@@ -152,6 +162,15 @@ describe('history page', () => {
     expect(screen.queryByRole('button', { name: /delete all/i })).toBeNull();
     expect(signOutControl()).toBeNull();
   });
+
+  it('treats a history of only in-flight searches as empty until one lands', async () => {
+    fetchHistory.mockResolvedValue({ entries: [PROCESSING], next_cursor: null });
+    renderHistory();
+
+    await waitFor(() => expect(screen.getByText(/no searches yet/i)).toBeDefined());
+    expect(screen.queryByText('still transcribing')).toBeNull();
+    expect(screen.queryByRole('button', { name: /delete all/i })).toBeNull();
+  });
 });
 
 describe('history grouping', () => {
@@ -176,6 +195,16 @@ describe('history grouping', () => {
     // Both keywords sit under the video they were searched against.
     expect(screen.getByText('how to type faster')).toBeDefined();
     expect(screen.getByText('wrist pain')).toBeDefined();
+  });
+
+  it('leaves out searches that are still processing', async () => {
+    fetchHistory.mockResolvedValue({ entries: [PROCESSING, ENTRY], next_cursor: null });
+    renderHistory();
+
+    // The finished search renders; the in-flight one waits off-screen until it
+    // has an answer to come back to.
+    await waitFor(() => expect(screen.getByText('how to type faster')).toBeDefined());
+    expect(screen.queryByText('still transcribing')).toBeNull();
   });
 
   it('makes the video title the way back to the video', async () => {
