@@ -5,14 +5,7 @@ import { getLanguage } from '../i18n';
 import { fieldStateClass } from '../utils/fieldStyles';
 import { inspectYouTubeUrl } from '../utils/youtube';
 import type { YouTubeUrlIssue } from '../utils/youtube';
-import {
-  IconAlert,
-  IconClipboard,
-  IconSearch,
-  IconTarget,
-  IconVideo,
-  IconX,
-} from './icons';
+import { IconAlert, IconClipboard, IconSearch, IconTarget, IconVideo, IconX } from './icons';
 
 export interface SearchFormHandle {
   /** Preserve the video URL and return to editing the phrase after a search. */
@@ -572,6 +565,7 @@ export const SearchForm = memo(function SearchForm({
         <button
           type="submit"
           disabled={disabled || submitLocked}
+          aria-describedby={submitLocked && !disabled ? 'search-again-note' : undefined}
           className={`group relative inline-flex w-full items-center justify-center gap-2.5 rounded-lg bg-action px-6 py-3.5 text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-action-hover focus:outline-none focus-visible:ring-4 focus-visible:ring-action focus-visible:ring-offset-2 overflow-hidden active:scale-[0.98] ${
             disabled ? 'disabled:cursor-wait' : 'disabled:cursor-not-allowed'
           }`}
@@ -598,6 +592,11 @@ export const SearchForm = memo(function SearchForm({
                 : t('form.submit')}
           </span>
         </button>
+        {submitLocked && !disabled ? (
+          <p id="search-again-note" className="text-sm text-muted-strong">
+            {t('form.searchAgainNote')}
+          </p>
+        ) : null}
         {hasInput && !disabled ? (
           <button
             type="button"

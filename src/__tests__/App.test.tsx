@@ -167,8 +167,9 @@ describe('App', () => {
     // clicking it is a no-op and the cached results are served only once.
     const user = userEvent.setup();
     const latched = screen.getByRole('button', {
-      name: 'Edit the URL or phrase to search again.',
+      name: 'Search again',
     });
+    expect(latched).toHaveAccessibleDescription('Edit the URL or phrase to search again.');
     await user.click(latched);
     expect(await screen.findByText('00:05')).toBeInTheDocument();
     expect(mockSubmit).toHaveBeenCalledTimes(1);
@@ -180,7 +181,7 @@ describe('App', () => {
     await screen.findByText('00:05');
 
     const latched = screen.getByRole('button', {
-      name: 'Edit the URL or phrase to search again.',
+      name: 'Search again',
     });
     expect(latched).toBeDisabled();
     expect(latched).not.toHaveAccessibleName('Jump to the moment');
