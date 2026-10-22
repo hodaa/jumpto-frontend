@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, submitSearch } from './api/client';
 import { Features } from './components/Features';
@@ -25,8 +25,14 @@ import type { VideoPlayerHandle } from './hooks/useYouTubePlayer';
 import type { HistoryEntry, SearchMatch, StatusResponse } from './types';
 import { savedResultsOf } from './utils/savedResults';
 import { isReadingHelp } from './utils/focus';
-import { parseYouTubeId, parseShareUrl, buildMomentHref, buildWatchUrl } from './utils/youtube';
-import type { DeepLink } from './utils/youtube';
+import {
+  buildMomentHref,
+  buildWatchUrl,
+  identifyVideoId,
+  inspectVideoUrl,
+  parseShareUrl,
+} from './utils/videoSources';
+import type { DeepLink, VideoRef } from './utils/videoSources';
 import { clearResultsCache, getCachedResults, setCachedResults } from './utils/resultsCache';
 import { useAuth } from './auth/useAuth';
 import { trackEvent } from './utils/analytics';
@@ -44,7 +50,6 @@ interface ActiveJob {
   signal: AbortSignal;
   jobId: string;
   videoId: string;
-  youtubeId: string;
 }
 
 interface Query {
@@ -90,7 +95,7 @@ export default function App() {
   const [job, setJob] = useState<ActiveJob | null>(null);
   const [query, setQuery] = useState<Query>(() => {
     const link = readSharedLink();
-    return link ? { url: buildWatchUrl(link.youtubeId, 0), keyword: '' } : { url: '', keyword: '' };
+    return link ? { url: buildWatchUrl(link.video, 0), keyword: '' } : { url: '', keyword: '' };
   });
   // Latches true once the user edits either field after a completed search, so
   // the submit CTA can warn that the shown results are stale. Stored as a
@@ -233,13 +238,13 @@ export default function App() {
   // together, so the effect above performs the seek.
   const showSavedSearch = useCallback(
     ({
-      videoId,
+      video,
       seconds,
       keyword,
       matches,
       matched,
     }: {
-      videoId: string;
+      video: VideoRef;
       seconds: number;
       keyword?: string;
       matches: SearchMatch[] | null;
@@ -259,14 +264,14 @@ export default function App() {
       // Carry the phrase into the field: the visitor came here *from* a search for
       // it, so the input should show what they searched rather than fall back to
       // the placeholder and read as if nothing was searched for.
-      setQuery({ url: buildWatchUrl(videoId, 0), keyword: trimmedKeyword });
+      setQuery({ url: buildWatchUrl(video, 0), keyword: trimmedKeyword });
 
       // Go home first, then write the moment into the URL: the route has already
       // changed by the time replaceState lands, and the address stays a deep link
       // a reload can replay. The search view only lives on the home route, so
       // without this the player would be mounted under /history and never appear.
       navigate('home');
-      window.history.replaceState(null, '', buildMomentHref(videoId, seconds));
+      window.history.replaceState(null, '', buildMomentHref(video, seconds));
 
       setSharedSeconds(Math.max(0, Math.floor(seconds)));
       setSharedKeyword(trimmedKeyword || null);
@@ -292,7 +297,7 @@ export default function App() {
     (entry: HistoryEntry) => {
       const saved = savedResultsOf(entry);
       showSavedSearch({
-        videoId: entry.video_id,
+        video: identifyVideoId(entry.video_id),
         seconds: entry.progress_seconds ?? saved.matches?.[0]?.progress_seconds ?? 0,
         keyword: entry.keyword,
         matches: saved.matches,
@@ -306,7 +311,13 @@ export default function App() {
   // search, so it carries no keyword and no results and starts at the top.
   const openHistoryVideo = useCallback(
     (videoId: string) => {
-      showSavedSearch({ videoId, seconds: 0, keyword: '', matches: null, matched: true });
+      showSavedSearch({
+        video: identifyVideoId(videoId),
+        seconds: 0,
+        keyword: '',
+        matches: null,
+        matched: true,
+      });
     },
     [showSavedSearch],
   );
@@ -323,8 +334,8 @@ export default function App() {
       setSharedKeyword(null);
       setSharedMatches(null);
       setSharedMatched(true);
-      const youtubeId = parseYouTubeId(url) ?? '';
-      const cached = youtubeId ? getCachedResults(youtubeId, keyword) : undefined;
+      const video = inspectVideoUrl(url).video;
+      const cached = video ? getCachedResults(video, keyword) : undefined;
       if (cached !== undefined) {
         // Same video + keyword was already searched this session: show the
         // cached results immediately instead of re-submitting and re-polling.
@@ -361,8 +372,8 @@ export default function App() {
         if (controller.signal.aborted) return;
         trackEvent('search_submit', { source: 'network' });
         if (response.status === 'found' || response.status === 'not_found') {
-          if (youtubeId)
-            setCachedResults(youtubeId, keyword, response.results, response.no_speech ?? false);
+          if (video)
+            setCachedResults(video, keyword, response.results, response.no_speech ?? false);
           setMatches(response.results);
           setNoSpeech(response.no_speech ?? false);
           setProgress(100);
@@ -373,7 +384,6 @@ export default function App() {
           signal: controller.signal,
           jobId: response.job_id,
           videoId: response.video_id,
-          youtubeId: parseYouTubeId(url) ?? '',
         });
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -416,8 +426,8 @@ export default function App() {
 
   const handlePollSuccess = useCallback(
     (value: SearchMatch[], noSpeech: boolean) => {
-      const youtubeId = parseYouTubeId(query.url) ?? '';
-      if (youtubeId) setCachedResults(youtubeId, query.keyword, value, noSpeech);
+      const video = inspectVideoUrl(query.url).video;
+      if (video) setCachedResults(video, query.keyword, value, noSpeech);
       setNoSpeech(noSpeech);
       setProgress(100);
       clearPendingTransition();
@@ -515,6 +525,10 @@ export default function App() {
   }, []);
 
   const searching = phase === 'processing';
+  // One video object per URL: the player and the result list memoize on its
+  // identity, and a fresh object on every render would defeat that — and would
+  // read as a different video to the list's expanded state, collapsing it.
+  const video = useMemo(() => inspectVideoUrl(query.url).video, [query.url]);
   // Once a search finishes, keep the Jump button latched off until the user
   // actually changes the URL or phrase — clicking it again would only replay
   // the exact same query. Retry (from an error panel) stays imperative, so it
@@ -650,7 +664,7 @@ export default function App() {
               noSpeech={noSpeech}
               errorText={errorText}
               keyword={query.keyword}
-              youtubeId={parseYouTubeId(query.url) ?? null}
+              video={video}
               matchLimit={MATCH_LIMIT}
               playerRef={playerRef}
               onSeek={handleSeek}

@@ -10,6 +10,7 @@ import { transcriptPdfUrl } from '../api/client';
 import { StatusCard } from './StatusCard';
 import { VideoPlayer } from './VideoPlayer';
 import type { VideoPlayerHandle } from '../hooks/useYouTubePlayer';
+import type { VideoRef } from '../utils/videoSources';
 import type { SearchMatch } from '../types';
 
 export type Phase = 'idle' | 'processing' | 'done' | 'error';
@@ -21,7 +22,8 @@ interface Props {
   noSpeech?: boolean;
   errorText: string;
   keyword: string;
-  youtubeId: string | null;
+  /** The video under search once the URL resolved to one, whichever source it is. */
+  video: VideoRef | null;
   matchLimit?: number;
   playerRef: React.Ref<VideoPlayerHandle>;
   onSeek: (seconds: number) => void;
@@ -122,7 +124,7 @@ function ResultsPanelContent({
   noSpeech,
   errorText,
   keyword,
-  youtubeId,
+  video,
   matchLimit,
   playerRef,
   onSeek,
@@ -213,8 +215,8 @@ function ResultsPanelContent({
             )}
           </h2>
         </div>
-        {youtubeId ? (
-          <VideoPlayer ref={playerRef} videoId={youtubeId} onPlaybackChange={onPlaybackChange} />
+        {video ? (
+          <VideoPlayer ref={playerRef} video={video} onPlaybackChange={onPlaybackChange} />
         ) : null}
         <div className="mt-5">
           <ResultsList
@@ -225,7 +227,7 @@ function ResultsPanelContent({
             onClear={onClear}
             matchLimit={matchLimit}
             currentPlayingTimestamp={currentPlayingTimestamp}
-            youtubeId={youtubeId}
+            video={video}
           />
         </div>
       </section>
@@ -281,8 +283,8 @@ function ResultsPanelContent({
             <p className="text-sm text-muted rtl:text-right">{t('shared.hint')}</p>
           </div>
         </div>
-        {youtubeId ? (
-          <VideoPlayer ref={playerRef} videoId={youtubeId} onPlaybackChange={onPlaybackChange} />
+        {video ? (
+          <VideoPlayer ref={playerRef} video={video} onPlaybackChange={onPlaybackChange} />
         ) : null}
         <div className="mt-5">
           <ResultsList
@@ -304,7 +306,7 @@ function ResultsPanelContent({
             // The player is parked on the saved moment, so that row is the active
             // one — the same row, and the same accent ring, the search view marks.
             currentPlayingTimestamp={sharedSeconds}
-            youtubeId={youtubeId}
+            video={video}
           />
         </div>
       </section>
@@ -331,12 +333,12 @@ function ResultsPanelContent({
             />
           </h2>
           <ResultsToolbar
-            transcriptUrl={youtubeId ? transcriptPdfUrl(youtubeId) : undefined}
-            videoYoutubeId={youtubeId ?? undefined}
+            transcriptUrl={video ? transcriptPdfUrl(video.id) : undefined}
+            videoYoutubeId={video?.source === 'youtube' ? video.id : undefined}
           />
         </div>
-        {youtubeId ? (
-          <VideoPlayer ref={playerRef} videoId={youtubeId} onPlaybackChange={onPlaybackChange} />
+        {video ? (
+          <VideoPlayer ref={playerRef} video={video} onPlaybackChange={onPlaybackChange} />
         ) : null}
         <div className="mt-5">
           <ResultsList
@@ -347,7 +349,7 @@ function ResultsPanelContent({
             onClear={onClear}
             matchLimit={matchLimit}
             currentPlayingTimestamp={currentPlayingTimestamp}
-            youtubeId={youtubeId}
+            video={video}
           />
         </div>
       </section>

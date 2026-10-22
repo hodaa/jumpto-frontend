@@ -106,7 +106,12 @@ describe('ResultsList', () => {
 
   it('opens each match on YouTube at its timestamp when a video id is known', () => {
     render(
-      <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+      <ResultsList
+        matches={matches}
+        keyword="hello world"
+        onSeek={vi.fn()}
+        video={{ source: 'youtube', id: 'abc123' }}
+      />,
     );
     const watch = screen.getAllByRole('link', { name: /Watch on YouTube at/ });
     expect(watch).toHaveLength(2);
@@ -115,10 +120,34 @@ describe('ResultsList', () => {
     expect(watch[1]).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc123&t=75');
   });
 
+  it('offers only share actions for a Drive video, which has no YouTube page or download yet', () => {
+    const driveId = '1DOoJhC6NHpLSu2nAvaWy3HukVimEyyhE';
+    render(
+      <ResultsList
+        matches={matches}
+        keyword="hello world"
+        onSeek={vi.fn()}
+        video={{ source: 'drive', id: driveId }}
+      />,
+    );
+    // No YouTube-branded link and no download button: the pipeline behind it
+    // still produces YouTube streams, and a button that can only fail is worse
+    // than no button.
+    expect(screen.queryAllByRole('link', { name: /Watch on YouTube at/ })).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: /Download from/ })).toBeNull();
+    // Sharing stays, one per row.
+    expect(screen.getAllByRole('button', { name: /Share link to/ })).toHaveLength(2);
+  });
+
   it('opens the download dialog from a match with the start pre-filled', async () => {
     const user = userEvent.setup();
     render(
-      <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+      <ResultsList
+        matches={matches}
+        keyword="hello world"
+        onSeek={vi.fn()}
+        video={{ source: 'youtube', id: 'abc123' }}
+      />,
     );
 
     await user.click(screen.getByRole('button', { name: 'Download from 01:15 to the end (MP4)' }));
@@ -131,7 +160,12 @@ describe('ResultsList', () => {
     const user = userEvent.setup();
     const save = holdSave();
     render(
-      <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+      <ResultsList
+        matches={matches}
+        keyword="hello world"
+        onSeek={vi.fn()}
+        video={{ source: 'youtube', id: 'abc123' }}
+      />,
     );
 
     await user.click(screen.getByRole('button', { name: 'Download from 01:15 to the end (MP4)' }));
@@ -155,7 +189,12 @@ describe('ResultsList', () => {
     formatsMock.mockResolvedValue([1080, 720]);
     holdSave();
     render(
-      <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+      <ResultsList
+        matches={matches}
+        keyword="hello world"
+        onSeek={vi.fn()}
+        video={{ source: 'youtube', id: 'abc123' }}
+      />,
     );
 
     await user.click(screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }));
@@ -172,7 +211,12 @@ describe('ResultsList', () => {
     holdSave();
     try {
       render(
-        <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+        <ResultsList
+          matches={matches}
+          keyword="hello world"
+          onSeek={vi.fn()}
+          video={{ source: 'youtube', id: 'abc123' }}
+        />,
       );
       fireEvent.click(screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }));
       fireEvent.click(screen.getByRole('button', { name: 'Download' }));
@@ -197,7 +241,12 @@ describe('ResultsList', () => {
     const user = userEvent.setup();
     const save = holdSave();
     render(
-      <ResultsList matches={matches} keyword="hello world" onSeek={vi.fn()} youtubeId="abc123" />,
+      <ResultsList
+        matches={matches}
+        keyword="hello world"
+        onSeek={vi.fn()}
+        video={{ source: 'youtube', id: 'abc123' }}
+      />,
     );
 
     await user.click(screen.getByRole('button', { name: 'Download from 00:03 to the end (MP4)' }));
@@ -294,11 +343,23 @@ describe('predictable result browsing', () => {
     const user = userEvent.setup();
     const results = manyMatches(55);
     const { rerender } = render(
-      <ResultsList matches={results} keyword="hello" youtubeId="first" onSeek={vi.fn()} />,
+      <ResultsList
+        matches={results}
+        keyword="hello"
+        video={{ source: 'youtube', id: 'first' }}
+        onSeek={vi.fn()}
+      />,
     );
     await user.click(screen.getByRole('button', { name: 'Show 5 more matches' }));
     expect(screen.getAllByRole('listitem')).toHaveLength(55);
-    rerender(<ResultsList matches={results} keyword="hello" youtubeId="second" onSeek={vi.fn()} />);
+    rerender(
+      <ResultsList
+        matches={results}
+        keyword="hello"
+        video={{ source: 'youtube', id: 'second' }}
+        onSeek={vi.fn()}
+      />,
+    );
     expect(screen.getAllByRole('listitem')).toHaveLength(50);
     expect(screen.getByRole('button', { name: 'Show 5 more matches' })).toHaveAttribute(
       'aria-expanded',
@@ -326,7 +387,12 @@ describe('predictable result browsing', () => {
 
   it('gives every external result link a distinct timestamp and a new-tab cue', () => {
     render(
-      <ResultsList matches={matches} keyword="hello" youtubeId="abcdef12345" onSeek={vi.fn()} />,
+      <ResultsList
+        matches={matches}
+        keyword="hello"
+        video={{ source: 'youtube', id: 'abcdef12345' }}
+        onSeek={vi.fn()}
+      />,
     );
     expect(
       screen.getByRole('link', { name: 'Watch on YouTube at 00:03 (opens in a new tab)' }),

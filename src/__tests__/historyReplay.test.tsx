@@ -93,7 +93,7 @@ describe('replaying a saved search from history', () => {
     // shared link opens.
     expect(await screen.findByRole('heading', { name: REPLAY_HEADING })).toBeInTheDocument();
     expect(screen.getByTestId('video-player')).toBeInTheDocument();
-    expect(screen.getByLabelText('YouTube URL')).toHaveValue(
+    expect(screen.getByLabelText('Video URL')).toHaveValue(
       'https://www.youtube.com/watch?v=abcdef12345&t=0',
     );
 

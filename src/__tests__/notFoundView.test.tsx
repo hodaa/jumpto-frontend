@@ -69,7 +69,7 @@ describe('the not-found view', () => {
     expect(screen.getByText('404')).toBeInTheDocument();
     // The search form must not be here: answering a mistyped URL with a working
     // search box reads as "this page exists".
-    expect(screen.queryByLabelText('YouTube URL')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Video URL')).not.toBeInTheDocument();
     expect(document.title).toBe('Page not found — Qfza');
     unmount();
   });
@@ -109,7 +109,7 @@ describe('the not-found view', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('link', { name: 'Back to the search' }));
     expect(window.location.pathname).toBe('/');
-    expect(await screen.findByLabelText('YouTube URL')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Video URL')).toBeInTheDocument();
     unmount();
   });
 

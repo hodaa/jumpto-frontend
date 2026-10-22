@@ -26,7 +26,7 @@ const RESULTS: SearchMatch[] = [{ timestamp: '00:05', progress_seconds: 5, text_
 async function fillAndSubmit(): Promise<void> {
   const user = userEvent.setup();
   render(<App />);
-  await user.type(screen.getByLabelText('YouTube URL'), URL);
+  await user.type(screen.getByLabelText('Video URL'), URL);
   await user.type(screen.getByLabelText('Word or phrase'), 'hello world');
   await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
 }
@@ -42,6 +42,19 @@ describe('App', () => {
     await fillAndSubmit();
     expect(await screen.findByText('00:05')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Play at/ })).toHaveLength(RESULTS.length);
+  });
+
+  it('submits a Google Drive link through the same form', async () => {
+    const driveUrl = 'https://drive.google.com/file/d/1DOoJhC6NHpLSu2nAvaWy3HukVimEyyhE/view';
+    mockSubmit.mockResolvedValue({ status: 'found', results: RESULTS });
+    const user = userEvent.setup();
+    render(<App />);
+    await user.type(screen.getByLabelText('Video URL'), driveUrl);
+    await user.type(screen.getByLabelText('Word or phrase'), 'hello world');
+    await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
+    expect(await screen.findByText('00:05')).toBeInTheDocument();
+    // The raw pasted link is what the backend identifies; the app does not rewrite it.
+    expect(mockSubmit).toHaveBeenCalledWith(driveUrl, 'hello world', expect.any(AbortSignal));
   });
 
   it('offers Clear keyword when there are no matches', async () => {
@@ -112,7 +125,7 @@ describe('App', () => {
     mockSubmit.mockRejectedValue(new ApiError('error.validation'));
     await fillAndSubmit();
     expect(
-      await screen.findByText('Please enter a YouTube URL and a word or phrase.'),
+      await screen.findByText('Please enter a video URL and a word or phrase.'),
     ).toBeInTheDocument();
     const user = userEvent.setup();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
@@ -246,13 +259,34 @@ describe('App', () => {
       expect(
         await screen.findByRole('heading', { name: 'Shared moment at 01:02' }),
       ).toBeInTheDocument();
-      expect(screen.getByLabelText('YouTube URL')).toHaveValue(
+      expect(screen.getByLabelText('Video URL')).toHaveValue(
         'https://www.youtube.com/watch?v=abcdef12345&t=0',
       );
       // The replay banner no longer offers its own search button: the search
       // form is already on screen, and a second way to start a search only
       // competed with it.
       expect(screen.queryByRole('button', { name: 'Search this video' })).toBeNull();
+    } finally {
+      window.history.replaceState({}, '', '/');
+    }
+  });
+
+  it('opens a shared Google Drive link into the shared view with the file pre-filled', async () => {
+    const driveId = '1DOoJhC6NHpLSu2nAvaWy3HukVimEyyhE';
+    window.history.replaceState({}, '', `/?v=${driveId}&t=62&s=drive`);
+    try {
+      render(<App />);
+      expect(
+        await screen.findByRole('heading', { name: 'Shared moment at 01:02' }),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Video URL')).toHaveValue(
+        `https://drive.google.com/file/d/${driveId}/view`,
+      );
+      // The Drive file plays through its own preview frame, not YouTube's player.
+      expect(screen.getByTitle('Video preview')).toHaveAttribute(
+        'src',
+        `https://drive.google.com/file/d/${driveId}/preview`,
+      );
     } finally {
       window.history.replaceState({}, '', '/');
     }

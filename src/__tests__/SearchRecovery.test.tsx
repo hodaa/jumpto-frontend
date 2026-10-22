@@ -40,7 +40,7 @@ function deferred<T>() {
 
 function start() {
   const view = render(<App />);
-  fireEvent.change(screen.getByLabelText('YouTube URL'), { target: { value: URL } });
+  fireEvent.change(screen.getByLabelText('Video URL'), { target: { value: URL } });
   fireEvent.change(screen.getByLabelText('Word or phrase'), { target: { value: 'first phrase' } });
   fireEvent.click(screen.getByRole('button', { name: 'Jump to the moment' }));
   return view;
@@ -179,7 +179,7 @@ describe('returning to the form', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Clear search' }));
     const phrase = screen.getByLabelText('Word or phrase');
     expect(phrase).toHaveValue('');
-    expect(screen.getByLabelText('YouTube URL')).toHaveValue(URL);
+    expect(screen.getByLabelText('Video URL')).toHaveValue(URL);
     await waitFor(() => expect(phrase).toHaveFocus());
     expectIdle();
   });
@@ -193,7 +193,7 @@ describe('current-query retry and persistent help', () => {
     start();
     await screen.findByRole('button', { name: 'Try again' });
     const changedUrl = 'https://youtu.be/zyxwvut9876';
-    fireEvent.change(screen.getByLabelText('YouTube URL'), { target: { value: changedUrl } });
+    fireEvent.change(screen.getByLabelText('Video URL'), { target: { value: changedUrl } });
     fireEvent.change(screen.getByLabelText('Word or phrase'), {
       target: { value: 'corrected phrase' },
     });
@@ -213,14 +213,14 @@ describe('current-query retry and persistent help', () => {
     submit.mockRejectedValue(new ApiError('error.network'));
     start();
     await screen.findByRole('button', { name: 'Try again' });
-    fireEvent.change(screen.getByLabelText('YouTube URL'), {
+    fireEvent.change(screen.getByLabelText('Video URL'), {
       target: { value: 'https://vimeo.com/123' },
     });
     fireEvent.change(screen.getByLabelText('Word or phrase'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(submit).toHaveBeenCalledOnce();
-    expect(screen.getByLabelText('YouTube URL')).toHaveFocus();
-    expect(screen.getByLabelText('YouTube URL')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Video URL')).toHaveFocus();
+    expect(screen.getByLabelText('Video URL')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText('Word or phrase')).toHaveAttribute('aria-invalid', 'true');
   });
 
@@ -246,7 +246,7 @@ describe('current-query retry and persistent help', () => {
       }
       expect(submit).toHaveBeenCalledOnce();
       expect(screen.getByLabelText('Word or phrase')).toHaveValue('first phrase');
-      expect(screen.getByLabelText('YouTube URL')).not.toHaveAttribute('readonly');
+      expect(screen.getByLabelText('Video URL')).not.toHaveAttribute('readonly');
     },
   );
 });

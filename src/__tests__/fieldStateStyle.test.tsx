@@ -61,7 +61,7 @@ describe('shared invalid-field styling', () => {
     render(<SearchForm onSubmit={vi.fn()} />);
     await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
 
-    const field = await screen.findByLabelText(/youtube url/i);
+    const field = await screen.findByLabelText(/video url/i);
     await waitFor(() => expect(field).toHaveAttribute('aria-invalid', 'true'));
     for (const token of fieldStateClass(true).split(' ')) {
       expect(field.className).toContain(token);

@@ -84,7 +84,7 @@ async function searchAsSignedInUser(): Promise<ReturnType<typeof render>> {
   vi.mocked(submitSearch).mockResolvedValue({ status: 'found', results: RESULTS } as never);
   const view = render(<App />);
   const user = userEvent.setup();
-  await user.type(screen.getByLabelText('YouTube URL'), URL_UNDER_TEST);
+  await user.type(screen.getByLabelText('Video URL'), URL_UNDER_TEST);
   await user.type(screen.getByLabelText('Word or phrase'), 'how to type faster');
   await user.click(screen.getByRole('button', { name: 'Jump to the moment' }));
   await screen.findByText('00:05');
@@ -111,14 +111,14 @@ describe('signing out', () => {
     await signOutFromMenu();
 
     expect(await screen.findByRole('button', { name: 'Jump to the moment' })).toBeInTheDocument();
-    expect(screen.getByLabelText('YouTube URL')).toBeInTheDocument();
+    expect(screen.getByLabelText('Video URL')).toBeInTheDocument();
   });
 
   it('clears both fields', async () => {
     await searchAsSignedInUser();
     await signOutFromMenu();
 
-    await waitFor(() => expect(screen.getByLabelText('YouTube URL')).toHaveValue(''));
+    await waitFor(() => expect(screen.getByLabelText('Video URL')).toHaveValue(''));
     expect(screen.getByLabelText('Word or phrase')).toHaveValue('');
   });
 

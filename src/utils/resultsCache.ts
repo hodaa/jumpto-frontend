@@ -1,4 +1,5 @@
 import type { SearchMatch } from '../types';
+import type { VideoRef } from './videoSources';
 
 const MAX_CACHE_ENTRIES = 20;
 
@@ -10,13 +11,13 @@ interface CachedEntry {
 
 const cache = new Map<string, CachedEntry>();
 
-function cacheKey(youtubeId: string, keyword: string): string {
-  return `${youtubeId}:${keyword.trim().toLowerCase()}`;
+function cacheKey(video: VideoRef, keyword: string): string {
+  return `${video.source}:${video.id}:${keyword.trim().toLowerCase()}`;
 }
 
 /** Return cached results for a video/keyword, or undefined on a miss. */
-export function getCachedResults(youtubeId: string, keyword: string): CachedEntry | undefined {
-  const key = cacheKey(youtubeId, keyword);
+export function getCachedResults(video: VideoRef, keyword: string): CachedEntry | undefined {
+  const key = cacheKey(video, keyword);
   if (!cache.has(key)) return undefined;
   const results = cache.get(key) as CachedEntry;
   cache.delete(key);
@@ -26,12 +27,12 @@ export function getCachedResults(youtubeId: string, keyword: string): CachedEntr
 
 /** Store results for a video/keyword, evicting the least-recent entry when full. */
 export function setCachedResults(
-  youtubeId: string,
+  video: VideoRef,
   keyword: string,
   matches: SearchMatch[],
   noSpeech = false,
 ): void {
-  const key = cacheKey(youtubeId, keyword);
+  const key = cacheKey(video, keyword);
   cache.delete(key);
   cache.set(key, { matches, noSpeech });
   if (cache.size > MAX_CACHE_ENTRIES) {

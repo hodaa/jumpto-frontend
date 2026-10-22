@@ -3,20 +3,23 @@ import { useTranslation } from 'react-i18next';
 import type { VideoPlayerHandle } from '../hooks/useYouTubePlayer';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
 import { formatYouTubeTime } from '../utils/youtube';
+import type { VideoRef } from '../utils/videoSources';
 import { IconVideo } from './icons';
 import { StatusCard } from './StatusCard';
 
 interface Props {
-  videoId: string;
+  video: VideoRef;
   onPlaybackChange?: (seconds: number | null) => void;
 }
 
+const FRAME = 'relative aspect-video w-full overflow-hidden rounded-xl';
+
 const PlayerInstance = forwardRef<VideoPlayerHandle, Props>(function PlayerInstance(
-  { videoId, onPlaybackChange },
+  { video, onPlaybackChange },
   ref,
 ) {
   const { t } = useTranslation();
-  const [containerRef, handle, state] = useYouTubePlayer(videoId, onPlaybackChange);
+  const [containerRef, handle, state] = useYouTubePlayer(video.id, onPlaybackChange);
   useImperativeHandle(ref, () => handle, [handle]);
   const { status, requestedTimestamp, playbackBlocked } = state;
   const timestamp = requestedTimestamp === null ? null : formatYouTubeTime(requestedTimestamp);
@@ -40,7 +43,7 @@ const PlayerInstance = forwardRef<VideoPlayerHandle, Props>(function PlayerInsta
   return (
     <div className="min-w-0">
       <div
-        className={`relative aspect-video w-full overflow-hidden rounded-xl ${
+        className={`${FRAME} ${
           status === 'ready' ? 'bg-black' : 'border border-slate-200 bg-slate-50'
         }`}
         aria-busy={status === 'loading'}
@@ -81,7 +84,36 @@ const PlayerInstance = forwardRef<VideoPlayerHandle, Props>(function PlayerInsta
   );
 });
 
+/**
+ * A Google Drive file embedded through its preview iframe.
+ *
+ * Drive exposes no scriptable player: the frame cannot be told to seek, and it
+ * reports no playback position. So this is deliberately dumb — one iframe, no
+ * overlays and no messages — and the replay of a moment still opens on the
+ * right row while the video itself starts from the beginning.
+ */
+function DrivePreview({ videoId }: { videoId: string }) {
+  const { t } = useTranslation();
+  return (
+    <div className="min-w-0">
+      <div className={`${FRAME} border border-slate-200 bg-black`}>
+        <iframe
+          src={`https://drive.google.com/file/d/${encodeURIComponent(videoId)}/preview`}
+          title={t('player.title')}
+          allow="autoplay; fullscreen"
+          allowFullScreen
+          className="h-full w-full"
+        />
+      </div>
+    </div>
+  );
+}
+
 /** A new video gets a fresh player lifecycle, including loading and queued seeks. */
 export const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(props, ref) {
-  return <PlayerInstance key={props.videoId} {...props} ref={ref} />;
+  const key = `${props.video.source}:${props.video.id}`;
+  if (props.video.source === 'drive') {
+    return <DrivePreview key={key} videoId={props.video.id} />;
+  }
+  return <PlayerInstance key={key} {...props} ref={ref} />;
 });

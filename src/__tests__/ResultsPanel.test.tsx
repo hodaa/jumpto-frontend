@@ -59,7 +59,7 @@ const baseProps = {
   matches: RESULTS,
   errorText: '',
   keyword: 'hello',
-  youtubeId: 'abcdef12345',
+  video: { source: 'youtube', id: 'abcdef12345' } as const,
   playerRef: { current: null },
   onSeek: vi.fn(),
   onClear: vi.fn(),
@@ -118,7 +118,7 @@ describe('ResultsPanel', () => {
   });
 
   it('omits the transcript download when no video is known', () => {
-    render(<ResultsPanel {...baseProps} phase="done" youtubeId={null} />);
+    render(<ResultsPanel {...baseProps} phase="done" video={null} />);
 
     expect(
       screen.queryByRole('link', { name: 'Download full transcript (PDF)' }),
@@ -137,7 +137,7 @@ describe('ResultsPanel', () => {
   });
 
   it('omits the video download when no video is known', () => {
-    render(<ResultsPanel {...baseProps} phase="done" youtubeId={null} />);
+    render(<ResultsPanel {...baseProps} phase="done" video={null} />);
 
     expect(screen.queryByRole('button', { name: 'Download video (MP4)' })).not.toBeInTheDocument();
   });
@@ -281,7 +281,9 @@ describe('ResultsPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Download' }));
     expect(screen.getByRole('button', { name: 'Cancel download' })).toBeInTheDocument();
 
-    rerender(<ResultsPanel {...baseProps} phase="done" youtubeId="othervid123" />);
+    rerender(
+      <ResultsPanel {...baseProps} phase="done" video={{ source: 'youtube', id: 'othervid123' }} />,
+    );
 
     expect(screen.getByRole('button', { name: 'Download video (MP4)' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel download' })).not.toBeInTheDocument();
@@ -308,7 +310,7 @@ describe('ResultsPanel', () => {
 
 describe('accessible results and announcements', () => {
   it('names the card from its actual heading and gives the list a plain-text name', () => {
-    render(<ResultsPanel {...baseProps} phase="done" youtubeId={null} />);
+    render(<ResultsPanel {...baseProps} phase="done" video={null} />);
     const heading = screen.getByRole('heading', { name: 'Matches for “hello”' });
     const card = screen.getByRole('region', { name: 'Matches for “hello”' });
     expect(card).toHaveAttribute('aria-labelledby', heading.id);
@@ -335,7 +337,7 @@ describe('accessible results and announcements', () => {
     expect(screen.getAllByRole('status')).toHaveLength(1);
     rerender(<ResultsPanel {...baseProps} phase="processing" progress={50} />);
     expect(live).toHaveTextContent('Finding matching timestamps.');
-    rerender(<ResultsPanel {...baseProps} phase="done" youtubeId={null} />);
+    rerender(<ResultsPanel {...baseProps} phase="done" video={null} />);
     expect(live).toHaveTextContent('Search complete: 1 match.');
     // The live region stays unnamed: naming it can suppress content announcements in NVDA/JAWS.
     expect(live).not.toHaveAttribute('aria-label');
@@ -379,7 +381,7 @@ describe('ResultsPanel replaying a saved search', () => {
   };
 
   it('lists every saved match rather than the one it opens on', () => {
-    render(<ResultsPanel {...baseProps} {...shared} sharedMatches={THREE} youtubeId={null} />);
+    render(<ResultsPanel {...baseProps} {...shared} sharedMatches={THREE} video={null} />);
 
     // The stored result set, all three of it. Trimming to the moment the player
     // opens on would make a keyword that occurs all over a video look like it
@@ -390,7 +392,7 @@ describe('ResultsPanel replaying a saved search', () => {
   });
 
   it('marks only the moment the player is parked on as current', () => {
-    render(<ResultsPanel {...baseProps} {...shared} sharedMatches={THREE} youtubeId={null} />);
+    render(<ResultsPanel {...baseProps} {...shared} sharedMatches={THREE} video={null} />);
 
     // aria-current is the screen-reader half of the accent ring: without it the
     // list reads as three undifferentiated matches with no indication of where
@@ -407,7 +409,7 @@ describe('ResultsPanel replaying a saved search', () => {
   it('shows one row for a bare moment link that knows of nothing else', () => {
     // ?v=&t= carries a second and nothing else. The single row is the honest
     // rendering of that, and must not be mistaken for a one-result search.
-    render(<ResultsPanel {...baseProps} {...shared} sharedMatches={null} youtubeId={null} />);
+    render(<ResultsPanel {...baseProps} {...shared} sharedMatches={null} video={null} />);
 
     expect(screen.getByRole('button', { name: /Play at 02:00/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Play at 00:30/i })).not.toBeInTheDocument();
@@ -426,7 +428,7 @@ describe('ResultsPanel replaying a saved search', () => {
         sharedSeconds={754}
         sharedKeyword={null}
         sharedMatches={null}
-        youtubeId={null}
+        video={null}
       />,
     );
 
@@ -450,11 +452,16 @@ describe('ResultsPanel replaying a saved search', () => {
         sharedSeconds={30}
         sharedKeyword="sighting"
         sharedMatches={THREE}
-        youtubeId="abcdef12345"
+        video={{ source: 'youtube', id: 'abcdef12345' }}
       />,
     );
     const searched = render(
-      <ResultsPanel {...baseProps} phase="done" matches={THREE} youtubeId="abcdef12345" />,
+      <ResultsPanel
+        {...baseProps}
+        phase="done"
+        matches={THREE}
+        video={{ source: 'youtube', id: 'abcdef12345' }}
+      />,
     );
 
     // Same list wrapper, same row markup, same inline action buttons: the replay is
@@ -477,7 +484,7 @@ describe('ResultsPanel replaying a saved search', () => {
         {...shared}
         sharedMatches={[]}
         sharedMatched={false}
-        youtubeId={null}
+        video={null}
       />,
     );
 

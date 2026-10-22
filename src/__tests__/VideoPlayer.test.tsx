@@ -42,7 +42,7 @@ afterEach(() => {
 
 describe('VideoPlayer', () => {
   it('shows a loading skeleton and a usable fallback until the player is ready', async () => {
-    render(<VideoPlayer videoId="abcdef12345" />);
+    render(<VideoPlayer video={{ source: 'youtube', id: 'abcdef12345' }} />);
     expect(screen.getByText('Loading video preview…')).toBeInTheDocument();
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
     ready();
@@ -53,7 +53,13 @@ describe('VideoPlayer', () => {
   it('queues only the latest early seek and waits for real playback before activating a match', async () => {
     const ref = createRef<VideoPlayerHandle>();
     const onPlaybackChange = vi.fn();
-    render(<VideoPlayer ref={ref} videoId="abcdef12345" onPlaybackChange={onPlaybackChange} />);
+    render(
+      <VideoPlayer
+        ref={ref}
+        video={{ source: 'youtube', id: 'abcdef12345' }}
+        onPlaybackChange={onPlaybackChange}
+      />,
+    );
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
     act(() => {
       ref.current?.seekTo(5);
@@ -80,7 +86,13 @@ describe('VideoPlayer', () => {
   it('parks on a moment without playing it when autoplay is off', async () => {
     const ref = createRef<VideoPlayerHandle>();
     const onPlaybackChange = vi.fn();
-    render(<VideoPlayer ref={ref} videoId="abcdef12345" onPlaybackChange={onPlaybackChange} />);
+    render(
+      <VideoPlayer
+        ref={ref}
+        video={{ source: 'youtube', id: 'abcdef12345' }}
+        onPlaybackChange={onPlaybackChange}
+      />,
+    );
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
 
     // Queued before the player exists, exactly as the shared-moment path does.
@@ -99,7 +111,7 @@ describe('VideoPlayer', () => {
 
   it('still plays a plain seek, so selecting a result is unchanged', async () => {
     const ref = createRef<VideoPlayerHandle>();
-    render(<VideoPlayer ref={ref} videoId="abcdef12345" />);
+    render(<VideoPlayer ref={ref} video={{ source: 'youtube', id: 'abcdef12345' }} />);
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
     act(() => ref.current?.seekTo(42));
     ready();
@@ -109,7 +121,7 @@ describe('VideoPlayer', () => {
   it('shows an unavailable state immediately when the API script fails', async () => {
     vi.stubGlobal('YT', undefined);
     const ref = createRef<VideoPlayerHandle>();
-    render(<VideoPlayer videoId="abcdef12345" ref={ref} />);
+    render(<VideoPlayer video={{ source: 'youtube', id: 'abcdef12345' }} ref={ref} />);
     act(() => document.getElementById('youtube-iframe-api')?.dispatchEvent(new Event('error')));
     expect(await screen.findByText('Video preview unavailable')).toBeInTheDocument();
     act(() => ref.current?.seekTo(83));
@@ -119,7 +131,7 @@ describe('VideoPlayer', () => {
   it('times out an API script that never becomes ready and clears its timers', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('YT', undefined);
-    render(<VideoPlayer videoId="abcdef12345" />);
+    render(<VideoPlayer video={{ source: 'youtube', id: 'abcdef12345' }} />);
     await act(async () => vi.advanceTimersByTime(8000));
     expect(screen.getByText('Video preview unavailable')).toBeInTheDocument();
     expect(vi.getTimerCount()).toBe(0);
@@ -127,7 +139,7 @@ describe('VideoPlayer', () => {
 
   it('also times out an iframe that never fires onReady, and ignores a late ready event', async () => {
     vi.useFakeTimers();
-    render(<VideoPlayer videoId="abcdef12345" />);
+    render(<VideoPlayer video={{ source: 'youtube', id: 'abcdef12345' }} />);
     await act(async () => {});
     expect(construct).toHaveBeenCalledOnce();
     await act(async () => vi.advanceTimersByTime(8000));
@@ -139,7 +151,7 @@ describe('VideoPlayer', () => {
 
   it('preserves the selected fallback timestamp on an embed error', async () => {
     const ref = createRef<VideoPlayerHandle>();
-    render(<VideoPlayer ref={ref} videoId="abcdef12345" />);
+    render(<VideoPlayer ref={ref} video={{ source: 'youtube', id: 'abcdef12345' }} />);
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
     ready();
     act(() => ref.current?.seekTo(65));
@@ -150,7 +162,13 @@ describe('VideoPlayer', () => {
   it('explains blocked autoplay without claiming the requested match is playing', async () => {
     const ref = createRef<VideoPlayerHandle>();
     const onPlaybackChange = vi.fn();
-    render(<VideoPlayer ref={ref} videoId="abcdef12345" onPlaybackChange={onPlaybackChange} />);
+    render(
+      <VideoPlayer
+        ref={ref}
+        video={{ source: 'youtube', id: 'abcdef12345' }}
+        onPlaybackChange={onPlaybackChange}
+      />,
+    );
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
     ready();
     act(() => ref.current?.seekTo(65));
@@ -164,16 +182,18 @@ describe('VideoPlayer', () => {
     construct.mockImplementationOnce(function () {
       throw new Error('blocked');
     });
-    render(<VideoPlayer videoId="abcdef12345" />);
+    render(<VideoPlayer video={{ source: 'youtube', id: 'abcdef12345' }} />);
     expect(await screen.findByText('Video preview unavailable')).toBeInTheDocument();
   });
 
   it('resets state and queued seeks when the video changes, without replacing React-owned DOM', async () => {
     const ref = createRef<VideoPlayerHandle>();
-    const { rerender } = render(<VideoPlayer videoId="first-video" ref={ref} />);
+    const { rerender } = render(
+      <VideoPlayer video={{ source: 'youtube', id: 'first-video' }} ref={ref} />,
+    );
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
     act(() => ref.current?.seekTo(120));
-    rerender(<VideoPlayer videoId="second-video" ref={ref} />);
+    rerender(<VideoPlayer video={{ source: 'youtube', id: 'second-video' }} ref={ref} />);
     await waitFor(() => expect(construct).toHaveBeenCalledTimes(2));
     expect(instances[0].player.destroy).toHaveBeenCalledOnce();
     ready(0); // Stale first-video events must not change the second player.
@@ -188,7 +208,7 @@ describe('VideoPlayer', () => {
     vi.stubGlobal('YT', undefined);
     const { unmount } = render(
       <StrictMode>
-        <VideoPlayer videoId="abcdef12345" />
+        <VideoPlayer video={{ source: 'youtube', id: 'abcdef12345' }} />
       </StrictMode>,
     );
     expect(document.querySelectorAll('#youtube-iframe-api')).toHaveLength(1);
@@ -198,9 +218,33 @@ describe('VideoPlayer', () => {
     expect(construct).not.toHaveBeenCalled();
   });
 
+  it('embeds a Drive file through its preview iframe instead of the YouTube player', () => {
+    const driveId = '1DOoJhC6NHpLSu2nAvaWy3HukVimEyyhE';
+    render(<VideoPlayer video={{ source: 'drive', id: driveId }} />);
+    expect(screen.getByTitle('Video preview')).toHaveAttribute(
+      'src',
+      `https://drive.google.com/file/d/${driveId}/preview`,
+    );
+    // The YouTube API must not be touched for a Drive video.
+    expect(construct).not.toHaveBeenCalled();
+    expect(document.getElementById('youtube-iframe-api')).toBeNull();
+  });
+
+  it('swaps a Drive preview for the YouTube player when a different video is loaded', () => {
+    const driveId = '1DOoJhC6NHpLSu2nAvaWy3HukVimEyyhE';
+    const { rerender } = render(<VideoPlayer video={{ source: 'drive', id: driveId }} />);
+    expect(screen.getByTitle('Video preview')).toHaveAttribute(
+      'src',
+      `https://drive.google.com/file/d/${driveId}/preview`,
+    );
+    rerender(<VideoPlayer video={{ source: 'youtube', id: 'abcdef12345' }} />);
+    expect(screen.getByText('Loading video preview…')).toBeInTheDocument();
+    expect(screen.queryByTitle('Video preview')).not.toBeInTheDocument();
+  });
+
   it('localizes loading, error and fallback feedback in Arabic', async () => {
     await act(async () => setLanguage('ar'));
-    render(<VideoPlayer videoId="abcdef12345" />);
+    render(<VideoPlayer video={{ source: 'youtube', id: 'abcdef12345' }} />);
     expect(screen.getByText('جارٍ تحميل معاينة الفيديو…')).toBeInTheDocument();
     await waitFor(() => expect(construct).toHaveBeenCalledOnce());
     act(() => instances[0].options.events?.onError?.({ data: 100 }));

@@ -7,7 +7,9 @@ import { trackEvent } from '../../utils/analytics';
 import { groupHistoryByVideo, type VideoHistoryGroup } from '../../utils/historyGroups';
 import { formatWhen } from '../../utils/datetime';
 import { savedResultsOf } from '../../utils/savedResults';
-import { buildMomentHref, buildThumbnailUrl, formatYouTubeTime } from '../../utils/youtube';
+import { formatYouTubeTime } from '../../utils/youtube';
+import { buildMomentHref, buildThumbnailUrl, identifyVideoId } from '../../utils/videoSources';
+import type { VideoRef } from '../../utils/videoSources';
 import type { HistoryEntry } from '../../types';
 import { IconAlert, IconHistory, IconTrash, IconVideo } from '../icons';
 import { useAuthErrorMessage } from './formHooks';
@@ -418,7 +420,7 @@ function KeywordLink({
       // A fruitless search says so in its own href, so that reloading the link
       // or opening it in another tab lands on the same empty result this click
       // produces instead of inventing a match at 00:00.
-      href={buildMomentHref(entry.video_id, seconds, { foundNothing: empty })}
+      href={buildMomentHref(identifyVideoId(entry.video_id), seconds, { foundNothing: empty })}
       onClick={(event) => onPlainClick(event, () => onReplay(entry))}
       // The tooltip has no room for the keyword — the row already shows it — and
       // passing only `timestamp` here used to print the raw `{{keyword}}`
@@ -516,7 +518,7 @@ function MatchCountBadge({ entry }: { entry: HistoryEntry }) {
  * error rather than a placeholder — so the failure swaps in a neutral tile of
  * exactly the same box instead of leaving a broken image icon on the card.
  */
-function VideoThumbnail({ videoId }: { videoId: string }) {
+function VideoThumbnail({ video }: { video: VideoRef }) {
   const [missing, setMissing] = useState(false);
   // A viewport breakpoint rather than a named container query: this card is
   // already inside the page's single `max-w-3xl` column, so there is no narrower
@@ -537,7 +539,7 @@ function VideoThumbnail({ videoId }: { videoId: string }) {
 
   return (
     <img
-      src={buildThumbnailUrl(videoId)}
+      src={buildThumbnailUrl(video)}
       alt=""
       aria-hidden="true"
       loading="lazy"
@@ -573,11 +575,11 @@ function VideoHeading({
   return (
     <div className="flex items-center gap-3 p-4">
       <a
-        href={buildMomentHref(group.videoId, 0)}
+        href={buildMomentHref(identifyVideoId(group.videoId), 0)}
         onClick={(event) => onPlainClick(event, () => onOpenVideo(group.videoId))}
         className="group/video flex min-w-0 flex-1 items-center gap-3 rounded-lg text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-action"
       >
-        <VideoThumbnail videoId={group.videoId} />
+        <VideoThumbnail video={identifyVideoId(group.videoId)} />
         {titled ? (
           // `dir="auto"` so the ellipsis lands at the end of the title's own
           // script: with the row's inherited rtl direction a latin title gets

@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { videoDownloadUrl } from '../api/client';
 import { usePreparingDownload } from '../hooks/usePreparingDownload';
 import type { SearchMatch } from '../types';
-import { buildShareUrl, buildWatchUrl, formatYouTubeTime } from '../utils/youtube';
+import { buildShareUrl, buildWatchUrl } from '../utils/videoSources';
+import type { VideoRef } from '../utils/videoSources';
+import { formatYouTubeTime } from '../utils/youtube';
 import { IconCheck, IconDownload, IconSearch, IconShare, IconYouTube } from './icons';
 import { VideoDownloadDialog } from './VideoDownloadDialog';
 
@@ -16,7 +18,7 @@ interface Props {
   noSpeech?: boolean;
   onSeek: (seconds: number) => void;
   onClear?: () => void;
-  youtubeId?: string | null;
+  video?: VideoRef | null;
   matchLimit?: number;
   currentPlayingTimestamp?: number | null;
   /**
@@ -63,7 +65,7 @@ interface MatchRowProps {
   match: SearchMatch;
   keyword: string;
   onSeek: (seconds: number) => void;
-  youtubeId?: string | null;
+  video?: VideoRef | null;
   isPlaying: boolean;
 }
 
@@ -73,7 +75,7 @@ const DOWNLOAD_SPINNER =
   'h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700';
 
 interface SegmentDownloadButtonProps {
-  youtubeId: string;
+  videoId: string;
   timestamp: string;
 }
 
@@ -81,8 +83,11 @@ interface SegmentDownloadButtonProps {
  * Download the video from this moment onward. The click opens the download
  * dialog with the start time pre-filled; while the fetch runs the same button
  * turns into a cancel control, and clicking it stops waiting for the file.
+ *
+ * YouTube-only for now: the download pipeline still produces YouTube streams,
+ * so a Drive row does not offer a button that could only fail.
  */
-function SegmentDownloadButton({ youtubeId, timestamp }: SegmentDownloadButtonProps) {
+function SegmentDownloadButton({ videoId, timestamp }: SegmentDownloadButtonProps) {
   const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const { preparing, beginDownload, cancelDownload } = usePreparingDownload(timestamp);
@@ -95,7 +100,7 @@ function SegmentDownloadButton({ youtubeId, timestamp }: SegmentDownloadButtonPr
     height: number | null,
   ) => {
     setDialogOpen(false);
-    beginDownload(videoDownloadUrl(youtubeId, startSeconds, endSeconds, height));
+    beginDownload(videoDownloadUrl(videoId, startSeconds, endSeconds, height));
   };
   const handleClick = () => {
     if (preparing) {
@@ -127,8 +132,8 @@ function SegmentDownloadButton({ youtubeId, timestamp }: SegmentDownloadButtonPr
       </button>
       {dialogOpen ? (
         <VideoDownloadDialog
-          key={`${youtubeId}-${timestamp}`}
-          youtubeId={youtubeId}
+          key={`${videoId}-${timestamp}`}
+          youtubeId={videoId}
           initialStart={timestamp}
           onClose={() => setDialogOpen(false)}
           onDownload={handleDownload}
@@ -139,17 +144,17 @@ function SegmentDownloadButton({ youtubeId, timestamp }: SegmentDownloadButtonPr
 }
 
 interface ShareButtonProps {
-  youtubeId: string;
+  video: VideoRef;
   seconds: number;
   timestamp: string;
 }
 
 /** Share the moment as a qfza.app link, falling back to copying it. */
-function ShareButton({ youtubeId, seconds, timestamp }: ShareButtonProps) {
+function ShareButton({ video, seconds, timestamp }: ShareButtonProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<number | null>(null);
-  const url = buildShareUrl(youtubeId, seconds);
+  const url = buildShareUrl(video, seconds);
   const shareLabel = t('results.shareMoment', { timestamp });
 
   useEffect(
@@ -208,7 +213,7 @@ export const MatchRow = memo(function MatchRow({
   match,
   keyword,
   onSeek,
-  youtubeId,
+  video,
   isPlaying,
 }: MatchRowProps) {
   const { t } = useTranslation();
@@ -255,24 +260,24 @@ export const MatchRow = memo(function MatchRow({
             {highlighted}
           </p>
         </button>
-        {youtubeId ? (
+        {video ? (
           <div className="flex shrink-0 items-center gap-1.5 self-stretch p-2 max-sm:w-full max-sm:justify-end max-sm:border-t max-sm:border-slate-100 @min-[36rem]/matches:items-center @min-[36rem]/matches:border-s @min-[36rem]/matches:border-slate-100">
-            <SegmentDownloadButton youtubeId={youtubeId} timestamp={timestamp} />
-            <ShareButton
-              youtubeId={youtubeId}
-              seconds={match.progress_seconds}
-              timestamp={timestamp}
-            />
-            <a
-              href={buildWatchUrl(youtubeId, match.progress_seconds)}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={t('results.watchMoment', { timestamp })}
-              title={t('results.watchOnYouTube')}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-200 bg-red-50 text-youtube transition-colors duration-200 hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-action"
-            >
-              <IconYouTube size={18} />
-            </a>
+            {video.source === 'youtube' ? (
+              <SegmentDownloadButton videoId={video.id} timestamp={timestamp} />
+            ) : null}
+            <ShareButton video={video} seconds={match.progress_seconds} timestamp={timestamp} />
+            {video.source === 'youtube' ? (
+              <a
+                href={buildWatchUrl(video, match.progress_seconds)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t('results.watchMoment', { timestamp })}
+                title={t('results.watchOnYouTube')}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-200 bg-red-50 text-youtube transition-colors duration-200 hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-action"
+              >
+                <IconYouTube size={18} />
+              </a>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -286,7 +291,7 @@ export const ResultsList = memo(function ResultsList({
   noSpeech = false,
   onSeek,
   onClear,
-  youtubeId,
+  video,
   matchLimit = DEFAULT_MATCH_LIMIT,
   currentPlayingTimestamp,
   listLabel,
@@ -300,13 +305,13 @@ export const ResultsList = memo(function ResultsList({
   const [expandedFor, setExpandedFor] = useState<{
     matches: SearchMatch[];
     keyword: string;
-    youtubeId: Props['youtubeId'];
+    video: Props['video'];
     matchLimit: number;
   } | null>(null);
   const expanded =
     expandedFor?.matches === matches &&
     expandedFor.keyword === keyword &&
-    expandedFor.youtubeId === youtubeId &&
+    expandedFor.video === video &&
     expandedFor.matchLimit === matchLimit;
   const capped = matchLimit > 0 && matches.length > matchLimit;
   const maxVisible = capped && !expanded ? matchLimit : matches.length;
@@ -316,11 +321,11 @@ export const ResultsList = memo(function ResultsList({
     () => () => {
       if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
     },
-    [matches, keyword, youtubeId, matchLimit],
+    [matches, keyword, video, matchLimit],
   );
 
   const toggleExpanded = () => {
-    setExpandedFor(expanded ? null : { matches, keyword, youtubeId, matchLimit });
+    setExpandedFor(expanded ? null : { matches, keyword, video, matchLimit });
     if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
     focusFrameRef.current = requestAnimationFrame(() => {
       focusFrameRef.current = null;
@@ -409,7 +414,7 @@ export const ResultsList = memo(function ResultsList({
             match={match}
             keyword={keyword}
             onSeek={onSeek}
-            youtubeId={youtubeId}
+            video={video}
             isPlaying={currentPlayingTimestamp === match.progress_seconds}
           />
         ))}

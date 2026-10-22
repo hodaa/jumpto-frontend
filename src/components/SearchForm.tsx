@@ -3,8 +3,8 @@ import type { ChangeEvent, FormEvent, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLanguage } from '../i18n';
 import { fieldStateClass } from '../utils/fieldStyles';
-import { inspectYouTubeUrl } from '../utils/youtube';
-import type { YouTubeUrlIssue } from '../utils/youtube';
+import { inspectVideoUrl } from '../utils/videoSources';
+import type { VideoUrlIssue } from '../utils/videoSources';
 import { IconAlert, IconClipboard, IconSearch, IconTarget, IconVideo, IconX } from './icons';
 
 export interface SearchFormHandle {
@@ -29,7 +29,7 @@ interface Props {
  * Field error codes. They are stored untranslated and resolved with `t()` at
  * render time, so a visible error follows the active language (EN/AR) live.
  */
-type UrlError = 'required' | YouTubeUrlIssue;
+type UrlError = 'required' | VideoUrlIssue;
 type PasteIssue = 'unavailable' | 'empty';
 type KeywordError = 'required';
 
@@ -54,7 +54,7 @@ function isArabicText(value: string): boolean {
 function validateUrl(value: string): UrlError | null {
   const clean = value.trim();
   if (!clean) return 'required';
-  return inspectYouTubeUrl(clean).issue;
+  return inspectVideoUrl(clean).issue;
 }
 
 /** The single source of truth for keyword validity. */

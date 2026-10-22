@@ -5,7 +5,7 @@ changefreq: monthly
 priority: '0.7'
 ---
 
-Qfza (قفزة, "jump") searches the **transcript** of a public YouTube video for an exact phrase and tells you the moment that phrase was actually said — so you can jump straight to it instead of scrubbing.
+Qfza (قفزة, "jump") searches the **transcript** of a public video for an exact phrase and tells you the moment that phrase was actually said — so you can jump straight to it instead of scrubbing.
 
 ## The problem it solves
 
@@ -26,7 +26,6 @@ That is the whole product. There is no account required to search, no AI rewriti
 - **It is not a video summariser.** You get the real transcript matches, not a paraphrase.
 - **It does not fuzzy-match.** Searching for a word the speaker never said returns nothing, which is the honest answer.
 - **It does not bypass anything.** If a video has captions disabled, there is no transcript to search and no result to find. Qfza works with the accessibility data that already exists.
-- **It does not download or re-host video.** You keep watching on YouTube.
 
 ## Who it is for
 
